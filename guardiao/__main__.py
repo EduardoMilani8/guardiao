@@ -2,6 +2,7 @@
 
     python -m guardiao varrer ~/Downloads [--isolar]
     python -m guardiao monitorar [pastas...] [--isolar]
+    python -m guardiao dev [pasta] [--todos]
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
 """
@@ -101,6 +102,34 @@ def cmd_monitorar(args) -> int:
     return 0
 
 
+def cmd_dev(args) -> int:
+    from . import dev
+
+    raiz = Path(args.pasta).expanduser().resolve()
+    if not raiz.is_dir():
+        print(f"{VERMELHO}Pasta não encontrada: {raiz}{FIM}")
+        return 2
+    avisar_se_sem_yara()
+
+    achados = dev.auditar(raiz)
+    estilo = {"alta": (VERMELHO, "[ALTO]   "), "media": (AMARELO, "[atenção]"), "info": (CINZA, "[info]   ")}
+    contagem = {"alta": 0, "media": 0, "info": 0}
+    for a in achados:
+        contagem[a.gravidade] = contagem.get(a.gravidade, 0) + 1
+        if a.gravidade == "info" and not args.todos:
+            continue
+        cor, rotulo = estilo.get(a.gravidade, (FIM, "[?]      "))
+        local = a.arquivo.relative_to(raiz) if a.arquivo.is_relative_to(raiz) else a.arquivo
+        print(f"{cor}{rotulo} {a.categoria} · {local}{FIM}")
+        print(f"           {a.mensagem}")
+
+    cor = VERMELHO if contagem["alta"] else AMARELO if contagem["media"] else VERDE
+    escondidos = "" if args.todos or not contagem["info"] else " (--todos para ver)"
+    print(f"\n{cor}{contagem['alta']} alto risco · {contagem['media']} atenção · "
+          f"{contagem['info']} informativos{escondidos}{FIM}")
+    return 1 if contagem["alta"] else 0
+
+
 def cmd_quarentena(args) -> int:
     if args.acao == "listar":
         entradas = quarentena.listar()
@@ -127,6 +156,11 @@ def main() -> int:
     p_mon.add_argument("pastas", nargs="*", help="padrão: ~/Downloads")
     p_mon.add_argument("--isolar", action="store_true", help="move ameaças para a quarentena")
     p_mon.set_defaults(func=cmd_monitorar)
+
+    p_dev = sub.add_parser("dev", help="audita um projeto: pacotes, scripts de instalação, auto-execução")
+    p_dev.add_argument("pasta", nargs="?", default=".", help="padrão: pasta atual")
+    p_dev.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
+    p_dev.set_defaults(func=cmd_dev)
 
     p_q = sub.add_parser("quarentena", help="gerencia arquivos isolados")
     q_sub = p_q.add_subparsers(dest="acao", required=True)
