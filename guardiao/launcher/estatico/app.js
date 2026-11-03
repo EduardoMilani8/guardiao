@@ -1,13 +1,16 @@
 // Protótipo do launcher: recebe os eventos da varredura e anima os guardiões.
-// O servidor manda os eventos o mais rápido possível; esta página os coloca
-// numa fila e define o próprio ritmo, para as reações serem visíveis.
+// O servidor manda o progresso de tempos em tempos e um evento só para cada
+// ameaça ou suspeito; esta página os coloca numa fila e define o próprio ritmo,
+// para as reações serem visíveis.
 
 const QUEM_PEGOU = { hash: "guardiao", yara: "arqueira", heuristica: "vidente" };
 const INSPETORES = ["guardiao", "arqueira", "vidente"];   // ordem das camadas no motor
 const NOMES = { guardiao: "Guardião", arqueira: "Arqueira", vidente: "Vidente", carcereiro: "Carcereiro" };
+const MINIMO_MS = 2000;   // tempo mínimo de patrulha na tela
 
 const $ = (seletor) => document.querySelector(seletor);
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const n = (x) => x.toLocaleString("pt-BR");
 
 const estado = {
   fonte: null,
@@ -15,6 +18,8 @@ const estado = {
   processando: false,
   total: 0,
   vistos: 0,
+  pulso: 0,
+  inicio: 0,
   contadores: { guardiao: 0, arqueira: 0, vidente: 0, carcereiro: 0 },
 };
 
@@ -69,34 +74,43 @@ function registrar(classe, quem, arquivo, detalhe) {
 // --- reações a cada evento -----------------------------------------------------
 
 async function aoIniciar(ev) {
-  estado.total = ev.total;
   $(".progresso").hidden = false;
-  falar("guardiao", `Todos a postos! Patrulhando: ${ev.alvo}.`);
+  $(".atual").textContent = "Preparando a patrulha…";
+  falar("guardiao", `Todos a postos! Patrulhando ${ev.alvo}.`);
   falar("arqueira", ev.yara ? "Flecha no arco." : "Estou sem flechas: yara-x não instalado.");
   falar("vidente", "Minha bola de cristal está acesa.");
   falar("carcereiro", "Celas abertas, esperando.");
   ["guardiao", "arqueira", "vidente", "carcereiro"].forEach((q) => animar(q, "ativo", 700));
+  estado.inicio = Date.now();
   await espera(900);
-  trabalhando(true);
+  if (estado.fonte) trabalhando(true);   // a pessoa pode ter apertado Parar nesse meio-tempo
+}
+
+function aoProgresso(ev) {
+  estado.vistos = ev.vistos;
+  estado.total = ev.total;
+  const listando = ev.fase === "listando";
+  $(".barra").classList.toggle("listando", listando);
+  // Todo arquivo passa pelas três camadas: um pulso de luz percorre os três
+  // em revezamento e os balões mostram o trabalho acumulado.
+  animar(INSPETORES[estado.pulso++ % INSPETORES.length], "ativo", 300);
+
+  if (listando) {
+    $(".preenchido").style.width = "30%";
+    $(".atual").textContent = `Contando arquivos… ${n(ev.vistos)} até agora`;
+    atualizar("guardiao", `Reunindo os suspeitos de sempre: ${n(ev.vistos)} arquivos.`);
+    atualizar("arqueira", "Escolhendo os alvos.");
+    atualizar("vidente", "Sinto muitos arquivos por aí…");
+    return;
+  }
+  $(".preenchido").style.width = `${(100 * ev.vistos) / Math.max(ev.total, 1)}%`;
+  $(".atual").textContent = ev.atual ? `Examinando: ${ev.atual}` : `${n(ev.vistos)} de ${n(ev.total)} arquivos`;
+  atualizar("guardiao", `Conferi ${n(ev.vistos)} de ${n(ev.total)} rostos.`);
+  atualizar("arqueira", `${n(ev.vistos)} arquivos na mira.`);
+  atualizar("vidente", `Observei ${n(ev.vistos)} arquivos.`);
 }
 
 async function aoArquivo(ev) {
-  estado.vistos++;
-  $(".preenchido").style.width = `${(100 * estado.vistos) / Math.max(estado.total, 1)}%`;
-  $(".atual").textContent = `Examinando: ${ev.caminho}`;
-
-  if (ev.veredito === "limpo") {
-    // Todo arquivo passa pelas três camadas: um pulso de luz percorre os três
-    // em revezamento e os balões mostram o trabalho acumulado.
-    animar(INSPETORES[(estado.vistos - 1) % INSPETORES.length], "ativo", 300);
-    atualizar("guardiao", `Conferi ${estado.vistos} de ${estado.total} rostos.`);
-    atualizar("arqueira", `${estado.vistos} arquivos na mira.`);
-    atualizar("vidente", `Observei ${estado.vistos} arquivos.`);
-    // Quanto mais arquivos, mais rápido: a parte limpa leva uns 2,5 s no total.
-    await espera(Math.max(12, Math.min(140, 2500 / Math.max(estado.total, 1))));
-    return;
-  }
-
   const quem = QUEM_PEGOU[ev.camada] || "vidente";
   contar(quem);
   animar(quem, "ativo", 1600);
@@ -129,17 +143,22 @@ async function aoArquivo(ev) {
 }
 
 async function aoTerminar(ev) {
+  // Com o cache, uma varredura pode acabar em instantes: os guardiões
+  // trabalham um pouco na tela para a patrulha não parecer que nem começou.
+  await espera(Math.max(0, MINIMO_MS - (Date.now() - estado.inicio)));
   trabalhando(false);
+  $(".barra").classList.remove("listando");
   $(".preenchido").style.width = "100%";
-  $(".atual").textContent = `Patrulha concluída: ${estado.total} arquivos.`;
+  const conhecidos = ev.em_cache ? `, ${n(ev.em_cache)} sem mudanças desde a última vez` : "";
+  $(".atual").textContent = `Patrulha concluída em ${ev.segundos}s: ${n(ev.total)} arquivos${conhecidos}.`;
 
   if (ev.ameaca === 0 && ev.suspeito === 0) {
-    falar("guardiao", `Tudo limpo! ${estado.total} arquivos patrulhados.`);
+    falar("guardiao", `Tudo limpo! ${n(ev.total)} arquivos patrulhados.`);
     falar("arqueira", "Nenhum alvo hoje.");
     falar("vidente", "O futuro parece tranquilo.");
     animar("carcereiro", "ronda", 1500);
     falar("carcereiro", "Ronda feita: celas vazias. Assim que eu gosto.");
-    registrar("limpo", "Guarda", "Nenhuma ameaça", `${estado.total} arquivos verificados`);
+    registrar("limpo", "Guarda", "Nenhuma ameaça", `${n(ev.total)} arquivos verificados`);
   } else {
     falar("guardiao", `Patrulha feita: ${ev.ameaca} ameaça(s), ${ev.suspeito} suspeito(s).`);
     if (ev.ameaca > 0) {
@@ -148,6 +167,10 @@ async function aoTerminar(ev) {
       falar("carcereiro", `Separei ${ev.ameaca} para trancar. No launcher final, é só um clique.`);
     }
   }
+  const fora = [];
+  if (ev.sem_permissao) fora.push(`${n(ev.sem_permissao)} itens sem permissão de leitura (rode pelo terminal com sudo para incluí-los)`);
+  if (ev.grandes) fora.push(`${n(ev.grandes)} arquivos acima do limite de tamanho`);
+  if (fora.length) registrar("info", "Guarda", "Fora do alcance", fora.join("; "));
   encerrar();
 }
 
@@ -158,8 +181,9 @@ async function processar() {
   while (estado.fila.length) {
     const ev = estado.fila.shift();
     if (ev.tipo === "inicio") await aoIniciar(ev);
+    // Do progresso só importa o mais recente: se outro já chegou, este está velho.
+    else if (ev.tipo === "progresso") { if (!estado.fila.some((e) => e.tipo === "progresso")) aoProgresso(ev); }
     else if (ev.tipo === "arquivo") await aoArquivo(ev);
-    else if (ev.tipo === "erro") registrar("suspeito", "Guarda", ev.caminho, `Não consegui ler: ${ev.mensagem}`);
     else if (ev.tipo === "fim") await aoTerminar(ev);
   }
   estado.processando = false;
@@ -167,7 +191,7 @@ async function processar() {
 
 function reiniciar() {
   estado.fila = [];
-  estado.total = estado.vistos = 0;
+  estado.total = estado.vistos = estado.pulso = 0;
   for (const quem in estado.contadores) {
     estado.contadores[quem] = 0;
     const contador = $(`#${quem} .contador`);
@@ -177,14 +201,20 @@ function reiniciar() {
   $("#lista").replaceChildren();
   $(".vazio").hidden = false;
   $(".preenchido").style.width = "0";
+  $(".barra").classList.remove("listando");
 }
 
-function iniciar(alvo) {
+function botoes(ocupado, comParar = ocupado) {
+  document.querySelectorAll(".acoes .botao:not(#btn-parar)").forEach((b) => (b.disabled = ocupado));
+  $("#btn-parar").hidden = !comParar;
+}
+
+function iniciar(consulta) {
   if (estado.fonte) return;
   reiniciar();
-  document.querySelectorAll(".botao").forEach((b) => (b.disabled = true));
+  botoes(true);
 
-  const fonte = new EventSource(`/api/varrer?alvo=${alvo}`);
+  const fonte = new EventSource(`/api/varrer?${consulta}`);
   estado.fonte = fonte;
   fonte.onmessage = (e) => {
     const ev = JSON.parse(e.data);
@@ -201,11 +231,48 @@ function iniciar(alvo) {
   };
 }
 
+async function escolherPasta() {
+  if (estado.fonte) return;
+  botoes(true, false);
+  falar("guardiao", "Qual pasta devemos patrulhar? Escolha na janela que abriu.");
+  try {
+    // O seletor abre do lado do servidor (zenity); a página só recebe um id.
+    const resposta = await fetch("/api/escolher-pasta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    if (!resposta.ok) throw new Error(resposta.status === 501 ? "sem zenity" : `HTTP ${resposta.status}`);
+    const dados = await resposta.json();
+    botoes(false);
+    if (dados.cancelado) falar("guardiao", "Tudo bem, fica para outra hora.");
+    else iniciar(`alvo=pasta&id=${encodeURIComponent(dados.id)}`);
+  } catch (erro) {
+    botoes(false);
+    falar("guardiao", erro.message === "sem zenity"
+      ? "Não achei o seletor de pastas. Instale o zenity."
+      : "Não consegui abrir o seletor de pastas.");
+  }
+}
+
+function parar() {
+  if (!estado.fonte) return;
+  estado.fonte.close();   // o servidor percebe a conexão fechada e encerra os processos de análise
+  estado.fila = [];
+  $(".barra").classList.remove("listando");
+  $(".atual").textContent = "Patrulha interrompida.";
+  falar("guardiao", "Patrulha interrompida. Descansar, guarda!");
+  encerrar();
+}
+
 function encerrar() {
   trabalhando(false);
   estado.fonte = null;
-  document.querySelectorAll(".botao").forEach((b) => (b.disabled = false));
+  botoes(false);
 }
 
-$("#btn-downloads").addEventListener("click", () => iniciar("downloads"));
-$("#btn-demo").addEventListener("click", () => iniciar("demo"));
+$("#btn-rapida").addEventListener("click", () => iniciar("alvo=rapida"));
+$("#btn-completa").addEventListener("click", () => iniciar("alvo=completa"));
+$("#btn-pasta").addEventListener("click", escolherPasta);
+$("#btn-demo").addEventListener("click", () => iniciar("alvo=demo"));
+$("#btn-parar").addEventListener("click", parar);

@@ -9,7 +9,13 @@ from pathlib import Path
 from .scanner import Resultado
 
 
-def de_resultado(r: Resultado, raiz: Path) -> dict:
+def relativo(caminho: Path | str, raiz: Path | None) -> str:
+    """Caminho curto para mostrar: relativo à raiz, se houver uma só."""
+    caminho = Path(caminho)
+    return str(caminho.relative_to(raiz)) if raiz and caminho.is_relative_to(raiz) else str(caminho)
+
+
+def de_resultado(r: Resultado, raiz: Path | None) -> dict:
     if r.infectado:
         veredito = "ameaca"
     elif r.suspeito:
@@ -19,7 +25,7 @@ def de_resultado(r: Resultado, raiz: Path) -> dict:
     return {
         "tipo": "arquivo",
         "nome": r.caminho.name,
-        "caminho": str(r.caminho.relative_to(raiz)) if r.caminho.is_relative_to(raiz) else str(r.caminho),
+        "caminho": relativo(r.caminho, raiz),
         "veredito": veredito,
         "camada": r.camada if veredito != "limpo" else None,
         "ameaca": r.ameaca,
@@ -27,10 +33,3 @@ def de_resultado(r: Resultado, raiz: Path) -> dict:
         "motivos": r.motivos,
     }
 
-
-def de_erro(caminho: Path, erro: OSError, raiz: Path) -> dict:
-    return {
-        "tipo": "erro",
-        "caminho": str(caminho.relative_to(raiz)) if caminho.is_relative_to(raiz) else str(caminho),
-        "mensagem": erro.strerror or str(erro),
-    }

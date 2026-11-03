@@ -168,6 +168,11 @@ def cmd_launcher(args) -> int:
 
     from .launcher import servidor
 
+    if os.geteuid() == 0:
+        # Um servidor web como root daria a qualquer falha nele o poder do root.
+        print(f"{VERMELHO}Não rode o launcher como root. Para varrer o sistema todo: "
+              f"sudo .venv/bin/python -m guardiao varrer --completa{FIM}")
+        return 2
     try:
         srv = servidor.criar_servidor(args.porta)
     except OSError as erro:

@@ -242,6 +242,8 @@ body {
 }
 .botao.principal:hover:not(:disabled) { background: linear-gradient(180deg, #f6cd78, #d39b37); }
 .botao small { font-weight: 400; color: var(--texto-suave); }
+.botao.parar { border-color: var(--perigo); color: var(--perigo); }
+.botao.parar:hover { background: #ff6b5e22; }
 
 .progresso { max-width: 560px; margin: 18px auto 0; }
 .barra { height: 8px; border-radius: 999px; background: #0006; overflow: hidden; }
@@ -252,6 +254,9 @@ body {
   /* Sem transição: a barra muda a cada arquivo (às vezes a cada 12 ms) e uma
      animação reiniciada o tempo todo nunca alcançaria o valor certo. */
 }
+/* Enquanto lista, o total ainda é desconhecido: a barra vai e volta. */
+.barra.listando .preenchido { animation: vaivem 1.1s ease-in-out infinite alternate; }
+@keyframes vaivem { to { transform: translateX(233%); } }
 .atual {
   margin: 8px 0 0;
   font-size: 0.85rem;
@@ -285,6 +290,7 @@ body {
 }
 .achado.ameaca { border-left-color: var(--perigo); }
 .achado.limpo { border-left-color: var(--limpo); }
+.achado.info { border-left-color: var(--texto-suave); }
 .achado .quem {
   grid-row: span 2;
   align-self: center;
