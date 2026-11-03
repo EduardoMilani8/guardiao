@@ -108,3 +108,14 @@ def test_download_com_limite_de_tamanho(tmp_path, monkeypatch):
         bases.baixar_arquivo("https://exemplo.com/enorme", tmp_path / "x", limite=1000)
     sha = bases.baixar_arquivo("https://exemplo.com/ok", tmp_path / "y", limite=10_000)
     assert len(sha) == 64 and (tmp_path / "y").stat().st_size == 5000
+
+
+def test_avisa_base_nunca_baixada_e_velha():
+    base = Falsa()
+    assert bases.avisos([base]) == ["falsa: nunca foi baixada (rode: guardiao atualizar)"]
+    bases.atualizar([base], agora=1000)
+    assert bases.avisos([base], agora=1000 + 3600) == []
+    base.falhar_download = True
+    bases.atualizar([base], agora=1000 + 4 * 86400)   # dias tentando, só erro
+    [aviso] = bases.avisos([base], agora=1000 + 4 * 86400)
+    assert "há 4 dia(s)" in aviso and "rede caiu" in aviso

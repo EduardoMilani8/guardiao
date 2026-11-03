@@ -81,6 +81,8 @@ async function aoIniciar(ev) {
   falar("vidente", "Minha bola de cristal está acesa.");
   falar("carcereiro", "Celas abertas, esperando.");
   ["guardiao", "arqueira", "vidente", "carcereiro"].forEach((q) => animar(q, "ativo", 700));
+  // Base velha não conhece as ameaças novas: o "tudo limpo" vale menos.
+  (ev.avisos || []).forEach((aviso) => registrar("info", "Guarda", "Base desatualizada", aviso));
   estado.inicio = Date.now();
   await espera(900);
   if (estado.fonte) trabalhando(true);   // a pessoa pode ter apertado Parar nesse meio-tempo

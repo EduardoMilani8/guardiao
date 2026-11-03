@@ -186,3 +186,20 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
 def registradas() -> list[Base]:
     """Todas as bases que o Guardião conhece, na ordem em que são atualizadas."""
     return []
+
+
+def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[str]:
+    """Bases que nunca foram baixadas ou não são conferidas há mais de VELHA_APOS.
+    Uma base velha não protege contra o que surgiu depois dela: melhor avisar
+    do que mostrar "tudo limpo" com uma base de semanas atrás."""
+    saida = []
+    for base in registradas() if lista is None else lista:
+        estado = ler_estado(base)
+        idade = estado.idade(agora)
+        if estado.versao is None:
+            saida.append(f"{base.nome}: nunca foi baixada (rode: guardiao atualizar)")
+        elif idade is None or idade > VELHA_APOS:
+            dias = int((idade or 0) // 86400)
+            motivo = f" ({estado.erro})" if estado.erro else ""
+            saida.append(f"{base.nome}: sem atualizar há {dias} dia(s){motivo}")
+    return saida

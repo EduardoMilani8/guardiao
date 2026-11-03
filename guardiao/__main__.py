@@ -62,6 +62,9 @@ def cmd_varrer(args) -> int:
         return 2
 
     avisar_se_sem_yara()
+    from . import bases
+    for aviso in bases.avisos():
+        print(f"{AMARELO}Base desatualizada: {aviso}{FIM}")
     processos = args.processos or os.cpu_count() or 1
     print(f"Varredura {nome}: {len(raizes)} ponto(s) de partida, até {processos} processos")
     terminal = sys.stdout.isatty()

@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from .. import eventos, regras_yara, scanner, varredura
+from .. import bases, eventos, regras_yara, scanner, varredura
 from . import demo
 
 PASTA_ESTATICA = Path(__file__).parent / "estatico"
@@ -130,7 +130,8 @@ class Manipulador(BaseHTTPRequestHandler):
 
     def _transmitir(self, raizes: list[Path], rotulo: str, usar_cache: bool = True) -> None:
         base = raizes[0] if len(raizes) == 1 else None
-        self._evento({"tipo": "inicio", "alvo": rotulo, "yara": regras_yara.disponivel()})
+        self._evento({"tipo": "inicio", "alvo": rotulo, "yara": regras_yara.disponivel(),
+                      "avisos": bases.avisos()})
         # closing(): se a página sumir, o erro de escrita sai do laço e o gerador
         # é fechado na hora, o que encerra os processos de análise.
         with closing(varredura.executar(raizes, usar_cache=usar_cache)) as itens:

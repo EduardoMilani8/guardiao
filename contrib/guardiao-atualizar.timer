@@ -1,0 +1,27 @@
+# Timer de usuário do systemd: atualiza as bases de detecção de hora em hora.
+# Cada base tem o próprio intervalo (ex.: YARA Forge só baixa de novo uma vez
+# por semana); nas horas em que nada mudou, a verificação leva segundos.
+#
+# Instalar:
+#   mkdir -p ~/.config/systemd/user
+#   cp contrib/guardiao-atualizar.service contrib/guardiao-atualizar.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now guardiao-atualizar.timer
+#
+# Próxima execução:   systemctl --user list-timers guardiao-atualizar.timer
+# Ver o que fez:      journalctl --user -u guardiao-atualizar
+# Desinstalar:        systemctl --user disable --now guardiao-atualizar.timer
+
+[Unit]
+Description=Guardião: atualizar bases de hora em hora
+
+[Timer]
+OnCalendar=hourly
+# Se o computador estava desligado na hora marcada, roda assim que ligar
+# (só funciona com OnCalendar, não com OnUnitActiveSec).
+Persistent=true
+# Espalha os acessos: não bater nos servidores das bases todos no mesmo minuto.
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target
