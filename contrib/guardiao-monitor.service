@@ -1,0 +1,23 @@
+# Serviço de usuário do systemd: inicia o monitor junto com a sessão.
+#
+# Instalar:
+#   mkdir -p ~/.config/systemd/user
+#   cp contrib/guardiao-monitor.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now guardiao-monitor
+#
+# Ver o que ele está fazendo:  journalctl --user -u guardiao-monitor -f
+# Desinstalar:                 systemctl --user disable --now guardiao-monitor
+
+[Unit]
+Description=Guardião: monitor de Downloads
+After=graphical-session.target
+
+[Service]
+WorkingDirectory=%h/guardiao
+ExecStart=%h/guardiao/.venv/bin/python -m guardiao monitorar --isolar
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
