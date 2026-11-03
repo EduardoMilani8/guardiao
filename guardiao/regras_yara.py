@@ -109,6 +109,14 @@ def verificar(caminho: Path, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
     return _ocorrencias(resultado)
 
 
+def verificar_bytes(dados: bytes, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
+    """Aplica as regras a um conteúdo em memória, ex.: um membro de um .zip."""
+    try:
+        return _ocorrencias(scanner.scan(dados))
+    except (yara_x.ScanError, yara_x.TimeoutError) as erro:
+        raise OSError(f"YARA: {erro}") from erro
+
+
 def verificar_texto(texto: str, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
     """Aplica as regras a um trecho de texto, ex.: o comando de um script npm."""
     return _ocorrencias(scanner.scan(texto.encode("utf-8", errors="replace")))

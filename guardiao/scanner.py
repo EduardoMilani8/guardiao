@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator, Protocol
 
-from . import heuristicas, regras_yara
+from . import compactados, heuristicas, regras_yara
 
 TAMANHO_BLOCO = 64 * 1024
 
@@ -81,6 +81,16 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Res
                 return resultado
             resultado.pontuacao += regras_yara.PESO_MEDIA
             resultado.motivos.append(f"regra YARA {o.regra}: {o.descricao}")
+
+    # ClamAV já abre pacotes sozinho; aqui o hash e o YARA olham dentro deles.
+    if (exame := compactados.examinar(caminho, banco, yara)) is not None:
+        if exame.ameaca:
+            resultado.ameaca, resultado.camada = exame.ameaca, exame.camada
+            return resultado
+        if exame.pontuacao:
+            resultado.camada = resultado.camada or exame.camada
+            resultado.pontuacao += exame.pontuacao
+            resultado.motivos += exame.motivos
 
     pontos, motivos = heuristicas.avaliar_suspeita(heuristicas.coletar_sinais(caminho))
     if pontos and resultado.camada is None:
