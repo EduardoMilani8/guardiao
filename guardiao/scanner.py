@@ -18,6 +18,7 @@ class Resultado:
     ameaca: str | None = None          # nome, se bateu com uma assinatura
     pontuacao: int = 0                 # 0-100, vindo das heurísticas
     motivos: list[str] = field(default_factory=list)
+    camada: str | None = None          # quem decidiu: "hash", "yara" ou "heuristica"
 
     @property
     def infectado(self) -> bool:
@@ -53,10 +54,12 @@ def analisar(caminho: Path, banco: dict[str, str], yara=None) -> Resultado:
     sha = calcular_sha256(caminho)
     resultado = Resultado(caminho=caminho, sha256=sha, ameaca=banco.get(sha))
     if resultado.infectado:
+        resultado.camada = "hash"
         return resultado
 
     if yara is not None:
         for o in regras_yara.verificar(caminho, yara):
+            resultado.camada = "yara"
             if o.gravidade == "alta":
                 resultado.ameaca = f"{o.regra} (YARA)"
                 return resultado
@@ -64,6 +67,8 @@ def analisar(caminho: Path, banco: dict[str, str], yara=None) -> Resultado:
             resultado.motivos.append(f"regra YARA {o.regra}: {o.descricao}")
 
     pontos, motivos = heuristicas.avaliar_suspeita(heuristicas.coletar_sinais(caminho))
+    if pontos and resultado.camada is None:
+        resultado.camada = "heuristica"
     resultado.pontuacao = min(resultado.pontuacao + pontos, 100)
     resultado.motivos += motivos
     return resultado
