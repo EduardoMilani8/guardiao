@@ -7,6 +7,7 @@
 """
 
 import argparse
+import os
 import signal
 import sys
 import time
@@ -15,6 +16,8 @@ from pathlib import Path
 from . import assinaturas, notificacao, quarentena, regras_yara, scanner
 
 VERMELHO, AMARELO, VERDE, CINZA, FIM = "\033[31m", "\033[33m", "\033[32m", "\033[90m", "\033[0m"
+if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):   # ex.: journal do systemd
+    VERMELHO = AMARELO = VERDE = CINZA = FIM = ""
 
 
 def avisar_se_sem_yara() -> None:
