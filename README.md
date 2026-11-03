@@ -97,3 +97,7 @@ tests/             testes (pytest)
 
 Os testes usam apenas amostras inofensivas (o arquivo de teste EICAR e trechos de
 script montados em tempo de execução, para o próprio código não ser detectado).
+
+## Licença
+
+[MIT](LICENSE) © 2026 Eduardo Milani
