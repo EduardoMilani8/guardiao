@@ -22,6 +22,7 @@ audita projetos de programação atrás de riscos na cadeia de pacotes (npm, PyP
 | **Atualização** | Bases baixadas de hora em hora, com troca atômica | Download quebrado nunca deixa o Guardião sem a base anterior |
 | **Quarentena** | Move para `~/.local/share/guardiao/quarentena` sem permissão de execução | Reversível com `quarentena restaurar` |
 | **Monitor** | inotify (via watchdog) na pasta Downloads | Analisa cada download assim que termina |
+| **Caçador** | Procura o que já se instalou: bibliotecas injetadas, processos estranhos, persistência fora dos pacotes, binários alterados | Rootkit no `/etc/ld.so.preload`, minerador rodando de `/dev/shm`, serviço que voltou depois do reboot |
 | **Módulo de dev** | Audita um projeto | `postinstall` malicioso, typosquatting (`reqeusts`), `.vscode/tasks.json` com `runOn: folderOpen` |
 
 ## Instalação
@@ -78,6 +79,10 @@ sudo .venv/bin/python -m guardiao varrer --completa
 # Vigiar Downloads em tempo real, com notificações na área de trabalho
 .venv/bin/python -m guardiao monitorar --isolar
 
+# Caçar persistência e rootkits já instalados (com sudo, vê todos os processos)
+.venv/bin/python -m guardiao cacar
+sudo .venv/bin/python -m guardiao cacar --todos
+
 # Auditar um projeto de programação
 .venv/bin/python -m guardiao dev ~/meu-projeto
 
@@ -107,6 +112,27 @@ excluir_pastas = ["~/Vídeos", "~/VirtualBox VMs"]
 excluir_padroes = ["*.iso"]
 tamanho_maximo_mb = 512     # padrão: 256
 ```
+
+### Caçador
+
+A varredura procura arquivos ruins; o `cacar` pergunta se alguma coisa já se
+instalou e está se escondendo. O critério central é *veio de um pacote?*: tudo o
+que o apt instalou está registrado em `/var/lib/dpkg/info`, e o resto é listado e
+passa pelas mesmas camadas da varredura.
+
+| Onde olha | Alto risco quando |
+|---|---|
+| `/etc/ld.so.preload` e `LD_PRELOAD` dos processos | a biblioteca não veio de um pacote ou está numa pasta temporária |
+| `/proc/<pid>/exe` | o processo roda de `/tmp`, `/var/tmp`, `/dev/shm` ou da memória (`memfd`), ou o scanner reconhece o executável, que continua legível mesmo apagado do disco |
+| systemd, cron, autostart e `/etc/rc.local` | o comando roda algo de uma pasta temporária, ou o YARA ou o scanner condenam o comando, o script ou o programa chamado |
+| `dpkg --verify` | um executável ou biblioteca do sistema não é mais o que o pacote instalou |
+
+Ficam como **atenção** um executável apagado que sumiu de vez e uma unidade do
+systemd que sobrepõe a de um pacote trocando o comando (o truque de sequestrar o
+`sshd.service`). Unidades do snap e mascaradas são ignoradas; o que não veio de
+pacote mas não tem nada de estranho aparece como informativo, com `--todos`.
+O `dpkg --verify` leva uns 30 segundos (`--sem-pacotes` pula esse passo). Sem
+root, só os seus processos e os arquivos legíveis por você são conferidos.
 
 ### Monitor como serviço
 
@@ -141,6 +167,7 @@ guardiao/
   heuristicas.py   sinais e pontuação de suspeita
   quarentena.py    isola e restaura arquivos
   monitor.py       vigia pastas em tempo real
+  cacador.py       caça persistência e rootkits (preload, processos, systemd, cron, dpkg)
   dev.py           auditoria de projetos (npm, PyPI, VS Code, hooks do git)
   eventos.py       converte resultados em eventos JSON para interfaces
   launcher/        protótipo da interface com os guardiões

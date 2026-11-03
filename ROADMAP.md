@@ -29,10 +29,13 @@ eBPF, ataques à cadeia de pacotes).
 
 ## Fase 3: caçador de persistência e rootkits
 
-- [ ] Entradas em `/etc/ld.so.preload` e `LD_PRELOAD` em processos
-- [ ] Serviços systemd, cron e autostart que não vieram de pacotes
-- [ ] Processos rodando de `/tmp` e `/dev/shm` ou com executável apagado
-- [ ] Binários do sistema alterados (`dpkg --verify`)
+- [x] Entradas em `/etc/ld.so.preload` e `LD_PRELOAD` em processos
+- [x] Serviços systemd, cron e autostart que não vieram de pacotes
+- [x] Processos rodando de `/tmp` e `/dev/shm` ou com executável apagado
+- [x] Binários do sistema alterados (`dpkg --verify`)
+- [ ] Linhas suspeitas em `~/.bashrc`, `~/.profile` e afins (alias de `sudo`, `curl | sh`)
+- [ ] Chaves SSH autorizadas que não deveriam estar lá (`~/.ssh/authorized_keys`)
+- [ ] Rodar o caçador como root e calibrar de novo
 
 ## Fase 4: proteção em tempo real de verdade
 
