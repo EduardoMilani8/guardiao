@@ -194,6 +194,8 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
     Uma base velha não protege contra o que surgiu depois dela: melhor avisar
     do que mostrar "tudo limpo" com uma base de semanas atrás."""
     saida = []
+    if lista is None:
+        saida += _aviso_clamav(agora)
     for base in registradas() if lista is None else lista:
         estado = ler_estado(base)
         idade = estado.idade(agora)
@@ -205,3 +207,19 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
             saida.append(f"{base.nome}: sem atualizar há {dias} dia(s){motivo}")
     return saida
 
+
+def _aviso_clamav(agora: float | None) -> list[str]:
+    # As assinaturas do ClamAV não passam por aqui: quem baixa é o freshclam.
+    # Mas se ele parar (sem rede, serviço desligado), quem precisa saber é você.
+    from . import clamav
+    cliente = clamav.conectar()
+    if cliente is None:
+        return []
+    try:
+        _, _, quando = cliente.versao()
+    except OSError:
+        return []
+    if quando and (agora or time.time()) - quando.timestamp() > VELHA_APOS:
+        dias = int(((agora or time.time()) - quando.timestamp()) // 86400)
+        return [f"clamav: assinaturas de {dias} dia(s) atrás (o freshclam está rodando?)"]
+    return []

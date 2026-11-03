@@ -54,13 +54,22 @@ def listar_arquivos(alvo: Path) -> Iterator[Path]:
                 yield p
 
 
-def analisar(caminho: Path, banco: BancoDeHashes, yara=None) -> Resultado:
-    """Camadas em ordem de certeza: hash → YARA → heurísticas."""
+def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Resultado:
+    """Camadas em ordem de certeza: hash → ClamAV → YARA → heurísticas."""
     sha = calcular_sha256(caminho)
     resultado = Resultado(caminho=caminho, sha256=sha, ameaca=banco.get(sha))
     if resultado.infectado:
         resultado.camada = "hash"
         return resultado
+
+    if clamav is not None:
+        try:
+            if nome := clamav.verificar(caminho):
+                resultado.ameaca, resultado.camada = f"{nome} (ClamAV)", "clamav"
+                return resultado
+        except OSError as erro:
+            # clamd reiniciando (ex.: carregando assinaturas novas): as outras camadas seguem.
+            resultado.motivos.append(f"ClamAV não respondeu: {erro}")
 
     if yara is not None:
         for o in regras_yara.verificar(caminho, yara):
@@ -81,7 +90,7 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None) -> Resultado:
     return resultado
 
 
-def varrer(alvo: Path, banco: BancoDeHashes, yara=None) -> Iterator[Resultado | tuple[Path, OSError]]:
+def varrer(alvo: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Iterator[Resultado | tuple[Path, OSError]]:
     """Gera um Resultado por arquivo, ou (caminho, erro) se não deu pra ler."""
     pasta_regras = regras_yara.PASTA_PADRAO.resolve()
     for caminho in listar_arquivos(alvo):
@@ -89,6 +98,6 @@ def varrer(alvo: Path, banco: BancoDeHashes, yara=None) -> Iterator[Resultado | 
         if caminho.resolve().is_relative_to(pasta_regras):
             continue
         try:
-            yield analisar(caminho, banco, yara)
+            yield analisar(caminho, banco, yara, clamav)
         except OSError as erro:
             yield caminho, erro

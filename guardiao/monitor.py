@@ -9,11 +9,12 @@ from typing import Callable
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from . import regras_yara, scanner
+from . import clamav, regras_yara, scanner
 
 # Downloads em andamento: o navegador renomeia para o nome final ao terminar.
 EXT_TEMPORARIAS = {".part", ".crdownload", ".download", ".partial", ".tmp"}
 JANELA_REPETICAO = 2.0            # segundos em que eventos repetidos do mesmo arquivo são ignorados
+RECONECTAR_CLAMAV = 300           # segundos entre tentativas de achar o clamd
 
 
 class _Coletor(FileSystemEventHandler):
@@ -93,6 +94,7 @@ class Monitor:
         # O Scanner do YARA-X só pode ser usado na thread que o criou.
         yara = regras_yara.carregar() if self.usar_yara else None
         regras_em_uso = regras_yara.regras_das_bases()
+        cliente, tentou_clamav = clamav.conectar(), time.monotonic()
         vistos: dict[Path, float] = {}
         while (caminho := self._fila.get()) is not None:
             if caminho.suffix.lower() in EXT_TEMPORARIAS:
@@ -110,11 +112,14 @@ class Monitor:
             # `atual` de uma base mudou), recompila antes de analisar.
             if self.usar_yara and regras_yara.regras_das_bases() != regras_em_uso:
                 yara, regras_em_uso = regras_yara.carregar(), regras_yara.regras_das_bases()
+            # O clamd pode ter sido instalado ou reiniciado depois do monitor abrir.
+            if cliente is None and agora - tentou_clamav > RECONECTAR_CLAMAV:
+                cliente, tentou_clamav = clamav.conectar(), agora
 
             # Qualquer erro fica restrito a este arquivo: se a thread morresse,
             # o monitor pareceria ativo sem analisar mais nada.
             try:
-                self.ao_analisar(scanner.analisar(caminho, self.banco, yara))
+                self.ao_analisar(scanner.analisar(caminho, self.banco, yara, cliente))
             except Exception as erro:
                 if self.ao_erro:
                     self.ao_erro(caminho, erro)

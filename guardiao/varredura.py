@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
-from . import assinaturas, bases, quarentena, regras_yara, scanner
+from . import assinaturas, bases, clamav, quarentena, regras_yara, scanner
 from .cache import Cache
 from .caminhos import casa_real
 
@@ -191,18 +191,20 @@ def percorrer(raiz: Path, exclusoes: Exclusoes, resumo: Resumo) -> Iterator[tupl
 
 _banco: scanner.BancoDeHashes = {}
 _yara = None
+_clamav = None
 
 
 def _iniciar_processo() -> None:
     # Cada processo carrega o próprio banco e o próprio Scanner do YARA-X.
-    global _banco, _yara
+    global _banco, _yara, _clamav
     _banco = assinaturas.carregar()
     _yara = regras_yara.carregar()
+    _clamav = clamav.conectar()
 
 
 def _analisar(caminho: str):
     try:
-        return scanner.analisar(Path(caminho), _banco, _yara)
+        return scanner.analisar(Path(caminho), _banco, _yara, _clamav)
     except OSError as erro:
         return Path(caminho), erro
 
@@ -277,10 +279,10 @@ def _mapear(caminhos: list[str], processos: int):
     if processos <= 1 or len(caminhos) < 50:
         # Poucos arquivos: abrir processos custa mais que ganha. Banco e Scanner
         # ficam locais, porque o Scanner do YARA-X não pode trocar de thread.
-        banco, yara = assinaturas.carregar(), regras_yara.carregar()
+        banco, yara, cliente = assinaturas.carregar(), regras_yara.carregar(), clamav.conectar()
         for caminho in caminhos:
             try:
-                yield scanner.analisar(Path(caminho), banco, yara)
+                yield scanner.analisar(Path(caminho), banco, yara, cliente)
             except OSError as erro:
                 yield Path(caminho), erro
         return

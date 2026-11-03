@@ -24,9 +24,12 @@ if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):   # ex.: journal do sy
     VERMELHO = AMARELO = VERDE = CINZA = FIM = ""
 
 
-def avisar_se_sem_yara() -> None:
+def avisar_camadas_desligadas() -> None:
+    from . import clamav
     if not regras_yara.disponivel():
         print(f"{CINZA}yara-x não instalado: camada de regras desativada (pip install yara-x){FIM}")
+    if clamav.conectar() is None:
+        print(f"{CINZA}ClamAV não encontrado: camada desativada (sudo apt install clamav clamav-daemon){FIM}")
 
 
 def relatar(item: scanner.Resultado, isolar: bool) -> str | None:
@@ -61,7 +64,7 @@ def cmd_varrer(args) -> int:
         print("Diga o que varrer: um caminho, --rapida ou --completa.")
         return 2
 
-    avisar_se_sem_yara()
+    avisar_camadas_desligadas()
     from . import bases
     for aviso in bases.avisos():
         print(f"{AMARELO}Base desatualizada: {aviso}{FIM}")
@@ -107,6 +110,19 @@ def _ha_quanto(segundos: float | None) -> str:
     return f"há {int(segundos)} s"
 
 
+def _status_clamav() -> None:
+    from . import clamav
+    cliente = clamav.conectar()
+    if cliente is None:
+        print(f"{CINZA}{'clamav':<14} {'desligado':<14} instale: sudo apt install clamav clamav-daemon{FIM}")
+        return
+    motor, numero, quando = cliente.versao()
+    idade = None if quando is None else time.time() - quando.timestamp()
+    from . import bases
+    cor = VERMELHO if idade is None or idade > bases.VELHA_APOS else CINZA
+    print(f"{cor}{'clamav':<14} {'freshclam':<14} versão {numero or '-'} · assinaturas {_ha_quanto(idade)} ({motor}){FIM}")
+
+
 def cmd_atualizar(args) -> int:
     from . import bases
 
@@ -123,6 +139,7 @@ def cmd_atualizar(args) -> int:
             print(f"{AMARELO}{erro}{FIM}")
             return 1
     falhou = False
+    _status_clamav()
     for r in relatorios:
         e = r.estado
         velha = e.idade() is None or e.idade() > bases.VELHA_APOS
@@ -144,7 +161,7 @@ def cmd_monitorar(args) -> int:
         if not pasta.is_dir():
             print(f"{VERMELHO}Pasta não encontrada: {pasta}{FIM}")
             return 2
-    avisar_se_sem_yara()
+    avisar_camadas_desligadas()
     banco = assinaturas.carregar()
 
     def ao_analisar(item: scanner.Resultado) -> None:
@@ -184,7 +201,7 @@ def cmd_dev(args) -> int:
     if not raiz.is_dir():
         print(f"{VERMELHO}Pasta não encontrada: {raiz}{FIM}")
         return 2
-    avisar_se_sem_yara()
+    avisar_camadas_desligadas()
 
     achados = dev.auditar(raiz)
     estilo = {"alta": (VERMELHO, "[ALTO]   "), "media": (AMARELO, "[atenção]"), "info": (CINZA, "[info]   ")}

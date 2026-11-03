@@ -3,7 +3,8 @@
 // ameaça ou suspeito; esta página os coloca numa fila e define o próprio ritmo,
 // para as reações serem visíveis.
 
-const QUEM_PEGOU = { hash: "guardiao", yara: "arqueira", heuristica: "vidente" };
+// O Guardião reconhece rostos conhecidos: assinaturas locais e as milhões do ClamAV.
+const QUEM_PEGOU = { hash: "guardiao", clamav: "guardiao", yara: "arqueira", heuristica: "vidente" };
 const INSPETORES = ["guardiao", "arqueira", "vidente"];   // ordem das camadas no motor
 const NOMES = { guardiao: "Guardião", arqueira: "Arqueira", vidente: "Vidente", carcereiro: "Carcereiro" };
 const MINIMO_MS = 2000;   // tempo mínimo de patrulha na tela
