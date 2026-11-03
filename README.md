@@ -13,10 +13,13 @@ audita projetos de programação atrás de riscos na cadeia de pacotes (npm, PyP
 
 | Camada | Como detecta | Exemplo |
 |---|---|---|
-| **Assinaturas** | SHA-256 do arquivo contra um banco de hashes conhecidos | Arquivo de teste EICAR |
-| **Regras YARA** | Padrões dentro dos arquivos ([YARA-X](https://virustotal.github.io/yara-x/)) | Shell reverso, minerador de criptomoeda, script baixado e executado direto |
+| **Assinaturas** | SHA-256 do arquivo contra um banco de hashes conhecidos, incluindo os do [MalwareBazaar](https://bazaar.abuse.ch) | Arquivo de teste EICAR, malware real enviado por pesquisadores |
+| **ClamAV** | Milhões de assinaturas do [ClamAV](https://www.clamav.net/), mantidas pelo freshclam | Trojans, worms e ransomware conhecidos |
+| **Regras YARA** | Padrões dentro dos arquivos ([YARA-X](https://virustotal.github.io/yara-x/)): as nossas e ~5 mil do [YARA Forge](https://github.com/YARAHQ/yara-forge) | Shell reverso, minerador de criptomoeda, famílias de malware conhecidas |
+| **Pacotes** | Olha dentro de `.zip` e `.tar` (e `.docx`, `.jar`...), com proteção contra zip bomb | Malware zipado, macro dentro de documento |
 | **Heurísticas** | Sinais combinados numa pontuação de 0 a 100 | Executável disfarçado de `.jpg`, extensão dupla, entropia alta |
-| **Varredura** | Rápida, completa ou de uma pasta, em vários processos e com cache | 1 milhão de arquivos em ~3,5 min; a segunda vez pula o que não mudou |
+| **Varredura** | Rápida, completa ou de uma pasta, em vários processos e com cache | 1 milhão de arquivos em ~8 min; a segunda vez pula o que não mudou |
+| **Atualização** | Bases baixadas de hora em hora, com troca atômica | Download quebrado nunca deixa o Guardião sem a base anterior |
 | **Quarentena** | Move para `~/.local/share/guardiao/quarentena` sem permissão de execução | Reversível com `quarentena restaurar` |
 | **Monitor** | inotify (via watchdog) na pasta Downloads | Analisa cada download assim que termina |
 | **Módulo de dev** | Audita um projeto | `postinstall` malicioso, typosquatting (`reqeusts`), `.vscode/tasks.json` com `runOn: folderOpen` |
@@ -30,8 +33,34 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-Requer Python 3.11+. Sem o `yara-x` instalado, a camada de regras é desativada e o
-resto continua funcionando.
+Requer Python 3.11+. Para a camada do ClamAV (recomendada):
+
+```bash
+sudo apt install clamav clamav-daemon
+```
+
+Cada camada é opcional: sem o `yara-x` ou sem o ClamAV, ela é desativada (com aviso)
+e o resto continua funcionando.
+
+### Bases de detecção
+
+```bash
+.venv/bin/python -m guardiao atualizar            # baixa o que estiver desatualizado
+.venv/bin/python -m guardiao atualizar --status   # situação de cada base
+```
+
+Para atualizar sozinho de hora em hora, há um timer de usuário do systemd em
+[`contrib/guardiao-atualizar.timer`](contrib/guardiao-atualizar.timer), com a
+instalação no próprio arquivo. A varredura e o launcher avisam quando uma base passa
+de 2 dias sem atualizar.
+
+O MalwareBazaar precisa de uma chave gratuita, criada em
+[auth.abuse.ch](https://auth.abuse.ch). Coloque no `~/.config/guardiao/config.toml`:
+
+```toml
+[malwarebazaar]
+chave = "..."
+```
 
 ## Uso
 

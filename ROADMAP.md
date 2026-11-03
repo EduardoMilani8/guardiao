@@ -19,11 +19,12 @@ eBPF, ataques à cadeia de pacotes).
 
 ## Fase 2: banco de detecção de verdade
 
-- [ ] ClamAV como camada extra
-- [ ] Hashes do MalwareBazaar
-- [ ] Regras YARA da comunidade (YARA Forge), calibradas contra falsos positivos
-- [ ] Varredura dentro de `.zip` e `.tar`, com proteção contra zip bombs
-- [ ] Comando `atualizar` e atualização diária automática
+- [x] ClamAV como camada extra
+- [x] Hashes do MalwareBazaar
+- [x] Regras YARA da comunidade (YARA Forge), calibradas contra falsos positivos
+- [x] Varredura dentro de `.zip` e `.tar`, com proteção contra zip bombs
+- [x] Comando `atualizar` e atualização automática de hora em hora
+- [ ] Medir a taxa de detecção com amostras reais do MalwareBazaar
 - [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fase 3: caçador de persistência e rootkits
