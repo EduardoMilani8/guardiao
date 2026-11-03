@@ -19,6 +19,10 @@ class Ocorrencia:
     descricao: str
 
 
+def disponivel() -> bool:
+    return yara_x is not None
+
+
 def carregar(pasta: Path = PASTA_PADRAO) -> "yara_x.Scanner | None":
     """Compila todos os .yar da pasta. Retorna None se o yara-x não estiver instalado."""
     if yara_x is None:
