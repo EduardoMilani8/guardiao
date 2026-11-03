@@ -1,2 +1,3 @@
 # Regras das bases baixadas (ex.: YARA Forge) desligadas aqui por darem falso
 # positivo em arquivos legítimos. Uma por linha; o motivo vai depois do #.
+SEKOIA_Hacktool_Socat_Strings   # identifica o socat em si; marcava o /usr/bin/socat1 do pacote do sistema
