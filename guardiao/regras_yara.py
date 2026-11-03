@@ -9,6 +9,7 @@ except ImportError:              # camada opcional: sem yara-x o resto continua 
     yara_x = None
 
 PASTA_PADRAO = Path(__file__).parent.parent / "regras"
+PASTA_DEV = PASTA_PADRAO / "dev"  # só para o módulo de dev (não entra em carregar() padrão)
 PESO_MEDIA = 50                  # pontos de suspeita por regra de gravidade "media"
 
 
@@ -39,7 +40,15 @@ def verificar(caminho: Path, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
         resultado = scanner.scan_file(str(caminho))
     except (yara_x.ScanError, yara_x.TimeoutError) as erro:
         raise OSError(f"YARA: {erro}") from erro
+    return _ocorrencias(resultado)
 
+
+def verificar_texto(texto: str, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
+    """Aplica as regras a um trecho de texto, ex.: o comando de um script npm."""
+    return _ocorrencias(scanner.scan(texto.encode("utf-8", errors="replace")))
+
+
+def _ocorrencias(resultado) -> list[Ocorrencia]:
     ocorrencias = []
     for regra in resultado.matching_rules:
         meta = dict(regra.metadata)
