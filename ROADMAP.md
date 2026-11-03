@@ -1,0 +1,51 @@
+# Roadmap
+
+Plano para o Guardião se aproximar de um antivírus completo, baseado no que os
+antivírus populares (Bitdefender, Norton, ESET, Microsoft Defender, Sophos, ClamAV)
+oferecem hoje e no que de fato ataca Linux (mineradores via SSH, botnets, rootkits
+eBPF, ataques à cadeia de pacotes).
+
+## Fase 1: varredura completa
+
+- [x] Modos **rápida** (onde malware costuma ficar), **completa** (todo o disco) e
+      **personalizada** (pasta escolhida num seletor nativo)
+- [x] Ignorar o que não é arquivo de verdade (`/proc`, `/sys`, `/dev`) pelo tipo do
+      sistema de arquivos, e discos externos e de rede por padrão
+- [x] Exclusões configuráveis e limite de tamanho (`~/.config/guardiao/config.toml`)
+- [x] Cache: pular arquivos que não mudaram desde a última varredura
+- [x] Análise em paralelo, um processo por núcleo
+- [x] Modo root opcional para as pastas do sistema
+- [x] Launcher com os novos modos e botão de parar
+
+## Fase 2: banco de detecção de verdade
+
+- [ ] ClamAV como camada extra
+- [ ] Hashes do MalwareBazaar
+- [ ] Regras YARA da comunidade (YARA Forge), calibradas contra falsos positivos
+- [ ] Varredura dentro de `.zip` e `.tar`, com proteção contra zip bombs
+- [ ] Comando `atualizar` e atualização diária automática
+- [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
+
+## Fase 3: caçador de persistência e rootkits
+
+- [ ] Entradas em `/etc/ld.so.preload` e `LD_PRELOAD` em processos
+- [ ] Serviços systemd, cron e autostart que não vieram de pacotes
+- [ ] Processos rodando de `/tmp` e `/dev/shm` ou com executável apagado
+- [ ] Binários do sistema alterados (`dpkg --verify`)
+
+## Fase 4: proteção em tempo real de verdade
+
+- [ ] On-access com `fanotify` (o kernel espera o veredito antes de abrir o arquivo),
+      com limite de tempo e liberando o arquivo em caso de falha
+- [ ] Monitor de comportamento leve: mineradores e shells reversos em execução
+
+## Fase 5: rotina e painel
+
+- [ ] Varredura rápida diária e completa semanal (systemd timer)
+- [ ] Histórico de varreduras
+- [ ] Carcereiro isolando ameaças com um clique no launcher
+
+## Fora do escopo
+
+VPN, backup na nuvem, monitoramento da dark web, controle de dispositivos e
+isolamento de rede: são outros produtos ou recursos corporativos.
