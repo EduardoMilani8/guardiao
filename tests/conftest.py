@@ -1,6 +1,19 @@
-import pytest
+import atexit
+import os
+import shutil
+import tempfile
 
-from guardiao import cache
+# Antes de importar o Guardião: os caminhos dele são calculados no import, e os
+# processos da varredura em paralelo herdam estas variáveis. Assim nenhum teste
+# enxerga as bases baixadas, o cache ou a quarentena de verdade desta máquina.
+_TMP = tempfile.mkdtemp(prefix="guardiao-testes-")
+atexit.register(shutil.rmtree, _TMP, ignore_errors=True)
+for variavel in ("XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_CONFIG_HOME"):
+    os.environ[variavel] = os.path.join(_TMP, variavel.lower())
+
+import pytest  # noqa: E402
+
+from guardiao import cache  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

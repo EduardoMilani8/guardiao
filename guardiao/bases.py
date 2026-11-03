@@ -185,7 +185,8 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
 
 def registradas() -> list[Base]:
     """Todas as bases que o Guardião conhece, na ordem em que são atualizadas."""
-    return []
+    from .fontes.yara_forge import YaraForge   # aqui dentro: as fontes importam este módulo
+    return [YaraForge()]
 
 
 def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[str]:
@@ -203,3 +204,4 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
             motivo = f" ({estado.erro})" if estado.erro else ""
             saida.append(f"{base.nome}: sem atualizar há {dias} dia(s){motivo}")
     return saida
+

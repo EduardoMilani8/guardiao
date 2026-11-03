@@ -30,6 +30,8 @@ def versao_motor() -> str:
     h.update(str(regras_yara.disponivel()).encode())
     for arquivo in sorted(regras_yara.PASTA_PADRAO.rglob("*.yar")):
         h.update(arquivo.read_bytes())
+    if regras_yara.DESLIGADAS.is_file():
+        h.update(regras_yara.DESLIGADAS.read_bytes())
     h.update(assinaturas.ARQUIVO_PADRAO.read_bytes())
     h.update(bases.versoes_em_uso(bases.registradas()).encode())
     for modulo in (heuristicas, scanner):

@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
-from . import assinaturas, quarentena, regras_yara, scanner
+from . import assinaturas, bases, quarentena, regras_yara, scanner
 from .cache import Cache
 from .caminhos import casa_real
 
@@ -77,6 +77,7 @@ def carregar_exclusoes(config: Path = CONFIG) -> Exclusoes:
         str(quarentena.PASTA_PADRAO),             # senão as ameaças isoladas seriam achadas de novo
         str(casa_real() / ".local" / "share" / "guardiao" / "quarentena"),   # a do usuário, se via sudo
         str(regras_yara.PASTA_PADRAO.resolve()),  # as regras contêm os padrões que procuram
+        str(bases.PASTA),                         # idem para as regras e hashes baixados
         str(Path(__file__).parent.parent / ".venv"),
     ])
     if config.is_file():

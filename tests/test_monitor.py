@@ -59,3 +59,23 @@ def test_detecta_em_subpasta(tmp_path, vigiar):
     sub.mkdir()
     (sub / "teste.com").write_bytes(EICAR)
     assert vigiar.get(timeout=ESPERA).infectado
+
+
+def test_usa_regras_novas_sem_reiniciar(tmp_path, monkeypatch):
+    """O timer atualiza as bases com o monitor aberto há dias."""
+    pytest.importorskip("yara_x")
+    from guardiao import regras_yara
+
+    from .test_yara import REGRAS_DA_BASE, regras_de_base
+
+    em_uso = []
+    monkeypatch.setattr(regras_yara, "regras_das_bases", lambda: list(em_uso))
+    vigiada = tmp_path / "downloads"
+    vigiada.mkdir()
+    resultados: queue.Queue = queue.Queue()
+    with monitor.Monitor([vigiada], assinaturas.carregar(), resultados.put):
+        (vigiada / "a.bin").write_text("xx MARCA-FAMILIA yy")
+        assert not resultados.get(timeout=ESPERA).infectado
+        em_uso.append(regras_de_base(tmp_path / "bases", REGRAS_DA_BASE))   # chegou regra nova
+        (vigiada / "b.bin").write_text("xx MARCA-FAMILIA yy")
+        assert resultados.get(timeout=ESPERA).infectado

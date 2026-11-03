@@ -64,6 +64,8 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None) -> Resultado:
 
     if yara is not None:
         for o in regras_yara.verificar(caminho, yara):
+            if o.gravidade == "info":
+                continue   # informativo: não pesa na suspeita
             resultado.camada = "yara"
             if o.gravidade == "alta":
                 resultado.ameaca = f"{o.regra} (YARA)"

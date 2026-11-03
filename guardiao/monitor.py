@@ -92,6 +92,7 @@ class Monitor:
     def _trabalhar(self) -> None:
         # O Scanner do YARA-X só pode ser usado na thread que o criou.
         yara = regras_yara.carregar() if self.usar_yara else None
+        regras_em_uso = regras_yara.regras_das_bases()
         vistos: dict[Path, float] = {}
         while (caminho := self._fila.get()) is not None:
             if caminho.suffix.lower() in EXT_TEMPORARIAS:
@@ -104,6 +105,11 @@ class Monitor:
             if agora - vistos.get(caminho, -JANELA_REPETICAO) < JANELA_REPETICAO:
                 continue
             vistos[caminho] = agora
+
+            # O monitor fica dias aberto: se o timer trouxe regras novas (o link
+            # `atual` de uma base mudou), recompila antes de analisar.
+            if self.usar_yara and regras_yara.regras_das_bases() != regras_em_uso:
+                yara, regras_em_uso = regras_yara.carregar(), regras_yara.regras_das_bases()
 
             # Qualquer erro fica restrito a este arquivo: se a thread morresse,
             # o monitor pareceria ativo sem analisar mais nada.

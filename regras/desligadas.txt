@@ -1,0 +1,2 @@
+# Regras das bases baixadas (ex.: YARA Forge) desligadas aqui por darem falso
+# positivo em arquivos legítimos. Uma por linha; o motivo vai depois do #.
