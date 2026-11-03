@@ -5,6 +5,7 @@
     python -m guardiao atualizar [--forcar | --status]
     python -m guardiao monitorar [pastas...] [--isolar]
     python -m guardiao dev [pasta] [--todos]
+    python -m guardiao cacar [--todos]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
@@ -208,22 +209,34 @@ def cmd_dev(args) -> int:
     avisar_camadas_desligadas()
 
     achados = dev.auditar(raiz)
+    return imprimir_achados(achados, args.todos, raiz)
+
+
+def imprimir_achados(achados, todos: bool, raiz: Path | None = None) -> int:
+    """Achados do `dev` e do `cacar`. Retorna 1 se houver algum de alto risco."""
     estilo = {"alta": (VERMELHO, "[ALTO]   "), "media": (AMARELO, "[atenção]"), "info": (CINZA, "[info]   ")}
     contagem = {"alta": 0, "media": 0, "info": 0}
     for a in achados:
         contagem[a.gravidade] = contagem.get(a.gravidade, 0) + 1
-        if a.gravidade == "info" and not args.todos:
+        if a.gravidade == "info" and not todos:
             continue
         cor, rotulo = estilo.get(a.gravidade, (FIM, "[?]      "))
-        local = a.arquivo.relative_to(raiz) if a.arquivo.is_relative_to(raiz) else a.arquivo
+        local = a.arquivo.relative_to(raiz) if raiz and a.arquivo.is_relative_to(raiz) else a.arquivo
         print(f"{cor}{rotulo} {a.categoria} · {local}{FIM}")
         print(f"           {a.mensagem}")
 
     cor = VERMELHO if contagem["alta"] else AMARELO if contagem["media"] else VERDE
-    escondidos = "" if args.todos or not contagem["info"] else " (--todos para ver)"
+    escondidos = "" if todos or not contagem["info"] else " (--todos para ver)"
     print(f"\n{cor}{contagem['alta']} alto risco · {contagem['media']} atenção · "
           f"{contagem['info']} informativos{escondidos}{FIM}")
     return 1 if contagem["alta"] else 0
+
+
+def cmd_cacar(args) -> int:
+    from . import cacador
+
+    print("Procurando bibliotecas injetadas...")
+    return imprimir_achados(cacador.cacar(), args.todos)
 
 
 def cmd_launcher(args) -> int:
@@ -297,6 +310,10 @@ def main() -> int:
     p_dev.add_argument("pasta", nargs="?", default=".", help="padrão: pasta atual")
     p_dev.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
     p_dev.set_defaults(func=cmd_dev)
+
+    p_c = sub.add_parser("cacar", help="caça persistência e rootkits já instalados no sistema")
+    p_c.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
+    p_c.set_defaults(func=cmd_cacar)
 
     p_l = sub.add_parser("launcher", help="abre o protótipo do launcher com os guardiões")
     p_l.add_argument("--porta", type=int, default=8765)
