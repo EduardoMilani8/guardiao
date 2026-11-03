@@ -167,17 +167,19 @@ def versoes_em_uso(bases: list[Base]) -> str:
 
 
 def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
-                   limite: int = LIMITE_DOWNLOAD) -> str:
-    """Baixa por HTTPS com limite de tamanho. Devolve o SHA-256 do que chegou."""
+                   limite: int = LIMITE_DOWNLOAD, rotulo: str | None = None) -> str:
+    """Baixa por HTTPS com limite de tamanho. Devolve o SHA-256 do que chegou.
+    `rotulo` substitui o endereço nas mensagens, quando ele contém uma chave."""
+    rotulo = rotulo or url
     if not url.startswith("https://"):
-        raise ErroDeBase(f"só baixo por HTTPS: {url}")
+        raise ErroDeBase(f"só baixo por HTTPS: {rotulo}")
     pedido = urllib.request.Request(url, headers={"User-Agent": f"guardiao/{__version__}", **(cabecalhos or {})})
     h, recebido = hashlib.sha256(), 0
     with urllib.request.urlopen(pedido, timeout=60) as resposta, open(destino, "wb") as f:
         while bloco := resposta.read(1 << 16):
             recebido += len(bloco)
             if recebido > limite:
-                raise ErroDeBase(f"download passou de {limite // (1024 * 1024)} MB: {url}")
+                raise ErroDeBase(f"download passou de {limite // (1024 * 1024)} MB: {rotulo}")
             f.write(bloco)
             h.update(bloco)
     return h.hexdigest()
@@ -185,8 +187,10 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
 
 def registradas() -> list[Base]:
     """Todas as bases que o Guardião conhece, na ordem em que são atualizadas."""
-    from .fontes.yara_forge import YaraForge   # aqui dentro: as fontes importam este módulo
-    return [YaraForge()]
+    # Aqui dentro: as fontes importam este módulo.
+    from .fontes.malwarebazaar import MalwareBazaar
+    from .fontes.yara_forge import YaraForge
+    return [YaraForge()] + ([MalwareBazaar()] if MalwareBazaar.chave() else [])
 
 
 def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[str]:

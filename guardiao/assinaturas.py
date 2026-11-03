@@ -34,11 +34,11 @@ def ler_txt(caminho: Path = ARQUIVO_PADRAO) -> dict[str, str]:
 
 
 def criar_sqlite(destino: Path, pares: Iterable[tuple[str, str]]) -> int:
-    """Grava um banco de hashes para uma base baixada. Devolve quantos entraram."""
+    """Grava (ou acrescenta a) um banco de hashes de uma base. Devolve o total."""
     db = sqlite3.connect(destino)
     try:
         # WITHOUT ROWID: a própria chave é o índice, sem uma cópia a mais dos hashes.
-        db.execute("CREATE TABLE hashes (sha256 TEXT PRIMARY KEY, nome TEXT) WITHOUT ROWID")
+        db.execute("CREATE TABLE IF NOT EXISTS hashes (sha256 TEXT PRIMARY KEY, nome TEXT) WITHOUT ROWID")
         db.executemany("INSERT OR IGNORE INTO hashes VALUES (?, ?)", ((s.lower(), n) for s, n in pares))
         db.commit()
         return db.execute("SELECT count(*) FROM hashes").fetchone()[0]

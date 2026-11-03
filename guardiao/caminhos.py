@@ -15,3 +15,14 @@ def casa_real() -> Path:
         except KeyError:
             pass
     return Path.home()
+
+
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", casa_real() / ".config")) / "guardiao" / "config.toml"
+
+
+def ler_config(arquivo: Path | None = None) -> dict:
+    import tomllib
+    try:
+        return tomllib.loads((arquivo or CONFIG).read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}

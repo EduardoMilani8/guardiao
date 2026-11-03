@@ -140,6 +140,10 @@ def cmd_atualizar(args) -> int:
             return 1
     falhou = False
     _status_clamav()
+    from .fontes.malwarebazaar import MalwareBazaar
+    if not MalwareBazaar.chave():
+        print(f"{CINZA}{'malwarebazaar':<14} {'desligado':<14} sem chave: crie uma grátis em "
+              f"https://auth.abuse.ch e ponha em ~/.config/guardiao/config.toml{FIM}")
     for r in relatorios:
         e = r.estado
         velha = e.idade() is None or e.idade() > bases.VELHA_APOS

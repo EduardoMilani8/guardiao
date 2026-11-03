@@ -18,9 +18,7 @@ from typing import Iterator
 
 from . import assinaturas, bases, clamav, quarentena, regras_yara, scanner
 from .cache import Cache
-from .caminhos import casa_real
-
-CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", casa_real() / ".config")) / "guardiao" / "config.toml"
+from .caminhos import CONFIG, casa_real
 
 # Lista de PERMITIDOS: sistemas de arquivos que guardam arquivos de verdade.
 # proc, sysfs, devtmpfs etc. são janelas para o kernel (ler /dev/zero nunca
