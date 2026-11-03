@@ -1,6 +1,7 @@
 """Linha de comando.
 
     python -m guardiao varrer ~/Downloads [--isolar]
+    python -m guardiao varrer --rapida | --completa [--isolar] [--sem-cache]
     python -m guardiao monitorar [pastas...] [--isolar]
     python -m guardiao dev [pasta] [--todos]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
@@ -43,23 +44,54 @@ def relatar(item: scanner.Resultado, isolar: bool) -> str | None:
 
 
 def cmd_varrer(args) -> int:
+    from . import varredura
+
+    if args.completa:
+        raizes, nome, repetir = varredura.raizes_completa(args.incluir_externos), "completa", "--completa"
+    elif args.rapida:
+        raizes, nome, repetir = varredura.raizes_rapida(), "rápida", "--rapida"
+    elif args.alvo:
+        alvo = Path(args.alvo).expanduser()
+        if not alvo.exists():
+            print(f"{VERMELHO}Não encontrado: {alvo}{FIM}")
+            return 2
+        raizes, nome, repetir = [alvo.resolve()], str(alvo), str(alvo.resolve())
+    else:
+        print("Diga o que varrer: um caminho, --rapida ou --completa.")
+        return 2
+
     avisar_se_sem_yara()
-    banco, yara = assinaturas.carregar(), regras_yara.carregar()
-    total = ameacas = suspeitos = 0
+    processos = args.processos or os.cpu_count() or 1
+    print(f"Varredura {nome}: {len(raizes)} ponto(s) de partida, até {processos} processos")
+    terminal = sys.stdout.isatty()
+    resumo = varredura.Resumo()
 
-    for item in scanner.varrer(Path(args.alvo).expanduser(), banco, yara):
-        if isinstance(item, tuple):
-            caminho, erro = item
-            print(f"{CINZA}[pulado]   {caminho}: {erro.strerror or erro}{FIM}")
-            continue
-        total += 1
-        ameacas += item.infectado
-        suspeitos += item.suspeito
-        relatar(item, args.isolar)
+    for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
+        if isinstance(item, varredura.Progresso):
+            if terminal:
+                contagem = f"{item.vistos}/{item.total}" if item.total else f"{item.vistos}"
+                fase = "Listando" if item.fase == "listando" else "Analisando"
+                print(f"\r\033[K{CINZA}{fase} {contagem}  {item.atual[-70:]}{FIM}", end="", flush=True)
+        elif isinstance(item, varredura.Resumo):
+            resumo = item
+        elif isinstance(item, scanner.Resultado) and (item.infectado or item.suspeito):
+            if terminal:
+                print("\r\033[K", end="")
+            relatar(item, args.isolar)
+    if terminal:
+        print("\r\033[K", end="")
 
-    cor = VERDE if ameacas == suspeitos == 0 else VERMELHO
-    print(f"\n{cor}{total} arquivos analisados · {ameacas} ameaças · {suspeitos} suspeitos{FIM}")
-    return 1 if ameacas else 0
+    total = resumo.analisados + resumo.em_cache
+    cor = VERDE if resumo.ameacas == resumo.suspeitos == 0 else VERMELHO
+    print(f"\n{cor}{total} arquivos verificados · {resumo.ameacas} ameaças · {resumo.suspeitos} suspeitos"
+          f" · {resumo.segundos:.1f}s{FIM}")
+    print(f"{CINZA}{resumo.analisados} analisados agora, {resumo.em_cache} sem mudanças desde a última vez{FIM}")
+    if resumo.grandes:
+        print(f"{CINZA}{resumo.grandes} arquivos acima do limite de tamanho foram pulados{FIM}")
+    if resumo.sem_permissao and os.geteuid() != 0:
+        print(f"{CINZA}{resumo.sem_permissao} itens sem permissão de leitura. Para incluir os arquivos do sistema:\n"
+              f"  sudo .venv/bin/python -m guardiao varrer {repetir}{FIM}")
+    return 1 if resumo.ameacas else 0
 
 
 def cmd_monitorar(args) -> int:
@@ -171,9 +203,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="guardiao", description="Antivírus de estudo")
     sub = parser.add_subparsers(dest="comando", required=True)
 
-    p_varrer = sub.add_parser("varrer", help="analisa um arquivo ou pasta")
-    p_varrer.add_argument("alvo")
+    p_varrer = sub.add_parser("varrer", help="analisa um arquivo, uma pasta ou o computador")
+    p_varrer.add_argument("alvo", nargs="?")
+    modo = p_varrer.add_mutually_exclusive_group()
+    modo.add_argument("--rapida", action="store_true", help="onde malware costuma chegar ou se instalar")
+    modo.add_argument("--completa", action="store_true", help="o disco inteiro")
     p_varrer.add_argument("--isolar", action="store_true", help="move ameaças para a quarentena")
+    p_varrer.add_argument("--sem-cache", action="store_true", help="reanalisa mesmo o que não mudou")
+    p_varrer.add_argument("--processos", type=int, help="padrão: um por núcleo")
+    p_varrer.add_argument("--incluir-externos", action="store_true", help="inclui /media e /mnt na completa")
     p_varrer.set_defaults(func=cmd_varrer)
 
     p_mon = sub.add_parser("monitorar", help="analisa em tempo real os arquivos que chegam")
