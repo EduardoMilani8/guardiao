@@ -1,0 +1,5 @@
+# Formato: <sha256> <nome da ameaça>
+# Para ampliar o banco, dá pra importar listas públicas como a do MalwareBazaar (abuse.ch).
+
+# Arquivo de teste EICAR (inofensivo, reconhecido por todo antivírus)
+275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f EICAR-Test-File
