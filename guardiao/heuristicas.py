@@ -58,7 +58,8 @@ def coletar_sinais(caminho: Path) -> Sinais:
         executavel=os.access(caminho, os.X_OK),
         oculto=caminho.name.startswith("."),
         extensao_dupla=len(sufixos) >= 2 and sufixos[-2] in EXT_INOFENSIVAS and ext in EXT_EXECUTAVEIS,
-        disfarce=ext in EXT_INOFENSIVAS and tipo is not None,
+        # Script também é texto: exemplo.txt com "#!" é comum em manuais e anotações.
+        disfarce=ext in EXT_INOFENSIVAS and tipo is not None and not (tipo == "script" and ext == ".txt"),
     )
 
 

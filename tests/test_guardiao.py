@@ -64,3 +64,12 @@ def test_quarentena_isola_e_restaura(tmp_path):
     assert arquivo.exists()
     assert not arquivo.stat().st_mode & stat.S_IXUSR
     assert quarentena.listar(pasta_q) == []
+
+
+def test_script_em_txt_nao_e_disfarce(tmp_path):
+    exemplo = tmp_path / "user-script.txt"
+    exemplo.write_text("#!/bin/sh\necho exemplo do manual\n")
+    assert not heuristicas.coletar_sinais(exemplo).disfarce
+    foto = tmp_path / "foto.jpg"
+    foto.write_text("#!/bin/sh\necho nada de foto aqui\n")
+    assert heuristicas.coletar_sinais(foto).disfarce

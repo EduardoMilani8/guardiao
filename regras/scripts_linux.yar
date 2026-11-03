@@ -1,12 +1,14 @@
 // Padrões perigosos em scripts shell.
 // gravidade "alta" = ameaça; "media" = soma pontos de suspeita.
 
-// Regra auxiliar (não aparece nos resultados). Programas compilados costumam
-// conter esses comandos de forma legítima, então as regras "media" valem só para scripts.
-private rule ELF
+// Regra auxiliar (não aparece nos resultados): o arquivo começa com "#!", ou
+// seja, foi feito para ser executado. As regras "media" valem só para scripts:
+// a mesma linha `curl ... | sh` é instrução num README, num manual ou num
+// programa compilado, e só vira comportamento dentro de um script.
+private rule Script
 {
     condition:
-        uint32(0) == 0x464c457f
+        uint16(0) == 0x2123   // "#!" lido em little-endian
 }
 
 rule ReverseShell_DevTcp
@@ -40,7 +42,7 @@ rule DownloadEExecuta
     strings:
         $pipe = /(curl|wget)\s[^\n|]{1,300}\|\s*(sudo\s+)?(ba|z)?sh/
     condition:
-        $pipe and not ELF
+        Script and $pipe
 }
 
 rule Base64Executado
@@ -52,7 +54,7 @@ rule Base64Executado
         $decode_exec = /base64\s+(-d|--decode)[^\n]{0,60}\|\s*(sudo\s+)?(ba|z)?sh/
         $blob = /echo\s+['"]?[A-Za-z0-9+\/=]{80,}['"]?\s*\|\s*base64/
     condition:
-        any of them and not ELF
+        Script and any of them
 }
 
 rule Persistencia_Crontab
@@ -63,7 +65,7 @@ rule Persistencia_Crontab
     strings:
         $cron = /crontab\s+-l[^\n]{0,200}\|\s*crontab\s+-/
     condition:
-        $cron and not ELF
+        Script and $cron
 }
 
 rule Persistencia_ChaveSSH
@@ -74,5 +76,5 @@ rule Persistencia_ChaveSSH
     strings:
         $ssh = />>\s*[^\n]{0,40}\.ssh\/authorized_keys/
     condition:
-        $ssh and not ELF
+        Script and $ssh
 }
