@@ -5,6 +5,10 @@ mesma versão do motor (regras, assinaturas e heurísticas). O ctime importa
 porque o mtime pode ser falsificado (`touch -d`), mas o ctime é o kernel quem
 atualiza em qualquer mudança. Ameaças e suspeitos nunca entram no cache.
 
+O SHA-256 de cada arquivo fica guardado: quando chegam hashes novos (de hora
+em hora, do MalwareBazaar), basta perguntar ao banco se o hash guardado virou
+ameaça, sem ler o arquivo de novo e sem jogar o cache fora.
+
 O cache é só um atalho: se o banco estiver ocupado (duas varreduras ao mesmo
 tempo) ou corrompido, a varredura segue analisando tudo, nunca quebra.
 """
@@ -41,27 +45,36 @@ class Cache:
         self.db = sqlite3.connect(caminho, timeout=10)
         # WAL: quem lê não espera quem escreve, então duas varreduras convivem.
         self.db.execute("PRAGMA journal_mode=WAL")
+        colunas = [c[1] for c in self.db.execute("PRAGMA table_info(limpos)")]
+        if colunas and "sha256" not in colunas:
+            self.db.execute("DROP TABLE limpos")   # formato antigo: é só cache, recomeça
         self.db.execute(
             "CREATE TABLE IF NOT EXISTS limpos ("
             " dev INTEGER, ino INTEGER, tamanho INTEGER, mtime INTEGER, ctime INTEGER, versao TEXT,"
-            " PRIMARY KEY (dev, ino))"
+            " sha256 TEXT, PRIMARY KEY (dev, ino))"
         )
         self._pendentes = 0
 
-    def limpo(self, st: os.stat_result) -> bool:
+    def consultar(self, st: os.stat_result) -> str | None:
+        """O SHA-256 guardado, se o arquivo está no cache e não mudou; senão None."""
         try:
             linha = self.db.execute(
-                "SELECT tamanho, mtime, ctime, versao FROM limpos WHERE dev = ? AND ino = ?",
+                "SELECT tamanho, mtime, ctime, versao, sha256 FROM limpos WHERE dev = ? AND ino = ?",
                 (st.st_dev, st.st_ino),
             ).fetchone()
         except sqlite3.Error:
-            return False    # na dúvida, analisa
-        return linha == (st.st_size, st.st_mtime_ns, st.st_ctime_ns, self.versao)
+            return None    # na dúvida, analisa
+        if linha and linha[:4] == (st.st_size, st.st_mtime_ns, st.st_ctime_ns, self.versao):
+            return linha[4]
+        return None
 
-    def marcar_limpo(self, st: os.stat_result) -> None:
+    def limpo(self, st: os.stat_result) -> bool:
+        return self.consultar(st) is not None
+
+    def marcar_limpo(self, st: os.stat_result, sha256: str) -> None:
         self._escrever(
-            "INSERT OR REPLACE INTO limpos VALUES (?, ?, ?, ?, ?, ?)",
-            (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns, self.versao),
+            "INSERT OR REPLACE INTO limpos VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns, self.versao, sha256),
         )
 
     def esquecer(self, st: os.stat_result) -> None:

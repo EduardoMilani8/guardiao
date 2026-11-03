@@ -188,7 +188,7 @@ def percorrer(raiz: Path, exclusoes: Exclusoes, resumo: Resumo) -> Iterator[tupl
 
 # --- análise em paralelo -------------------------------------------------------------
 
-_banco: dict[str, str] = {}
+_banco: scanner.BancoDeHashes = {}
 _yara = None
 
 
@@ -221,13 +221,16 @@ def executar(
     if cache_proprio:
         cache = Cache()
     ultimo = 0.0
+    banco = assinaturas.carregar()   # para reconferir os hashes guardados no cache
 
     try:
         # 1) Listar: separa o que já está no cache do que precisa ser analisado.
         pendentes: dict[str, os.stat_result] = {}
         for raiz in raizes:
             for caminho, st in percorrer(raiz, exclusoes, resumo):
-                if cache is not None and cache.limpo(st):
+                sha = cache.consultar(st) if cache is not None else None
+                # Limpo da última vez, mas o hash pode ter virado ameaça numa base nova.
+                if sha is not None and banco.get(sha) is None:
                     resumo.em_cache += 1
                 else:
                     pendentes[caminho] = st
@@ -253,7 +256,7 @@ def executar(
                 if item.infectado or item.suspeito:
                     cache.esquecer(st)
                 else:
-                    cache.marcar_limpo(st)
+                    cache.marcar_limpo(st, item.sha256)
             yield item
             if time.monotonic() - ultimo > INTERVALO_PROGRESSO:
                 ultimo = time.monotonic()

@@ -55,7 +55,7 @@ class Monitor:
     def __init__(
         self,
         pastas: list[Path],
-        banco: dict[str, str],
+        banco: scanner.BancoDeHashes,
         ao_analisar: Callable[[scanner.Resultado], None],
         ao_erro: Callable[[Path, Exception], None] | None = None,
         usar_yara: bool = True,

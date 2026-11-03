@@ -4,11 +4,16 @@ import hashlib
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Protocol
 
 from . import heuristicas, regras_yara
 
 TAMANHO_BLOCO = 64 * 1024
+
+
+class BancoDeHashes(Protocol):
+    """Um dict {sha256: nome} ou o assinaturas.Banco, que consulta o disco."""
+    def get(self, sha256: str, /) -> str | None: ...
 
 
 @dataclass
@@ -49,7 +54,7 @@ def listar_arquivos(alvo: Path) -> Iterator[Path]:
                 yield p
 
 
-def analisar(caminho: Path, banco: dict[str, str], yara=None) -> Resultado:
+def analisar(caminho: Path, banco: BancoDeHashes, yara=None) -> Resultado:
     """Camadas em ordem de certeza: hash → YARA → heurísticas."""
     sha = calcular_sha256(caminho)
     resultado = Resultado(caminho=caminho, sha256=sha, ameaca=banco.get(sha))
@@ -74,7 +79,7 @@ def analisar(caminho: Path, banco: dict[str, str], yara=None) -> Resultado:
     return resultado
 
 
-def varrer(alvo: Path, banco: dict[str, str], yara=None) -> Iterator[Resultado | tuple[Path, OSError]]:
+def varrer(alvo: Path, banco: BancoDeHashes, yara=None) -> Iterator[Resultado | tuple[Path, OSError]]:
     """Gera um Resultado por arquivo, ou (caminho, erro) se não deu pra ler."""
     pasta_regras = regras_yara.PASTA_PADRAO.resolve()
     for caminho in listar_arquivos(alvo):
