@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
-from . import heuristicas
+from . import heuristicas, regras_yara
 
 TAMANHO_BLOCO = 64 * 1024
 
@@ -48,19 +48,35 @@ def listar_arquivos(alvo: Path) -> Iterator[Path]:
                 yield p
 
 
-def analisar(caminho: Path, banco: dict[str, str]) -> Resultado:
+def analisar(caminho: Path, banco: dict[str, str], yara=None) -> Resultado:
+    """Camadas em ordem de certeza: hash → YARA → heurísticas."""
     sha = calcular_sha256(caminho)
     resultado = Resultado(caminho=caminho, sha256=sha, ameaca=banco.get(sha))
-    if not resultado.infectado:
-        sinais = heuristicas.coletar_sinais(caminho)
-        resultado.pontuacao, resultado.motivos = heuristicas.avaliar_suspeita(sinais)
+    if resultado.infectado:
+        return resultado
+
+    if yara is not None:
+        for o in regras_yara.verificar(caminho, yara):
+            if o.gravidade == "alta":
+                resultado.ameaca = f"{o.regra} (YARA)"
+                return resultado
+            resultado.pontuacao += regras_yara.PESO_MEDIA
+            resultado.motivos.append(f"regra YARA {o.regra}: {o.descricao}")
+
+    pontos, motivos = heuristicas.avaliar_suspeita(heuristicas.coletar_sinais(caminho))
+    resultado.pontuacao = min(resultado.pontuacao + pontos, 100)
+    resultado.motivos += motivos
     return resultado
 
 
-def varrer(alvo: Path, banco: dict[str, str]) -> Iterator[Resultado | tuple[Path, OSError]]:
+def varrer(alvo: Path, banco: dict[str, str], yara=None) -> Iterator[Resultado | tuple[Path, OSError]]:
     """Gera um Resultado por arquivo, ou (caminho, erro) se não deu pra ler."""
+    pasta_regras = regras_yara.PASTA_PADRAO.resolve()
     for caminho in listar_arquivos(alvo):
+        # As próprias regras contêm os padrões que procuram: não se autodetectar.
+        if caminho.resolve().is_relative_to(pasta_regras):
+            continue
         try:
-            yield analisar(caminho, banco)
+            yield analisar(caminho, banco, yara)
         except OSError as erro:
             yield caminho, erro

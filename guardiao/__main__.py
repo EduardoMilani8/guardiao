@@ -9,19 +9,22 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import assinaturas, quarentena, scanner
+from . import assinaturas, quarentena, regras_yara, scanner
 
 VERMELHO, AMARELO, VERDE, CINZA, FIM = "\033[31m", "\033[33m", "\033[32m", "\033[90m", "\033[0m"
 
 
 def cmd_varrer(args) -> int:
     banco = assinaturas.carregar()
+    yara = regras_yara.carregar()
+    if yara is None:
+        print(f"{CINZA}yara-x não instalado: camada de regras desativada (pip install yara-x){FIM}")
     total = ameacas = suspeitos = 0
 
-    for item in scanner.varrer(Path(args.alvo).expanduser(), banco):
+    for item in scanner.varrer(Path(args.alvo).expanduser(), banco, yara):
         if isinstance(item, tuple):
             caminho, erro = item
-            print(f"{CINZA}[pulado]   {caminho}: {erro.strerror}{FIM}")
+            print(f"{CINZA}[pulado]   {caminho}: {erro.strerror or erro}{FIM}")
             continue
 
         total += 1
