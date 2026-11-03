@@ -237,11 +237,11 @@ def cmd_cacar(args) -> int:
 
     avisar_camadas_desligadas()
     from . import clamav
-    julgar = cacador.juiz(assinaturas.carregar(), regras_yara.carregar(), clamav.conectar())
+    julgar = cacador.Juiz(assinaturas.carregar(), regras_yara.carregar(), clamav.conectar())
     if os.geteuid() != 0:
         print(f"{CINZA}Sem root, só os seus processos são verificados. Para todos:\n"
               f"  sudo .venv/bin/python -m guardiao cacar{FIM}")
-    print("Procurando bibliotecas injetadas e processos estranhos...")
+    print("Procurando bibliotecas injetadas, processos estranhos e persistência...")
     return imprimir_achados(cacador.cacar(julgar), args.todos)
 
 

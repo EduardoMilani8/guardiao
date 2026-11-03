@@ -12,11 +12,16 @@ que já sabe julgar conteúdo (hash, ClamAV, YARA, heurísticas).
 """
 
 import os
+import re
+import shlex
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator
 
-from . import scanner
+from . import regras_yara, scanner
+from .caminhos import casa_real
 
 PRELOAD = Path("/etc/ld.so.preload")
 PROC = Path("/proc")
@@ -67,29 +72,41 @@ def em_pasta_temporaria(caminho: str) -> bool:
     return caminho.startswith(PASTAS_TEMPORARIAS)
 
 
-def juiz(banco, yara=None, clamav=None) -> Julgar:
+class Juiz:
     """O scanner de sempre, para julgar o conteúdo do que o caçador encontrar."""
-    def julgar(caminho: Path) -> scanner.Resultado | None:
+
+    def __init__(self, banco=None, yara=None, clamav=None):
+        self.banco, self.yara, self.clamav = banco, yara, clamav
+
+    def __call__(self, caminho: Path) -> scanner.Resultado | None:
+        if self.banco is None:
+            return None
         # /proc/<pid>/exe é um link "mágico" para o executável, mesmo apagado do
         # disco. O ClamAV abre com O_NOFOLLOW e não passaria dele.
-        cl = None if str(caminho).startswith("/proc/") else clamav
+        clamav = None if str(caminho).startswith("/proc/") else self.clamav
         try:
-            return scanner.analisar(caminho, banco, yara, cl)
+            return scanner.analisar(caminho, self.banco, self.yara, clamav)
         except OSError:
             return None
-    return julgar
+
+    def comandos(self, comandos: list[str]) -> list[regras_yara.Ocorrencia]:
+        """Comandos que o sistema vai executar sozinho são julgados como um script:
+        as regras de `curl | sh` e base64 valem só para scripts (começam com #!)."""
+        if self.yara is None or not comandos:
+            return []
+        texto = "#!/bin/sh\n" + "\n".join(comandos) + "\n"
+        return [o for o in regras_yara.verificar_texto(texto, self.yara) if o.gravidade != "info"]
 
 
-def nao_julgar(_caminho: Path) -> None:
-    return None
-
-
-def cacar(julgar: Julgar = nao_julgar, pacotes: Pacotes | None = None) -> list[Achado]:
+def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
+          casa: Path | None = None) -> list[Achado]:
+    julgar = julgar or Juiz()
     pacotes = pacotes or Pacotes()
     achados = [
         *preload(pacotes),
         *ld_preload_em_processos(pacotes),
         *processos(julgar, pacotes),
+        *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
 
@@ -184,7 +201,7 @@ def _avaliar_executavel(exe: str, pacotes: Pacotes) -> tuple[str, str] | None:
     return None
 
 
-def processos(julgar: Julgar, pacotes: Pacotes, proc: Path = PROC) -> Iterator[Achado]:
+def processos(julgar: Juiz | Julgar, pacotes: Pacotes, proc: Path = PROC) -> Iterator[Achado]:
     """Processos rodando de /tmp, da memória ou de um executável apagado."""
     grupos: dict[tuple[str, str, str], list[Path]] = {}
     for pid in proc.iterdir():
@@ -209,3 +226,198 @@ def processos(julgar: Julgar, pacotes: Pacotes, proc: Path = PROC) -> Iterator[A
         elif resultado and resultado.suspeito:
             mensagem += "".join(f"\n           - {m}" for m in resultado.motivos)
         yield Achado(gravidade, "processo", Path(exe), mensagem)
+
+
+# --- persistência: o que volta sozinho depois do reboot ---------------------
+
+@dataclass
+class Local:
+    categoria: str        # "systemd", "cron", "autostart" ou "rc.local"
+    caminho: Path         # arquivo ou pasta
+    formato: str          # como achar os comandos: "systemd", "desktop", "cron-sistema", "cron-usuario", "script"
+
+
+def locais_de_persistencia(casa: Path) -> list[Local]:
+    sistema = [Path("/etc/systemd/system"), Path("/usr/lib/systemd/system"), Path("/etc/systemd/user"),
+               Path("/usr/lib/systemd/user"), casa / ".config/systemd/user"]
+    periodicos = [Path(f"/etc/cron.{p}") for p in ("hourly", "daily", "weekly", "monthly")]
+    return [
+        *(Local("systemd", p, "systemd") for p in sistema),
+        Local("cron", Path("/etc/crontab"), "cron-sistema"),
+        Local("cron", Path("/etc/cron.d"), "cron-sistema"),
+        Local("cron", Path("/var/spool/cron/crontabs"), "cron-usuario"),   # só com root
+        *(Local("cron", p, "script") for p in periodicos),
+        Local("autostart", Path("/etc/xdg/autostart"), "desktop"),
+        Local("autostart", casa / ".config/autostart", "desktop"),
+        Local("rc.local", Path("/etc/rc.local"), "script"),
+    ]
+
+
+EXEC_SYSTEMD = re.compile(r"^\s*Exec(?:Start|StartPre|StartPost|Stop|StopPost|Reload)\s*=\s*(.+)$", re.MULTILINE)
+EXEC_DESKTOP = re.compile(r"^\s*Exec\s*=\s*(.+)$", re.MULTILINE)
+VARIAVEL = re.compile(r"^\w+\s*=")
+
+
+def comandos(formato: str, texto: str) -> list[str]:
+    """Os comandos que o sistema roda a partir de uma entrada de persistência."""
+    if formato == "systemd":
+        # Prefixos especiais do systemd: @ - : + ! (ex.: ExecStart=-/usr/bin/x).
+        return [c.lstrip("@-:+!").strip() for c in EXEC_SYSTEMD.findall(texto)]
+    if formato == "desktop":
+        return [c.strip() for c in EXEC_DESKTOP.findall(texto)]
+    if formato.startswith("cron"):
+        saida = []
+        campos_antes = 6 if formato == "cron-sistema" else 5   # 5 do horário (+ o usuário)
+        for linha in texto.splitlines():
+            linha = linha.strip()
+            if not linha or linha.startswith("#") or VARIAVEL.match(linha):
+                continue
+            if linha.startswith("@"):   # @reboot, @daily...: um campo de horário só
+                campos_antes -= 4
+            partes = linha.split(None, campos_antes)
+            if len(partes) > campos_antes:
+                saida.append(partes[campos_antes])
+            campos_antes = 6 if formato == "cron-sistema" else 5
+        return saida
+    return []   # "script": o próprio arquivo é o que roda
+
+
+def executavel(comando: str) -> str | None:
+    """O programa que um comando chama: `env X=1 /opt/x --y` → /opt/x."""
+    try:
+        partes = shlex.split(comando)
+    except ValueError:
+        partes = comando.split()
+    while partes and (partes[0] in ("env", "/usr/bin/env", "nohup", "exec") or VARIAVEL.match(partes[0])):
+        partes.pop(0)
+    if not partes:
+        return None
+    if partes[0].startswith("/"):
+        return partes[0]
+    return shutil.which(partes[0])
+
+
+def _do_snap(nome: str, texto: str) -> bool:
+    # O snapd gera as próprias unidades (snap-*.mount, snap.*.service) fora do dpkg.
+    return nome.startswith(("snap-", "snap.")) and \
+        ("X-Snappy=yes" in texto or "/usr/bin/snap run" in texto or "/var/lib/snapd/" in texto)
+
+
+def _unidade_original(arquivo: Path, pacotes: Pacotes) -> Path | None:
+    """A unidade de mesmo nome que veio de um pacote, se esta a sobrepõe."""
+    for pasta in ("/usr/lib/systemd/system", "/usr/lib/systemd/user"):
+        original = Path(pasta) / arquivo.name
+        if original != arquivo and pacotes.dono(original):
+            return original
+    return None
+
+
+def _arquivos(local: Local) -> Iterator[Path]:
+    if local.caminho.is_file():
+        yield local.caminho
+        return
+    for raiz, _dirs, nomes in os.walk(local.caminho):   # pasta sem permissão: pulada
+        for nome in sorted(nomes):
+            yield Path(raiz) / nome
+
+
+def _crontab_do_usuario() -> str:
+    """Sem root, /var/spool/cron é ilegível: o crontab -l mostra o do usuário."""
+    if os.geteuid() == 0 or not shutil.which("crontab"):
+        return ""
+    try:
+        r = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return r.stdout if r.returncode == 0 else ""
+
+
+def persistencia(julgar: Juiz, pacotes: Pacotes, locais: list[Local],
+                 crontab_do_usuario: Callable[[], str] = _crontab_do_usuario) -> Iterator[Achado]:
+    """Serviços, tarefas agendadas e programas de inicialização que não vieram de um pacote."""
+    vistos: set[str] = set()
+    for local in locais:
+        for arquivo in _arquivos(local):
+            real = os.path.realpath(arquivo)
+            # Links em *.wants/ só "habilitam" uma unidade, que é avaliada uma vez.
+            if real == "/dev/null" or real in vistos:
+                continue   # /dev/null: unidade mascarada (desligada de propósito)
+            vistos.add(real)
+            if pacotes.dono(arquivo):
+                continue
+            try:
+                texto = Path(real).read_text(errors="replace")
+            except OSError:
+                continue
+            if _do_snap(arquivo.name, texto):
+                continue
+            achado = _avaliar(local.categoria, Path(real), comandos(local.formato, texto), julgar, pacotes,
+                              formato=local.formato)
+            if local.formato == "systemd" and (original := _unidade_original(Path(real), pacotes)):
+                _comparar_com_original(achado, comandos("systemd", texto), original)
+            yield achado
+
+    if texto := crontab_do_usuario():
+        cmds = comandos("cron-usuario", texto)
+        if cmds:
+            yield _avaliar("cron", Path("crontab -l"), cmds, julgar, pacotes, formato="cron-usuario",
+                           julgar_arquivo=False)
+
+
+def _comparar_com_original(achado: Achado, cmds: list[str], original: Path) -> None:
+    # Trocar o ExecStart de uma unidade legítima (ex.: sshd.service) é um jeito
+    # de ganhar persistência sem criar nenhum serviço novo.
+    try:
+        de_antes = comandos("systemd", original.read_text(errors="replace"))
+    except OSError:
+        return
+    if cmds and cmds != de_antes:
+        achado.gravidade = "alta" if achado.gravidade == "alta" else "media"
+        achado.mensagem += f"\n           - troca o comando da unidade original ({original})"
+    else:
+        achado.mensagem += f"\n           - ajuste local de {original}, com o mesmo comando"
+
+
+def _avaliar(categoria: str, arquivo: Path, cmds: list[str], julgar: Juiz, pacotes: Pacotes,
+             formato: str, julgar_arquivo: bool = True) -> Achado:
+    gravidade, notas = "info", []
+
+    def subir(nova: str) -> None:
+        nonlocal gravidade
+        if ORDEM[nova] < ORDEM[gravidade]:
+            gravidade = nova
+
+    programas = {p for c in cmds if (p := executavel(c))}
+    for programa in sorted(programas):
+        if em_pasta_temporaria(programa):
+            subir("alta")
+            notas.append(f"roda {programa}, de uma pasta temporária")
+        elif not os.path.exists(programa):
+            notas.append(f"chama {programa}, que não existe mais")
+    if any(re.search(r"(?<![\w.])/(?:tmp|var/tmp|dev/shm)/", c) for c in cmds) and gravidade == "info":
+        subir("media")
+        notas.append("o comando mexe numa pasta temporária")
+
+    for o in julgar.comandos(cmds):
+        subir(o.gravidade)
+        notas.append(f"regra YARA {o.regra}: {o.descricao}")
+
+    # O próprio arquivo (um script do cron, por exemplo) e os programas que ele chama.
+    alvos = [arquivo] if julgar_arquivo else []
+    alvos += [Path(p) for p in sorted(programas) if os.path.isfile(p) and not pacotes.dono(p)]
+    for alvo in alvos:
+        resultado = julgar(alvo)
+        if resultado and resultado.infectado:
+            subir("alta")
+            notas.insert(0, f"{alvo}: {resultado.ameaca}")
+        elif resultado and resultado.suspeito:
+            subir("media")
+            notas += [f"{alvo}: {m}" for m in resultado.motivos]
+
+    if cmds:
+        resumo = "; ".join(cmds)[:200]
+    else:
+        resumo = "o próprio arquivo é executado" if formato == "script" else "sem comando próprio"
+    mensagem = f"não veio de um pacote · {resumo}"
+    mensagem += "".join(f"\n           - {n}" for n in notas)
+    return Achado(gravidade, categoria, arquivo, mensagem)
