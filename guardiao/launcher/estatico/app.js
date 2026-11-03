@@ -3,6 +3,7 @@
 // numa fila e define o próprio ritmo, para as reações serem visíveis.
 
 const QUEM_PEGOU = { hash: "guardiao", yara: "arqueira", heuristica: "vidente" };
+const INSPETORES = ["guardiao", "arqueira", "vidente"];   // ordem das camadas no motor
 const NOMES = { guardiao: "Guardião", arqueira: "Arqueira", vidente: "Vidente", carcereiro: "Carcereiro" };
 
 const $ = (seletor) => document.querySelector(seletor);
@@ -25,6 +26,15 @@ function falar(quem, texto) {
   balao.classList.remove("nova");
   void balao.offsetWidth;             // reinicia a animação
   balao.classList.add("nova");
+}
+
+// Troca o texto sem a animação de entrada: para contadores que mudam a cada arquivo.
+function atualizar(quem, texto) {
+  $(`#${quem} .balao`).textContent = texto;
+}
+
+function trabalhando(ligado) {
+  INSPETORES.forEach((q) => $(`#${q}`).classList.toggle("trabalhando", ligado));
 }
 
 function animar(quem, classe, ms) {
@@ -67,6 +77,7 @@ async function aoIniciar(ev) {
   falar("carcereiro", "Celas abertas, esperando.");
   ["guardiao", "arqueira", "vidente", "carcereiro"].forEach((q) => animar(q, "ativo", 700));
   await espera(900);
+  trabalhando(true);
 }
 
 async function aoArquivo(ev) {
@@ -75,7 +86,12 @@ async function aoArquivo(ev) {
   $(".atual").textContent = `Examinando: ${ev.caminho}`;
 
   if (ev.veredito === "limpo") {
-    animar("guardiao", "ativo", 250);
+    // Todo arquivo passa pelas três camadas: um pulso de luz percorre os três
+    // em revezamento e os balões mostram o trabalho acumulado.
+    animar(INSPETORES[(estado.vistos - 1) % INSPETORES.length], "ativo", 300);
+    atualizar("guardiao", `Conferi ${estado.vistos} de ${estado.total} rostos.`);
+    atualizar("arqueira", `${estado.vistos} arquivos na mira.`);
+    atualizar("vidente", `Observei ${estado.vistos} arquivos.`);
     // Quanto mais arquivos, mais rápido: a parte limpa leva uns 2,5 s no total.
     await espera(Math.max(12, Math.min(140, 2500 / Math.max(estado.total, 1))));
     return;
@@ -113,6 +129,7 @@ async function aoArquivo(ev) {
 }
 
 async function aoTerminar(ev) {
+  trabalhando(false);
   $(".preenchido").style.width = "100%";
   $(".atual").textContent = `Patrulha concluída: ${estado.total} arquivos.`;
 
@@ -120,7 +137,8 @@ async function aoTerminar(ev) {
     falar("guardiao", `Tudo limpo! ${estado.total} arquivos patrulhados.`);
     falar("arqueira", "Nenhum alvo hoje.");
     falar("vidente", "O futuro parece tranquilo.");
-    falar("carcereiro", "Celas vazias. Assim que eu gosto.");
+    animar("carcereiro", "ronda", 1500);
+    falar("carcereiro", "Ronda feita: celas vazias. Assim que eu gosto.");
     registrar("limpo", "Guarda", "Nenhuma ameaça", `${estado.total} arquivos verificados`);
   } else {
     falar("guardiao", `Patrulha feita: ${ev.ameaca} ameaça(s), ${ev.suspeito} suspeito(s).`);
@@ -184,6 +202,7 @@ function iniciar(alvo) {
 }
 
 function encerrar() {
+  trabalhando(false);
   estado.fonte = null;
   document.querySelectorAll(".botao").forEach((b) => (b.disabled = false));
 }

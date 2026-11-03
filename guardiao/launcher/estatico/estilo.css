@@ -171,6 +171,15 @@ body {
 #carcereiro.alerta .chaves { animation: balancar 0.35s ease-in-out 4; transform-origin: top center; }
 #arqueira.disparando .arco { animation: puxar 0.6s ease-out; }
 
+/* Modo trabalhando: durante a varredura cada guardião mostra o próprio ofício,
+   mesmo quando não encontra nada (todo arquivo passa pelas três camadas). */
+.personagem.trabalhando { border-color: color-mix(in srgb, var(--brilho) 45%, var(--borda)); }
+#guardiao.trabalhando .escudo { animation: vigiar 1.4s ease-in-out infinite; }
+#arqueira.trabalhando .arco   { animation: puxar 1.1s ease-in-out infinite; }
+#vidente.trabalhando .bola    { animation: brilhar 1.6s ease-in-out infinite; }
+#carcereiro.ronda .chaves     { animation: balancar 0.35s ease-in-out 4; transform-origin: top center; }
+#carcereiro.ronda             { border-color: var(--brilho); }
+
 .flecha {
   position: absolute;
   top: 46%;
@@ -198,6 +207,8 @@ body {
 @keyframes pulsar { 50% { transform: scale(1.18); filter: drop-shadow(0 0 14px #b39cff); } }
 @keyframes balancar { 25% { transform: rotate(14deg); } 75% { transform: rotate(-14deg); } }
 @keyframes puxar { 40% { transform: scaleX(0.82); } }
+@keyframes vigiar { 50% { transform: translateX(-3px) rotate(-6deg); } }
+@keyframes brilhar { 50% { filter: drop-shadow(0 0 9px #b39cff) brightness(1.15); } }
 @keyframes voar {
   0%   { opacity: 1; transform: translateX(0); }
   100% { opacity: 0; transform: translateX(160%); }
@@ -238,7 +249,8 @@ body {
   height: 100%;
   width: 0;
   background: linear-gradient(90deg, var(--ouro), #f6dc94);
-  transition: width 0.15s linear;
+  /* Sem transição: a barra muda a cada arquivo (às vezes a cada 12 ms) e uma
+     animação reiniciada o tempo todo nunca alcançaria o valor certo. */
 }
 .atual {
   margin: 8px 0 0;
