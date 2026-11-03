@@ -5,7 +5,7 @@
     python -m guardiao atualizar [--forcar | --status]
     python -m guardiao monitorar [pastas...] [--isolar]
     python -m guardiao dev [pasta] [--todos]
-    python -m guardiao cacar [--todos]
+    python -m guardiao cacar [--todos] [--sem-pacotes]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
@@ -242,7 +242,9 @@ def cmd_cacar(args) -> int:
         print(f"{CINZA}Sem root, só os seus processos são verificados. Para todos:\n"
               f"  sudo .venv/bin/python -m guardiao cacar{FIM}")
     print("Procurando bibliotecas injetadas, processos estranhos e persistência...")
-    return imprimir_achados(cacador.cacar(julgar), args.todos)
+    if not args.sem_pacotes:
+        print(f"{CINZA}Conferindo os arquivos dos pacotes com o dpkg (uns 30 s; --sem-pacotes pula){FIM}")
+    return imprimir_achados(cacador.cacar(julgar, conferir_pacotes=not args.sem_pacotes), args.todos)
 
 
 def cmd_launcher(args) -> int:
@@ -319,6 +321,7 @@ def main() -> int:
 
     p_c = sub.add_parser("cacar", help="caça persistência e rootkits já instalados no sistema")
     p_c.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
+    p_c.add_argument("--sem-pacotes", action="store_true", help="pula o dpkg --verify (o passo mais lento)")
     p_c.set_defaults(func=cmd_cacar)
 
     p_l = sub.add_parser("launcher", help="abre o protótipo do launcher com os guardiões")

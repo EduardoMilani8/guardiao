@@ -289,3 +289,40 @@ def test_unidade_que_sequestra_a_original(tmp_path, monkeypatch):
 def test_crontab_do_usuario(pacotes):
     achados = cacar_em([], pacotes=pacotes, crontab=lambda: "@reboot /var/tmp/.s/agent\n")
     assert achados["crontab -l"].gravidade == "alta"
+
+
+# --- dpkg --verify ----------------------------------------------------------
+
+SAIDA_DPKG = """\
+missing     /lib/modules/7.0.0-30-generic/kernel
+?????????   /usr/libexec/sssd/sssd_pam
+?????????   /boot/vmlinuz-7.0.0-42-generic
+??5?????? c /etc/gdm3/custom.conf
+??5??????   /usr/bin/ps
+??5??????   /usr/share/doc/x/README
+"""
+
+
+def test_pacotes_alterados():
+    achados = {str(a.arquivo): a for a in cacador.pacotes_alterados(julgar_nada, SAIDA_DPKG)}
+    assert achados["/usr/bin/ps"].gravidade == "alta"
+    assert "--reinstall" in achados["/usr/bin/ps"].mensagem
+    assert achados["/usr/share/doc/x/README"].gravidade == "media"
+    assert achados["/etc/gdm3/custom.conf"].gravidade == "info"
+    assert "2 arquivos" in achados["dpkg --verify"].mensagem
+    assert not any("modules" in c for c in achados)
+
+
+def test_pacote_alterado_passa_pelo_scanner(tmp_path):
+    from .test_guardiao import EICAR
+    falso = tmp_path / "ps"
+    falso.write_bytes(EICAR)
+    banco = {__import__("hashlib").sha256(EICAR).hexdigest(): "EICAR-Test-File"}
+    [achado] = cacador.pacotes_alterados(cacador.Juiz(banco), f"??5??????   {falso}\n")
+    assert achado.gravidade == "alta"
+    assert achado.mensagem.startswith("EICAR-Test-File")
+
+
+def test_sem_dpkg_nao_quebra(monkeypatch):
+    monkeypatch.setattr(cacador.shutil, "which", lambda _: None)
+    assert cacador.dpkg_verify() == ""

@@ -28,6 +28,7 @@ PROC = Path("/proc")
 DPKG_INFO = Path("/var/lib/dpkg/info")
 PASTAS_TEMPORARIAS = ("/tmp/", "/var/tmp/", "/dev/shm/")
 FUNDIDAS = ("bin", "sbin", "lib", "lib32", "lib64", "libx32")   # usrmerge: /lib → /usr/lib
+EXECUTAVEIS = tuple(f"/usr/{p}/" for p in (*FUNDIDAS, "libexec")) + tuple(f"/{p}/" for p in FUNDIDAS) + ("/boot/",)
 ORDEM = {"alta": 0, "media": 1, "info": 2}
 
 Julgar = Callable[[Path], "scanner.Resultado | None"]
@@ -99,7 +100,7 @@ class Juiz:
 
 
 def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
-          casa: Path | None = None) -> list[Achado]:
+          casa: Path | None = None, conferir_pacotes: bool = True) -> list[Achado]:
     julgar = julgar or Juiz()
     pacotes = pacotes or Pacotes()
     achados = [
@@ -107,6 +108,7 @@ def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
         *ld_preload_em_processos(pacotes),
         *processos(julgar, pacotes),
         *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
+        *(pacotes_alterados(julgar, dpkg_verify()) if conferir_pacotes else []),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
 
@@ -421,3 +423,51 @@ def _avaliar(categoria: str, arquivo: Path, cmds: list[str], julgar: Juiz, pacot
     mensagem = f"não veio de um pacote · {resumo}"
     mensagem += "".join(f"\n           - {n}" for n in notas)
     return Achado(gravidade, categoria, arquivo, mensagem)
+
+
+# --- binários do sistema alterados ------------------------------------------
+
+def dpkg_verify() -> str:
+    """Confere o MD5 de cada arquivo instalado com o que o pacote registrou (~30 s)."""
+    if not shutil.which("dpkg"):
+        return ""   # não é Debian/Ubuntu
+    try:
+        r = subprocess.run(["nice", "-n", "10", "dpkg", "--verify"], capture_output=True, text=True,
+                           errors="replace", timeout=900)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return r.stdout
+
+
+def pacotes_alterados(julgar: Juiz | Julgar, saida: str) -> Iterator[Achado]:
+    """Lê a saída do `dpkg --verify`: `??5??????   /usr/bin/ls` ou `??5?????? c /etc/x.conf`.
+
+    Rootkits antigos trocavam o ls, o ps e o netstat por versões que escondem
+    o invasor. A 3ª coluna "5" diz que o conteúdo já não é o que o pacote
+    instalou; "?" diz que não deu para conferir (arquivo só legível pelo root).
+    """
+    sem_conferir = 0
+    for linha in saida.splitlines():
+        if len(linha) < 13 or linha.startswith("missing"):
+            continue   # arquivo removido: comum em kernels antigos e caches
+        marcas, configuracao, caminho = linha[:9], linha[10] == "c", linha[12:].strip()
+        if marcas[2] == "?":
+            sem_conferir += 1
+            continue
+        if marcas[2] != "5":
+            continue
+        if configuracao:
+            yield Achado("info", "pacote alterado", Path(caminho),
+                         "arquivo de configuração editado (normal se foi você ou um instalador)")
+            continue
+        gravidade = "alta" if caminho.startswith(EXECUTAVEIS) else "media"
+        mensagem = "o conteúdo é diferente do que o pacote instalou"
+        resultado = julgar(Path(caminho))
+        if resultado and resultado.infectado:
+            gravidade, mensagem = "alta", f"{resultado.ameaca} · {mensagem}"
+        if gravidade == "alta":
+            mensagem += "; confira com: sudo apt install --reinstall $(dpkg -S " + caminho + " | cut -d: -f1)"
+        yield Achado(gravidade, "pacote alterado", Path(caminho), mensagem)
+    if sem_conferir:
+        yield Achado("info", "pacote alterado", Path("dpkg --verify"),
+                     f"{sem_conferir} arquivos só legíveis pelo root ficaram sem conferir (rode com sudo)")
