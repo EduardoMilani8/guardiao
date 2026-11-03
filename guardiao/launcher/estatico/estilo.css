@@ -1,0 +1,287 @@
+:root {
+  --fundo: #0e1324;
+  --fundo-2: #161d36;
+  --cartao: #1b2342;
+  --borda: #2c3762;
+  --texto: #e9e6f5;
+  --texto-suave: #a3a8c6;
+  --ouro: #e3b04b;
+  --perigo: #ff6b5e;
+  --atencao: #f4c152;
+  --limpo: #6fd39a;
+  --titulo: "Cinzel", Georgia, serif;
+  --corpo: "Nunito", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, var(--fundo-2), var(--fundo) 70%);
+  color: var(--texto);
+  font-family: var(--corpo);
+}
+
+/* Céu estrelado de fundo, feito só com gradientes */
+.estrelas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, #fff8 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 12%, #fff6 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 40% 30%, #fff5 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 40%, #fff7 50%, transparent 51%),
+    radial-gradient(1px 1px at 25% 60%, #fff4 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 60% 75%, #fff3 50%, transparent 51%);
+}
+
+.salao {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 16px 56px;
+}
+
+/* --- topo --------------------------------------------------------------- */
+
+.topo { text-align: center; margin-bottom: 28px; }
+.topo h1 {
+  font-family: var(--titulo);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  letter-spacing: 0.08em;
+  margin: 6px 0 4px;
+  color: var(--ouro);
+  text-shadow: 0 2px 18px #e3b04b44;
+}
+.subtitulo { margin: 0; color: var(--texto-suave); }
+.selo {
+  display: inline-block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 3px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  color: var(--texto-suave);
+}
+
+/* --- personagens ---------------------------------------------------------- */
+
+.guarda {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 780px) {
+  .guarda { grid-template-columns: repeat(2, 1fr); }
+}
+
+.personagem {
+  --cor: #3e63b8; --cor-escura: #26407e; --brilho: #6f97ff;
+  position: relative;
+  background: linear-gradient(180deg, var(--cartao), #141a33);
+  border: 1px solid var(--borda);
+  border-radius: 18px;
+  padding: 92px 12px 18px;
+  text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+#arqueira   { --cor: #3f8a55; --cor-escura: #275a37; --brilho: #6fe08f; }
+#vidente    { --cor: #6b4bb5; --cor-escura: #47307e; --brilho: #b39cff; }
+#carcereiro { --cor: #8a5a3a; --cor-escura: #5e3c26; --brilho: #f0b070; }
+
+.personagem.ativo {
+  transform: translateY(-6px);
+  border-color: var(--brilho);
+  box-shadow: 0 10px 30px -8px var(--brilho);
+}
+.personagem.alerta { animation: tremer 0.45s ease-in-out 2; border-color: var(--perigo); }
+
+.personagem h2 {
+  font-family: var(--titulo);
+  font-size: 1.05rem;
+  margin: 6px 0 2px;
+  letter-spacing: 0.04em;
+}
+.papel { margin: 0; font-size: 0.85rem; color: var(--texto-suave); }
+
+.figura { position: relative; height: 150px; }
+.figura svg {
+  height: 100%;
+  overflow: visible;
+  animation: flutuar 4s ease-in-out infinite;
+}
+#arqueira .figura svg   { animation-delay: -1s; }
+#vidente .figura svg    { animation-delay: -2s; }
+#carcereiro .figura svg { animation-delay: -3s; }
+.sombra { fill: #0006; }
+
+.contador {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 28px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #0005;
+  border: 1px solid var(--borda);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.contador.tem { background: var(--perigo); border-color: var(--perigo); color: #1b0f0f; }
+
+/* Balão de fala */
+.balao {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  right: 46px;
+  min-height: 62px;
+  margin: 0;
+  padding: 8px 10px;
+  background: #f4efe1;
+  color: #2a2230;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+.balao::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  border: 8px solid transparent;
+  border-top-color: #f4efe1;
+  border-bottom: 0;
+}
+.balao.nova { animation: surgir 0.3s ease-out; }
+
+/* --- animações específicas de cada guardião --------------------------------- */
+
+.escudo, .bola, .chaves, .arco { transform-box: fill-box; transform-origin: center; }
+#guardiao.alerta .escudo { animation: erguer-escudo 0.9s ease-in-out; }
+#vidente.alerta .bola    { animation: pulsar 0.7s ease-in-out 3; }
+#vidente.ativo .bola     { filter: drop-shadow(0 0 8px #b39cff); }
+#carcereiro.alerta .chaves { animation: balancar 0.35s ease-in-out 4; transform-origin: top center; }
+#arqueira.disparando .arco { animation: puxar 0.6s ease-out; }
+
+.flecha {
+  position: absolute;
+  top: 46%;
+  left: 30%;
+  width: 54px;
+  height: 3px;
+  background: linear-gradient(90deg, #efe6d2, #9a6a3c 80%);
+  border-radius: 2px;
+  opacity: 0;
+}
+.flecha::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: -4px;
+  border: 5.5px solid transparent;
+  border-left: 9px solid #cfd6e6;
+}
+#arqueira.disparando .flecha { animation: voar 0.7s 0.25s ease-in forwards; }
+
+@keyframes flutuar { 50% { transform: translateY(-5px); } }
+@keyframes surgir { from { opacity: 0; transform: translateY(4px); } }
+@keyframes tremer { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes erguer-escudo { 40% { transform: translateY(-14px) scale(1.25); filter: drop-shadow(0 0 10px #e3b04b); } }
+@keyframes pulsar { 50% { transform: scale(1.18); filter: drop-shadow(0 0 14px #b39cff); } }
+@keyframes balancar { 25% { transform: rotate(14deg); } 75% { transform: rotate(-14deg); } }
+@keyframes puxar { 40% { transform: scaleX(0.82); } }
+@keyframes voar {
+  0%   { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(160%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* --- painel ----------------------------------------------------------------- */
+
+.painel { margin: 28px 0 22px; text-align: center; }
+.acoes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.botao {
+  font: 700 1rem var(--corpo);
+  padding: 13px 22px;
+  border-radius: 12px;
+  border: 1px solid var(--borda);
+  background: var(--cartao);
+  color: var(--texto);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.botao:hover:not(:disabled) { transform: translateY(-2px); background: #232d55; }
+.botao:disabled { opacity: 0.5; cursor: wait; }
+.botao.principal {
+  background: linear-gradient(180deg, #f0c063, #c8902e);
+  border-color: #f0c063;
+  color: #24180a;
+}
+.botao.principal:hover:not(:disabled) { background: linear-gradient(180deg, #f6cd78, #d39b37); }
+.botao small { font-weight: 400; color: var(--texto-suave); }
+
+.progresso { max-width: 560px; margin: 18px auto 0; }
+.barra { height: 8px; border-radius: 999px; background: #0006; overflow: hidden; }
+.preenchido {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--ouro), #f6dc94);
+  transition: width 0.15s linear;
+}
+.atual {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- registro ----------------------------------------------------------------- */
+
+.registro {
+  background: #0f1530cc;
+  border: 1px solid var(--borda);
+  border-radius: 18px;
+  padding: 18px 20px;
+}
+.registro h3 { font-family: var(--titulo); margin: 0 0 10px; font-size: 1rem; letter-spacing: 0.05em; }
+.vazio { margin: 0; color: var(--texto-suave); font-size: 0.9rem; }
+
+#lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.achado {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff08;
+  border-left: 4px solid var(--atencao);
+  animation: surgir 0.3s ease-out;
+}
+.achado.ameaca { border-left-color: var(--perigo); }
+.achado.limpo { border-left-color: var(--limpo); }
+.achado .quem {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-suave);
+  min-width: 92px;
+}
+.achado .arquivo { font-weight: 700; overflow-wrap: anywhere; }
+.achado .detalhe { font-size: 0.86rem; color: var(--texto-suave); }
