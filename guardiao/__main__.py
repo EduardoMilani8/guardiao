@@ -3,6 +3,7 @@
     python -m guardiao varrer ~/Downloads [--isolar]
     python -m guardiao monitorar [pastas...] [--isolar]
     python -m guardiao dev [pasta] [--todos]
+    python -m guardiao launcher [--porta 8765] [--sem-navegador]
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
 """
@@ -130,6 +131,29 @@ def cmd_dev(args) -> int:
     return 1 if contagem["alta"] else 0
 
 
+def cmd_launcher(args) -> int:
+    import webbrowser
+
+    from .launcher import servidor
+
+    try:
+        srv = servidor.criar_servidor(args.porta)
+    except OSError as erro:
+        print(f"{VERMELHO}Não consegui abrir a porta {args.porta}: {erro.strerror}{FIM}")
+        return 2
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
+    print(f"{VERDE}Launcher (protótipo) em {url}  (Ctrl+C para sair){FIM}")
+    if not args.sem_navegador:
+        webbrowser.open(url)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        print("\nLauncher encerrado.")
+    finally:
+        srv.server_close()
+    return 0
+
+
 def cmd_quarentena(args) -> int:
     if args.acao == "listar":
         entradas = quarentena.listar()
@@ -161,6 +185,11 @@ def main() -> int:
     p_dev.add_argument("pasta", nargs="?", default=".", help="padrão: pasta atual")
     p_dev.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
     p_dev.set_defaults(func=cmd_dev)
+
+    p_l = sub.add_parser("launcher", help="abre o protótipo do launcher com os guardiões")
+    p_l.add_argument("--porta", type=int, default=8765)
+    p_l.add_argument("--sem-navegador", action="store_true", help="não abre o navegador sozinho")
+    p_l.set_defaults(func=cmd_launcher)
 
     p_q = sub.add_parser("quarentena", help="gerencia arquivos isolados")
     q_sub = p_q.add_subparsers(dest="acao", required=True)
