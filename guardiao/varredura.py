@@ -9,7 +9,6 @@ analisado e um `Resumo` no final.
 import fnmatch
 import multiprocessing
 import os
-import pwd
 import re
 import time
 import tomllib
@@ -19,20 +18,7 @@ from typing import Iterator
 
 from . import assinaturas, quarentena, regras_yara, scanner
 from .cache import Cache
-
-
-
-def casa_real() -> Path:
-    """A casa de quem pediu a varredura. Com sudo, HOME vira /root, mas os
-    Downloads, a configuração e a quarentena que importam são os do usuário."""
-    usuario = os.environ.get("SUDO_USER")
-    if os.geteuid() == 0 and usuario:
-        try:
-            return Path(pwd.getpwnam(usuario).pw_dir)
-        except KeyError:
-            pass
-    return Path.home()
-
+from .caminhos import casa_real
 
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", casa_real() / ".config")) / "guardiao" / "config.toml"
 
