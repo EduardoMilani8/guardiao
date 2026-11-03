@@ -235,8 +235,14 @@ def imprimir_achados(achados, todos: bool, raiz: Path | None = None) -> int:
 def cmd_cacar(args) -> int:
     from . import cacador
 
-    print("Procurando bibliotecas injetadas...")
-    return imprimir_achados(cacador.cacar(), args.todos)
+    avisar_camadas_desligadas()
+    from . import clamav
+    julgar = cacador.juiz(assinaturas.carregar(), regras_yara.carregar(), clamav.conectar())
+    if os.geteuid() != 0:
+        print(f"{CINZA}Sem root, só os seus processos são verificados. Para todos:\n"
+              f"  sudo .venv/bin/python -m guardiao cacar{FIM}")
+    print("Procurando bibliotecas injetadas e processos estranhos...")
+    return imprimir_achados(cacador.cacar(julgar), args.todos)
 
 
 def cmd_launcher(args) -> int:

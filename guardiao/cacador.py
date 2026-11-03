@@ -14,7 +14,9 @@ que já sabe julgar conteúdo (hash, ClamAV, YARA, heurísticas).
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
+
+from . import scanner
 
 PRELOAD = Path("/etc/ld.so.preload")
 PROC = Path("/proc")
@@ -22,6 +24,8 @@ DPKG_INFO = Path("/var/lib/dpkg/info")
 PASTAS_TEMPORARIAS = ("/tmp/", "/var/tmp/", "/dev/shm/")
 FUNDIDAS = ("bin", "sbin", "lib", "lib32", "lib64", "libx32")   # usrmerge: /lib → /usr/lib
 ORDEM = {"alta": 0, "media": 1, "info": 2}
+
+Julgar = Callable[[Path], "scanner.Resultado | None"]
 
 
 @dataclass
@@ -63,11 +67,29 @@ def em_pasta_temporaria(caminho: str) -> bool:
     return caminho.startswith(PASTAS_TEMPORARIAS)
 
 
-def cacar(pacotes: Pacotes | None = None) -> list[Achado]:
+def juiz(banco, yara=None, clamav=None) -> Julgar:
+    """O scanner de sempre, para julgar o conteúdo do que o caçador encontrar."""
+    def julgar(caminho: Path) -> scanner.Resultado | None:
+        # /proc/<pid>/exe é um link "mágico" para o executável, mesmo apagado do
+        # disco. O ClamAV abre com O_NOFOLLOW e não passaria dele.
+        cl = None if str(caminho).startswith("/proc/") else clamav
+        try:
+            return scanner.analisar(caminho, banco, yara, cl)
+        except OSError:
+            return None
+    return julgar
+
+
+def nao_julgar(_caminho: Path) -> None:
+    return None
+
+
+def cacar(julgar: Julgar = nao_julgar, pacotes: Pacotes | None = None) -> list[Achado]:
     pacotes = pacotes or Pacotes()
     achados = [
         *preload(pacotes),
         *ld_preload_em_processos(pacotes),
+        *processos(julgar, pacotes),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
 
@@ -143,3 +165,47 @@ def ld_preload_em_processos(pacotes: Pacotes, proc: Path = PROC) -> Iterator[Ach
         gravidade, motivo = _gravidade_da_biblioteca(lib, pacotes)
         quem = ", ".join(processos[:5]) + (f" e mais {len(processos) - 5}" if len(processos) > 5 else "")
         yield Achado(gravidade, "LD_PRELOAD", Path(lib), f"injetada em {quem}; {motivo}")
+
+
+# --- processos --------------------------------------------------------------
+
+def _avaliar_executavel(exe: str, pacotes: Pacotes) -> tuple[str, str] | None:
+    caminho = exe.removesuffix(" (deleted)")
+    if caminho.startswith("/memfd:"):
+        if "runc" in caminho:
+            return None   # o Docker roda o runc assim de propósito
+        return "alta", "roda direto da memória (memfd), sem nenhum arquivo no disco"
+    if em_pasta_temporaria(caminho):
+        return "alta", "roda de uma pasta temporária"
+    if exe.endswith(" (deleted)"):
+        if os.path.exists(caminho) or pacotes.dono(caminho):
+            return "info", "foi atualizado depois de abrir; reinicie-o para usar a versão nova"
+        return "media", "o executável foi apagado depois de iniciar, truque comum de malware"
+    return None
+
+
+def processos(julgar: Julgar, pacotes: Pacotes, proc: Path = PROC) -> Iterator[Achado]:
+    """Processos rodando de /tmp, da memória ou de um executável apagado."""
+    grupos: dict[tuple[str, str, str], list[Path]] = {}
+    for pid in proc.iterdir():
+        if not pid.name.isdigit():
+            continue
+        try:
+            exe = os.readlink(pid / "exe")
+        except OSError:
+            continue   # thread do kernel, outro usuário (sem root) ou já terminou
+        if avaliacao := _avaliar_executavel(exe, pacotes):
+            grupos.setdefault((exe.removesuffix(" (deleted)"), *avaliacao), []).append(pid)
+
+    for (exe, gravidade, motivo), pids in grupos.items():
+        quem = ", ".join(f"{nome_do_processo(p)} ({p.name})" for p in pids[:5])
+        if len(pids) > 5:
+            quem += f" e mais {len(pids) - 5}"
+        mensagem = f"{motivo}: {quem}"
+        # O executável continua legível por /proc/<pid>/exe, mesmo apagado do disco.
+        resultado = julgar(pids[0] / "exe") if gravidade != "info" else None
+        if resultado and resultado.infectado:
+            gravidade, mensagem = "alta", f"{resultado.ameaca} · {mensagem}"
+        elif resultado and resultado.suspeito:
+            mensagem += "".join(f"\n           - {m}" for m in resultado.motivos)
+        yield Achado(gravidade, "processo", Path(exe), mensagem)
