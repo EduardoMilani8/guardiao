@@ -272,7 +272,9 @@ def executar(
             if time.monotonic() - ultimo > INTERVALO_PROGRESSO:
                 ultimo = time.monotonic()
                 yield Progresso("analisando", resumo.em_cache + resumo.analisados, total, str(item.caminho))
-        yield Progresso("analisando", total, total, "")   # varreduras curtas acabam antes do primeiro intervalo
+        # Varreduras curtas acabam antes do primeiro intervalo. Conta só o que foi
+        # verificado: quem falhou na leitura (sumiu, sem permissão) não entra.
+        yield Progresso("analisando", resumo.em_cache + resumo.analisados, total, "")
     finally:
         if cache is not None:
             cache.fechar() if cache_proprio else cache.salvar()

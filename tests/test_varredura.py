@@ -164,3 +164,16 @@ def test_sem_permissao_e_contado(tmp_path):
         assert r.sem_permissao == 1
     finally:
         trancada.chmod(0o700)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root lê tudo")
+def test_progresso_final_bate_com_o_resumo(tmp_path):
+    (tmp_path / "ok.txt").write_text("oi")
+    trancado = tmp_path / "trancado.txt"
+    trancado.write_text("segredo")
+    trancado.chmod(0)   # aparece na listagem, mas falha na leitura
+    itens = list(varredura.executar([tmp_path], varredura.Exclusoes(), usar_cache=False, processos=1))
+    ultimo = [i for i in itens if isinstance(i, varredura.Progresso)][-1]
+    r = resumo(itens)
+    assert ultimo.vistos == r.analisados + r.em_cache == 1
+    assert ultimo.total == 2 and r.sem_permissao == 1
