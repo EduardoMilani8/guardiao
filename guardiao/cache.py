@@ -15,7 +15,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-from . import __version__, assinaturas, heuristicas, regras_yara, scanner
+from . import __version__, assinaturas, bases, heuristicas, regras_yara, scanner
 
 PADRAO = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "guardiao" / "cache.sqlite"
 
@@ -27,6 +27,7 @@ def versao_motor() -> str:
     for arquivo in sorted(regras_yara.PASTA_PADRAO.rglob("*.yar")):
         h.update(arquivo.read_bytes())
     h.update(assinaturas.ARQUIVO_PADRAO.read_bytes())
+    h.update(bases.versoes_em_uso(bases.registradas()).encode())
     for modulo in (heuristicas, scanner):
         h.update(inspect.getsource(modulo).encode())
     return h.hexdigest()[:16]

@@ -2,6 +2,7 @@
 
     python -m guardiao varrer ~/Downloads [--isolar]
     python -m guardiao varrer --rapida | --completa [--isolar] [--sem-cache]
+    python -m guardiao atualizar [--forcar | --status]
     python -m guardiao monitorar [pastas...] [--isolar]
     python -m guardiao dev [pasta] [--todos]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
@@ -92,6 +93,44 @@ def cmd_varrer(args) -> int:
         print(f"{CINZA}{resumo.sem_permissao} itens sem permissão de leitura. Para incluir os arquivos do sistema:\n"
               f"  sudo .venv/bin/python -m guardiao varrer {repetir}{FIM}")
     return 1 if resumo.ameacas else 0
+
+
+def _ha_quanto(segundos: float | None) -> str:
+    if segundos is None:
+        return "nunca"
+    for tamanho, unidade in ((86400, "dia(s)"), (3600, "h"), (60, "min")):
+        if segundos >= tamanho:
+            return f"há {int(segundos // tamanho)} {unidade}"
+    return f"há {int(segundos)} s"
+
+
+def cmd_atualizar(args) -> int:
+    from . import bases
+
+    lista = bases.registradas()
+    if not lista:
+        print("Nenhuma base externa configurada ainda.")
+        return 0
+    if args.status:
+        relatorios = [bases.Relatorio(b.nome, "status", bases.ler_estado(b)) for b in lista]
+    else:
+        try:
+            relatorios = bases.atualizar(lista, forcar=args.forcar)
+        except bases.Ocupado as erro:
+            print(f"{AMARELO}{erro}{FIM}")
+            return 1
+    falhou = False
+    for r in relatorios:
+        e = r.estado
+        velha = e.idade() is None or e.idade() > bases.VELHA_APOS
+        cor = VERMELHO if r.situacao == "erro" or velha else VERDE if r.situacao == "atualizada" else CINZA
+        print(f"{cor}{r.base:<14} {r.situacao:<14} versão {e.versao or '-'} · conferida {_ha_quanto(e.idade())}{FIM}")
+        if e.erro:
+            falhou = True
+            print(f"               {e.erro}")
+            if e.versao:
+                print("               segue valendo a versão anterior")
+    return 1 if falhou else 0
 
 
 def cmd_monitorar(args) -> int:
@@ -218,6 +257,12 @@ def main() -> int:
     p_varrer.add_argument("--processos", type=int, help="padrão: um por núcleo")
     p_varrer.add_argument("--incluir-externos", action="store_true", help="inclui /media e /mnt na completa")
     p_varrer.set_defaults(func=cmd_varrer)
+
+    p_at = sub.add_parser("atualizar", help="baixa as bases de detecção mais recentes")
+    modo_at = p_at.add_mutually_exclusive_group()
+    modo_at.add_argument("--forcar", action="store_true", help="baixa de novo mesmo se estiver em dia")
+    modo_at.add_argument("--status", action="store_true", help="só mostra a situação de cada base")
+    p_at.set_defaults(func=cmd_atualizar)
 
     p_mon = sub.add_parser("monitorar", help="analisa em tempo real os arquivos que chegam")
     p_mon.add_argument("pastas", nargs="*", help="padrão: ~/Downloads")
