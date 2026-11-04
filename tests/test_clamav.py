@@ -29,12 +29,20 @@ class ClamdFalso:
                 return
             with conexao:
                 mensagem, fds, _, _ = socket.recv_fds(conexao, 1024, 1)
-                comando = mensagem.rstrip(b"\0").decode()
-                if comando == "zPING":
+                comando, _, resto = mensagem.partition(b"\0")
+                comando = comando.decode()
+                if comando == "zFILDES" and fds and not resto:
+                    # Como o clamd real: o descritor vem num pacote próprio, depois do comando.
+                    resposta = "ancillary data sent without FILDES. ERROR"
+                elif comando == "zPING":
                     resposta = "PONG"
                 elif comando == "zVERSION":
-                    resposta = "ClamAV 1.4.3/27811/Tue Nov  3 08:00:00 2026"
-                elif comando == "zFILDES" and fds:
+                    resposta = "COMMAND UNAVAILABLE"   # EnableVersionCommand false, padrão no Ubuntu 26.04
+                elif comando == "zVERSIONCOMMANDS":
+                    resposta = "ClamAV 1.4.3/27811/Tue Nov  3 08:00:00 2026| COMMANDS: SCAN PING FILDES"
+                elif comando == "zFILDES":
+                    if not fds:   # o pacote com o descritor ainda não tinha chegado
+                        _, fds, _, _ = socket.recv_fds(conexao, 1024, 1)
                     with os.fdopen(fds[0], "rb") as f:
                         conteudo = f.read()
                     self.leu_por_fd += 1

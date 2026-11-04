@@ -26,7 +26,9 @@ class ErroClamAV(OSError):
     pass
 
 
-def encontrar_socket(config: Path = CONFIG_CLAMD) -> Path | None:
+def encontrar_socket(config: Path | None = None) -> Path | None:
+    # O padrão é lido aqui, e não na assinatura: lá ele ficaria congelado no import.
+    config = config or CONFIG_CLAMD
     try:
         if m := re.search(r"^LocalSocket\s+(\S+)", config.read_text(), re.MULTILINE):
             return Path(m.group(1))
@@ -45,10 +47,11 @@ class ClamAV:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
             s.settimeout(TEMPO_MAXIMO)
             s.connect(str(self.socket))
-            if fd is None:
-                s.sendall(mensagem)
-            else:
-                socket.send_fds(s, [mensagem], [fd])
+            s.sendall(mensagem)
+            if fd is not None:
+                # O descritor vai num pacote próprio, depois do comando, com um
+                # byte qualquer: colado no comando, o clamd o rejeita.
+                socket.send_fds(s, [b"\0"], [fd])
             resposta = b""
             while not resposta.endswith(b"\0"):
                 bloco = s.recv(4096)
@@ -65,7 +68,11 @@ class ClamAV:
 
     def versao(self) -> tuple[str, int | None, datetime | None]:
         """Ex.: ("ClamAV 1.4.3", 27811, data das assinaturas)."""
-        motor, _, resto = self._conversar("VERSION").partition("/")
+        # O VERSION vem desligado em alguns clamd.conf (EnableVersionCommand false,
+        # o padrão no Ubuntu 26.04); o VERSIONCOMMANDS responde o mesmo e mais
+        # a lista de comandos: "ClamAV 1.5.4/28173/Tue Nov  3 03:27:52 2026| COMMANDS: ..."
+        texto = self._conversar("VERSIONCOMMANDS").partition("|")[0]
+        motor, _, resto = texto.partition("/")
         numero, _, data = resto.partition("/")
         try:
             quando = datetime.strptime(" ".join(data.split()), "%a %b %d %H:%M:%S %Y")
