@@ -10,7 +10,9 @@ ConditionACPower=true
 Type=oneshot
 WorkingDirectory=%h/guardiao
 # Sem --isolar: avisa e quem decide trancar é você, no launcher.
-ExecStart=%h/guardiao/.venv/bin/python -m guardiao varrer --completa --agendada
+# 4 processos: cada um carrega as regras (~170 MB); com um por núcleo, a
+# rápida chegou a 2,8 GB. Em segundo plano, a pressa não vale essa memória.
+ExecStart=%h/guardiao/.venv/bin/python -m guardiao varrer --completa --agendada --processos 4
 Environment=PYTHONUNBUFFERED=1
 # Tarefa de fundo: cede CPU e disco a qualquer coisa que você estiver fazendo.
 Nice=19
