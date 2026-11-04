@@ -6,6 +6,7 @@
     python -m guardiao monitorar [pastas...] [--isolar] [--sem-comportamento]
     python -m guardiao dev [pasta] [--todos]
     python -m guardiao cacar [--todos] [--sem-pacotes]
+    sudo python -m guardiao proteger [--so-avisar] [--prazo 2]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
@@ -211,6 +212,65 @@ def cmd_monitorar(args) -> int:
     return 0
 
 
+def cmd_proteger(args) -> int:
+    from . import protetor
+
+    if os.geteuid() != 0:
+        print(f"{VERMELHO}O protetor precisa de root: o kernel só dá o fanotify de permissão a ele.{FIM}")
+        print("Instalação como serviço: veja contrib/guardiao-protetor.service")
+        return 2
+    codigo = Path(protetor.__file__).parent
+    if any(os.stat(p).st_uid != 0 or os.stat(p).st_mode & 0o022 for p in (codigo, *codigo.glob("*.py"))):
+        # Um serviço root rodando código que sua conta pode alterar é um atalho
+        # para root: qualquer malware na sua conta trocaria o Guardião.
+        print(f"{AMARELO}Atenção: {codigo} pode ser alterado por um usuário comum. "
+              f"Para o serviço, use a cópia de root em /opt/guardiao.{FIM}")
+    avisar_camadas_desligadas()
+
+    def ao_decidir(d: protetor.Decisao) -> None:
+        nome = d.resultado.ameaca if d.resultado and d.resultado.ameaca else ""
+        if d.motivo == "ameaça" and not d.permitido:
+            print(f"{VERMELHO}[BLOQUEADO] {d.caminho}  →  {nome}  (pedido por {d.quem}, pid {d.pid}){FIM}")
+            notificacao.notificar("Guardião bloqueou uma ameaça", f"{d.caminho}\n{nome}", urgente=True)
+        elif d.motivo == "ameaça":
+            print(f"{VERMELHO}[AMEAÇA]    {d.caminho}  →  {nome}  (só avisando; pid {d.pid}){FIM}")
+            notificacao.notificar("Ameaça executada (modo só avisar)", f"{d.caminho}\n{nome}", urgente=True)
+        elif d.motivo == "prazo":
+            print(f"{VERMELHO}[RODOU]     {d.caminho}  →  {nome}  (a análise passou do prazo; pid {d.pid}){FIM}")
+            notificacao.notificar("Ameaça rodou antes do veredito",
+                                  f"{d.caminho}\n{nome}\nPara encerrar: sudo kill {d.pid}", urgente=True)
+        elif d.motivo == "suspeito" and d.resultado:
+            print(f"{AMARELO}[suspeito]  {d.caminho}  ({d.resultado.pontuacao}/100, executado){FIM}")
+            notificacao.notificar(f"Executado um arquivo suspeito ({d.resultado.pontuacao}/100)",
+                                  f"{d.caminho}\n{d.resultado.motivos[0] if d.resultado.motivos else ''}")
+        else:
+            print(f"{CINZA}[erro]      {d.caminho}: liberado sem análise{FIM}")
+
+    def ao_sigterm(*_):
+        raise KeyboardInterrupt
+
+    analisadores = protetor.Analisadores()
+    guarda = protetor.Protetor(lambda: analisadores.analisar, ao_decidir,
+                               bloquear=not args.so_avisar, prazo=args.prazo)
+    try:
+        marcados = guarda.abrir()
+    except OSError as erro:
+        analisadores.fechar()
+        print(f"{VERMELHO}Não deu para ligar o fanotify: {erro}{FIM}")
+        return 1
+    signal.signal(signal.SIGTERM, ao_sigterm)
+    modo = "só avisando" if args.so_avisar else "bloqueando ameaças"
+    print(f"{VERDE}Protegendo a execução em {', '.join(map(str, marcados))} ({modo}; prazo {args.prazo:g} s){FIM}")
+    try:
+        guarda.rodar()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        analisadores.fechar()
+    print(f"Protetor encerrado. {guarda.estatisticas}")
+    return 0
+
+
 def cmd_dev(args) -> int:
     from . import dev
 
@@ -337,6 +397,12 @@ def main() -> int:
     p_c.add_argument("--todos", action="store_true", help="mostra também os achados informativos")
     p_c.add_argument("--sem-pacotes", action="store_true", help="pula o dpkg --verify (o passo mais lento)")
     p_c.set_defaults(func=cmd_cacar)
+
+    p_p = sub.add_parser("proteger", help="bloqueia ameaças antes de executarem (root, fanotify)")
+    p_p.add_argument("--so-avisar", action="store_true", help="não bloqueia, só avisa")
+    p_p.add_argument("--prazo", type=float, default=2.0,
+                     help="segundos até liberar uma execução sem veredito (padrão: 2)")
+    p_p.set_defaults(func=cmd_proteger)
 
     p_l = sub.add_parser("launcher", help="abre o protótipo do launcher com os guardiões")
     p_l.add_argument("--porta", type=int, default=8765)

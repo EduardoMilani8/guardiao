@@ -1,0 +1,30 @@
+# Serviço do sistema (root): bloqueia ameaças antes de executarem (fanotify).
+#
+# Não copie este arquivo à mão: o instalador cria a cópia de root do Guardião
+# em /opt/guardiao e troca @CASA@ pela sua pasta pessoal.
+#   sudo contrib/instalar-protetor.sh
+#
+# Ver o que ele está fazendo:  journalctl -u guardiao-protetor -f
+# Desinstalar:                 sudo systemctl disable --now guardiao-protetor
+#
+# Se ele cair, o kernel libera tudo que estava esperando (fail-open), e o
+# systemd tenta de novo em 5 s; se cair 5 vezes seguidas, desiste.
+
+[Unit]
+Description=Guardião: bloqueia ameaças antes de executarem
+After=local-fs.target clamav-daemon.service
+
+[Service]
+# A cópia em /opt é de root: um serviço root rodando código que a sua conta
+# pode alterar seria um atalho para root para qualquer malware na sua conta.
+WorkingDirectory=/opt/guardiao
+# -E ignora variáveis PYTHON*; -s ignora pacotes do usuário; -u: journal sem atraso.
+ExecStart=/opt/guardiao/.venv/bin/python -E -s -u -m guardiao proteger
+# As bases (hashes, regras) que o timer da sua conta mantém atualizadas.
+Environment=XDG_DATA_HOME=@CASA@/.local/share
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
