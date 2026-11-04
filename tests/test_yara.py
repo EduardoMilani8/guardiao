@@ -120,3 +120,70 @@ def test_validar_fonte(tmp_path):
     assert regras_yara.validar_fonte(regras_de_base(tmp_path / "boa", REGRAS_DA_BASE)) == 2
     with pytest.raises(Exception):
         regras_yara.validar_fonte(regras_de_base(tmp_path / "ruim", "rule { quebrada"))
+
+
+# --- JavaScript para o Windows Script Host ----------------------------------
+
+DROPPER_JS = "".join(['var s = new ActiveXObject("WScript.', 'Shell");\n', 's.Run("cmd /c start x.exe", 0);\n'])
+CHAMA_PS_JS = "".join(["var w = WScript.", "CreateObject('Shell.Application');\n",
+                         "w.ShellExecute('power", "shell', '-w hidden -c iex x', '', 'open', 0);\n"])
+ESCONDIDOS_JS = "var p = WScript.ScriptFullName;\n" + "".join(
+    f"var o{i} = new Active" + f"XObject(QWERTYUIOPASD{i});\n" for i in range(4))
+JQUERY_ANTIGO = """\
+function createActiveXHR() {
+    try { return new window.ActiveXObject("Microsoft.XMLHTTP"); } catch (e) {}
+}
+var dados = "data:image/png;base64,""" + "A" * 4000 + '";\n'
+
+
+# Nomes montados com join() e ids curtos: o .pytest_cache guarda os ids, e
+# o nome de uma regra mais um objeto do WSH no mesmo arquivo bastam para disparar.
+@pytest.mark.parametrize("conteudo, regra", [
+    (DROPPER_JS, "JS_WSH_RodaComando"),
+    (CHAMA_PS_JS, "".join(["JS_WSH_Power", "Shell"])),
+    (ESCONDIDOS_JS, "JS_WSH_ObjetosEscondidos"),
+], ids=["roda-comando", "chama-ps", "objetos-escondidos"])
+def test_dropper_js_e_ameaca(tmp_path, yara, conteudo, regra):
+    r = analisar(tmp_path, "fatura.js", conteudo, yara)
+    assert r.ameaca == f"{regra} (YARA)"
+
+
+def test_dropper_js_em_utf16_tambem(tmp_path, yara):
+    # O WSH roda scripts UTF-16 (BOM FF FE); cada letra vira dois bytes.
+    r = analisar(tmp_path, "nota.js", b"\xff\xfe" + DROPPER_JS.encode("utf-16-le"), yara)
+    assert r.ameaca == "JS_WSH_RodaComando (YARA)"
+
+
+def test_js_de_site_com_activex_nao_dispara(tmp_path, yara):
+    # Biblioteca antiga com o XMLHttpRequest do Internet Explorer e uma imagem embutida.
+    r = analisar(tmp_path, "jquery-1.4.js", JQUERY_ANTIGO, yara)
+    assert not r.infectado and not r.suspeito
+
+
+def test_binario_que_cita_o_wsh_nao_dispara(tmp_path, yara):
+    # Como o wscript.exe do Wine ou uma DLL .NET: o texto está lá, mas é um programa.
+    binario = b"MZ\x90\x00\x03\x00\x00\x00" + b"\x00" * 64 + DROPPER_JS.encode()
+    r = analisar(tmp_path, "wscript.exe", binario, yara)
+    assert not r.infectado
+
+
+def test_registro_do_wine_nao_dispara(tmp_path, yara):
+    registro = "".join(['[Software\\\\Classes\\\\WScript.', 'Shell] 1700000000\n',
+                        '"Path"="C:\\\\windows\\\\system32\\\\WindowsPower', 'Shell\\\\v1.0"\n'])
+    r = analisar(tmp_path, "system.reg", registro, yara)
+    assert not r.infectado and not r.suspeito
+
+
+def test_biblioteca_web_que_testa_o_ambiente_nao_dispara(tmp_path, yara):
+    # Como o rx.lite.min.js: testa se roda no WSH e é minificado (aspas longe umas das outras).
+    minificado = "".join(['typeof WScript!="undefined"&&WScript.', 'Sleep(1);var a="', "x=1;" * 1000, '"'])
+    r = analisar(tmp_path, "rx.lite.min.js", minificado, yara)
+    assert not r.infectado and not r.suspeito
+
+
+def test_realce_de_sintaxe_com_activex_nao_dispara(tmp_path, yara):
+    # Como o Swagger UI: XMLHttpRequest do IE e a lista de linguagens do highlight.js.
+    swagger = "".join(['try{x=new Active', 'XObject("Microsoft.XMLHTTP")}catch(e){}\n',
+                       'registerLanguage("power', 'shell", ps);\n'])
+    r = analisar(tmp_path, "swagger.js", swagger, yara)
+    assert not r.infectado

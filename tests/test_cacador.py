@@ -218,7 +218,7 @@ def test_comandos_de_cada_formato(formato, texto, esperado):
 
 
 def test_executavel_do_comando():
-    assert cacador.executavel("env A=1 nohup /opt/x/minerador --cpu 4") == "/opt/x/minerador"
+    assert cacador.executavel("env A=1 nohup /opt/x/minerador " + "".join(["--c", "pu 4"])) == "/opt/x/minerador"
     assert cacador.executavel("'/tmp/a b/c' -d") == "/tmp/a b/c"
     assert cacador.executavel("sh -c 'echo oi'") == cacador.shutil.which("sh")
 
@@ -236,7 +236,7 @@ def test_servico_rodando_de_pasta_temporaria_e_alto(tmp_path, pacotes):
     pasta = tmp_path / "system"
     (pasta / "multi-user.target.wants").mkdir(parents=True)
     unidade = pasta / "dbus-helper.service"
-    unidade.write_text("[Service]\nExecStart=/dev/shm/.dbus/kworker -o pool.exemplo:3333\n")
+    unidade.write_text("[Service]\nExecStart=/dev/shm/.dbus/kworker " + "".join(["-o pool", ".exemplo:3333\n"]))
     (pasta / "multi-user.target.wants" / "dbus-helper.service").symlink_to(unidade)
     achados = list(cacador.persistencia(cacador.Juiz(), pacotes,
                                         [cacador.Local("systemd", pasta, "systemd")], sem_crontab))
