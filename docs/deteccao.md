@@ -38,3 +38,15 @@ um shell reverso ou um minerador pelo que ele faz, seja qual for o arquivo, e o
 [caçador](como-funciona.md#caçador), que procura o que já se instalou. É assim
 também nos antivírus comerciais: detectar malware recém-criado só pelo conteúdo é
 difícil, e o comportamento cobre parte do que escapa.
+
+## Como medir de novo
+
+```bash
+.venv/bin/pip install -r ferramentas/requirements.txt
+.venv/bin/python -I ferramentas/medir_deteccao.py --desde AAAA-MM-DD
+```
+
+O script baixa as amostras mais recentes de cada tipo, vistas a partir de
+`--desde` (o dia seguinte à última medição, para nenhuma amostra se repetir),
+mede sem a base de hashes e apaga tudo no fim. Ele imprime a tabela no formato
+desta página. Precisa da chave do MalwareBazaar.
