@@ -26,7 +26,8 @@ eBPF, ataques à cadeia de pacotes).
 - [x] Comando `atualizar` e atualização automática de hora em hora
 - [x] Medir a taxa de detecção com amostras reais do MalwareBazaar (99,5% do já reportado,
       cerca de metade do malware Linux novo; veja o README)
-- [ ] Medir de novo de tempos em tempos, e incluir JavaScript ofuscado nas regras
+- [x] Regras para JavaScript ofuscado do Windows Script Host (0% → 46,3% em amostras novas)
+- [ ] Medir de novo de tempos em tempos
 - [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fase 3: caçador de persistência e rootkits
@@ -35,9 +36,9 @@ eBPF, ataques à cadeia de pacotes).
 - [x] Serviços systemd, cron e autostart que não vieram de pacotes
 - [x] Processos rodando de `/tmp` e `/dev/shm` ou com executável apagado
 - [x] Binários do sistema alterados (`dpkg --verify`)
-- [ ] Linhas suspeitas em `~/.bashrc`, `~/.profile` e afins (alias de `sudo`, `curl | sh`)
-- [ ] Chaves SSH autorizadas que não deveriam estar lá (`~/.ssh/authorized_keys`)
-- [ ] Rodar o caçador como root e calibrar de novo
+- [x] Linhas suspeitas em `~/.bashrc`, `~/.profile` e afins (alias de `sudo`, `curl | sh`)
+- [x] Chaves SSH autorizadas que não deveriam estar lá (`~/.ssh/authorized_keys`)
+- [x] Rodar o caçador como root e calibrar de novo
 
 ## Fase 4: proteção em tempo real de verdade
 

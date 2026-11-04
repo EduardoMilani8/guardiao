@@ -51,7 +51,12 @@ porque as amostras vieram dela):
 | **Guardião: ameaça ou suspeito** | **34,9%** | **54,1%** | 16,7% | 29,2% | 0% |
 
 O que mais escapou foram variantes recompiladas da botnet Mirai, cada uma com um
-hash novo, e JavaScript ofuscado (ladrões de senha do Windows). Detectar malware
+hash novo, e JavaScript ofuscado (ladrões de senha do Windows).
+
+Depois disso vieram regras para os droppers JavaScript do Windows Script Host
+(`regras/javascript_windows.yar`). Escritas olhando 58 amostras e medidas em
+outras **41 que não foram usadas para escrevê-las**: o JavaScript foi de 0% para
+**46,3%**, sem nenhum falso positivo em 1,14 milhão de arquivos do disco. Detectar malware
 recém-criado só pelo conteúdo é difícil para qualquer antivírus; os comerciais
 compensam com análise de comportamento, que é a [Fase 4](ROADMAP.md). O caçador
 não entra nesta conta: ele procura o que já está rodando ou instalado.
@@ -157,6 +162,8 @@ passa pelas mesmas camadas da varredura.
 | `/proc/<pid>/exe` | o processo roda de `/tmp`, `/var/tmp`, `/dev/shm` ou da memória (`memfd`), ou o scanner reconhece o executável, que continua legível mesmo apagado do disco |
 | systemd, cron, autostart e `/etc/rc.local` | o comando roda algo de uma pasta temporária, ou o YARA ou o scanner condenam o comando, o script ou o programa chamado |
 | `dpkg --verify` | um executável ou biblioteca do sistema não é mais o que o pacote instalou |
+| `.bashrc`, `.zshrc`, `/etc/profile.d`... (e o que eles carregam com `source`) | põem uma pasta temporária no `PATH` ou rodam algo de `/tmp`; um alias ou função que troca o `sudo` pede atenção |
+| `~/.ssh/authorized_keys` | a chave tem a marca de uma botnet (Outlaw); chaves acrescentadas nos últimos 7 dias pedem atenção |
 
 Ficam como **atenção** um executável apagado que sumiu de vez e uma unidade do
 systemd que sobrepõe a de um pacote trocando o comando (o truque de sequestrar o
