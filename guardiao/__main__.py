@@ -9,6 +9,7 @@
     python -m guardiao cacar [--todos] [--sem-pacotes]
     sudo python -m guardiao proteger [--so-avisar] [--prazo 2]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
+    python -m guardiao virustotal <arquivo>
     python -m guardiao quarentena listar
     python -m guardiao quarentena restaurar <id>
 """
@@ -20,8 +21,9 @@ import sys
 import time
 from pathlib import Path
 
-from . import assinaturas, notificacao, quarentena, regras_yara, scanner
+from . import assinaturas, notificacao, quarentena, regras_yara, scanner, virustotal
 
+MAX_VIRUSTOTAL_POR_VARREDURA = 20   # com o cache, a próxima varredura continua de onde esta parou
 VERMELHO, AMARELO, VERDE, CINZA, FIM = "\033[31m", "\033[33m", "\033[32m", "\033[90m", "\033[0m"
 if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):   # ex.: journal do systemd
     VERMELHO = AMARELO = VERDE = CINZA = FIM = ""
@@ -48,6 +50,68 @@ def relatar(item: scanner.Resultado, isolar: bool) -> str | None:
         for motivo in item.motivos:
             print(f"           - {motivo}")
     return None
+
+
+class ConsultaVirusTotal:
+    """Junta o laudo do VirusTotal a um resultado, se houver chave. Respeita o
+    limite por minuto esperando a vaga; quando acaba a cota do dia (ou a desta
+    varredura), avisa uma vez e para de consultar."""
+
+    def __init__(self, maximo: int | None = None):
+        self.chave = virustotal.chave()
+        self.maximo, self.feitas, self.parou = maximo, 0, False
+
+    def __call__(self, item: scanner.Resultado) -> scanner.Resultado:
+        if not self.chave or self.parou or item.infectado:
+            return item
+        if self.maximo is not None and self.feitas >= self.maximo:
+            self._parar(f"{self.maximo} consultas nesta varredura; o resto fica para a próxima")
+            return item
+        while True:
+            try:
+                laudo = virustotal.consultar(item.sha256, self.chave)
+                self.feitas += 1
+                return virustotal.aplicar(item, laudo)
+            except virustotal.SemCota as erro:
+                if erro.espera is None:
+                    self._parar(str(erro))
+                    return item
+                time.sleep(erro.espera)
+            except OSError as erro:
+                print(f"{CINZA}VirusTotal não respondeu sobre {item.caminho.name}: {erro}{FIM}")
+                return item
+
+    def _parar(self, motivo: str) -> None:
+        self.parou = True
+        print(f"{CINZA}VirusTotal: {motivo}.{FIM}")
+
+
+def cmd_virustotal(args) -> int:
+    arquivo = Path(args.arquivo).expanduser()
+    if not arquivo.is_file():
+        print(f"{VERMELHO}Não encontrado: {arquivo}{FIM}")
+        return 2
+    chave = virustotal.chave()
+    if not chave:
+        print("Sem chave do VirusTotal. Crie uma grátis em https://www.virustotal.com e coloque no")
+        print("~/.config/guardiao/config.toml:\n\n[virustotal]\nchave = \"...\"")
+        return 2
+    sha = scanner.calcular_sha256(arquivo)
+    print(f"{CINZA}Consultando o SHA-256 {sha} (o arquivo não é enviado){FIM}")
+    try:
+        laudo = virustotal.consultar(sha, chave)
+    except (virustotal.SemCota, OSError) as erro:
+        print(f"{VERMELHO}Não deu para consultar: {erro}{FIM}")
+        return 2
+    if not laudo.conhecido:
+        print("O VirusTotal nunca viu este arquivo.")
+        return 0
+    cor = VERMELHO if laudo.maliciosos >= virustotal.MINIMO_AMEACA else \
+        AMARELO if laudo.maliciosos else VERDE
+    print(f"{cor}{laudo.maliciosos} de {laudo.total} antivírus apontam como malicioso"
+          f"{f'  ({laudo.nome})' if laudo.nome else ''}{FIM}")
+    print(f"{CINZA}https://www.virustotal.com/gui/file/{sha}{FIM}")
+    return 1 if laudo.maliciosos >= virustotal.MINIMO_AMEACA else 0
 
 
 def cmd_varrer(args) -> int:
@@ -78,6 +142,8 @@ def cmd_varrer(args) -> int:
     terminal = sys.stdout.isatty()
     resumo = varredura.Resumo()
     inicio, achados = datetime.now(), []
+    # Só os suspeitos: o VirusTotal desempata o que o Guardião não teve certeza.
+    consultar_vt, promovidos = ConsultaVirusTotal(maximo=MAX_VIRUSTOTAL_POR_VARREDURA), 0
 
     for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
         if isinstance(item, varredura.Progresso):
@@ -90,9 +156,12 @@ def cmd_varrer(args) -> int:
         elif isinstance(item, scanner.Resultado) and (item.infectado or item.suspeito):
             if terminal:
                 print("\r\033[K", end="")
+            if item.suspeito and consultar_vt(item).infectado:
+                promovidos += 1
             achados.append(historico.achado(item, relatar(item, args.isolar)))
     if terminal:
         print("\r\033[K", end="")
+    resumo.ameacas, resumo.suspeitos = resumo.ameacas + promovidos, resumo.suspeitos - promovidos
     historico.registrar(historico.novo(nome, "agendada" if args.agendada else "terminal", inicio, resumo, achados))
 
     total = resumo.analisados + resumo.em_cache
@@ -211,8 +280,12 @@ def cmd_monitorar(args) -> int:
             return 2
     avisar_camadas_desligadas()
     banco = assinaturas.carregar()
+    consultar_vt = ConsultaVirusTotal()
+    if consultar_vt.chave:
+        print(f"{VERDE}Downloads novos também são conferidos no VirusTotal (só o hash){FIM}")
 
     def ao_analisar(item: scanner.Resultado) -> None:
+        item = consultar_vt(item)
         id_ = relatar(item, args.isolar)
         if item.infectado:
             acao = "Movido para a quarentena." if id_ else "Não foi isolado (rode com --isolar)."
@@ -457,6 +530,10 @@ def main() -> int:
     p_l.add_argument("--porta", type=int, default=8765)
     p_l.add_argument("--sem-navegador", action="store_true", help="não abre o navegador sozinho")
     p_l.set_defaults(func=cmd_launcher)
+
+    p_vt = sub.add_parser("virustotal", help="o que uns 70 antivírus acham de um arquivo (só o hash é enviado)")
+    p_vt.add_argument("arquivo")
+    p_vt.set_defaults(func=cmd_virustotal)
 
     p_q = sub.add_parser("quarentena", help="gerencia arquivos isolados")
     q_sub = p_q.add_subparsers(dest="acao", required=True)
