@@ -124,3 +124,13 @@ def test_avisa_assinaturas_velhas(clamd):
     agora = datetime(2026, 11, 10).timestamp()   # a versão falsa é de 3/11
     assert bases._aviso_clamav(agora) == ["clamav: assinaturas de 6 dia(s) atrás (o freshclam está rodando?)"]
     assert bases._aviso_clamav(datetime(2026, 11, 3, 20).timestamp()) == []
+
+
+def test_avisa_quando_o_freshclam_esta_parado(clamd, monkeypatch):
+    from datetime import datetime
+
+    from guardiao import bases
+    monkeypatch.setattr(bases, "freshclam_parado", lambda: True)
+    # Mesmo com assinaturas de hoje: parado, ele não vai mais atualizar.
+    [aviso] = bases._aviso_clamav(datetime(2026, 11, 3, 20).timestamp())
+    assert "freshclam está parado" in aviso and "systemctl enable --now clamav-freshclam" in aviso

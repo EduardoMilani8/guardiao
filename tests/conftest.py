@@ -31,6 +31,8 @@ def bases_isoladas(tmp_path, monkeypatch):
     # Nem as bases baixadas de verdade em ~/.local/share/guardiao/bases.
     from guardiao import bases
     monkeypatch.setattr(bases, "PASTA", tmp_path / "bases")
+    # Nem o estado do freshclam desta máquina: quem testa isso liga de propósito.
+    monkeypatch.setattr(bases, "freshclam_parado", lambda: False)
 
 
 @pytest.fixture(autouse=True)

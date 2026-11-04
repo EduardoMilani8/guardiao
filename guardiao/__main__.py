@@ -232,8 +232,12 @@ def _status_clamav() -> None:
     motor, numero, quando = cliente.versao()
     idade = None if quando is None else time.time() - quando.timestamp()
     from . import bases
-    cor = VERMELHO if idade is None or idade > bases.VELHA_APOS else CINZA
-    print(f"{cor}{'clamav':<14} {'freshclam':<14} versão {numero or '-'} · assinaturas {_ha_quanto(idade)} ({motor}){FIM}")
+    parado = bases.freshclam_parado()
+    cor = VERMELHO if parado or idade is None or idade > bases.VELHA_APOS else CINZA
+    estado = "parado" if parado else "freshclam"
+    print(f"{cor}{'clamav':<14} {estado:<14} versão {numero or '-'} · assinaturas {_ha_quanto(idade)} ({motor}){FIM}")
+    if parado:
+        print(f"{VERMELHO}{'':<29}o freshclam não está rodando; para ligar: {bases.LIGAR_FRESHCLAM}{FIM}")
 
 
 def cmd_atualizar(args) -> int:

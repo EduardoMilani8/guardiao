@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 import urllib.request
@@ -212,6 +213,22 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
     return saida
 
 
+FRESHCLAM = "clamav-freshclam.service"
+LIGAR_FRESHCLAM = f"sudo systemctl enable --now {FRESHCLAM.removesuffix('.service')}"
+
+
+def freshclam_parado() -> bool:
+    """O serviço do freshclam existe neste sistema e não está rodando. Parado,
+    ele não avisa ninguém: as assinaturas só envelhecem."""
+    if not any(Path(pasta, FRESHCLAM).exists()
+               for pasta in ("/etc/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system")):
+        return False   # sem o serviço (ex.: freshclam pelo cron): não dá para saber
+    try:
+        return subprocess.run(["systemctl", "is-active", "--quiet", FRESHCLAM], timeout=5).returncode != 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def _aviso_clamav(agora: float | None) -> list[str]:
     # As assinaturas do ClamAV não passam por aqui: quem baixa é o freshclam.
     # Mas se ele parar (sem rede, serviço desligado), quem precisa saber é você.
@@ -219,6 +236,8 @@ def _aviso_clamav(agora: float | None) -> list[str]:
     cliente = clamav.conectar()
     if cliente is None:
         return []
+    if freshclam_parado():
+        return [f"clamav: o freshclam está parado e as assinaturas não vão mais atualizar ({LIGAR_FRESHCLAM})"]
     try:
         _, _, quando = cliente.versao()
     except OSError:
