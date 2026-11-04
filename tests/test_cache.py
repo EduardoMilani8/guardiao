@@ -27,6 +27,27 @@ def test_cache_invalida_quando_o_motor_muda(tmp_path):
         assert not c.limpo(arquivo.stat())
 
 
+def test_cache_vence_quando_o_clamav_aparece_mas_nao_a_cada_assinatura(monkeypatch):
+    class ClamAVFalso:
+        def __init__(self, motor, assinaturas):
+            self.motor, self.assinaturas = motor, assinaturas
+
+        def versao(self):
+            return self.motor, self.assinaturas, None
+
+    def com(cliente):
+        monkeypatch.setattr(cache_mod.clamav, "conectar", lambda: cliente)
+        return cache_mod.versao_motor()
+
+    sem = com(None)
+    hoje = com(ClamAVFalso("ClamAV 1.5.4", 28173))
+    amanha = com(ClamAVFalso("ClamAV 1.5.4", 28174))
+    motor_novo = com(ClamAVFalso("ClamAV 1.6.0", 28174))
+    assert sem != hoje        # o ClamAV ainda não viu os arquivos do cache
+    assert hoje == amanha     # assinaturas do dia não zeram o cache
+    assert amanha != motor_novo
+
+
 def test_cache_corrompido_nao_quebra_a_varredura(tmp_path):
     with cache_mod.Cache(versao="v1") as c:
         c.db.execute("DROP TABLE limpos")

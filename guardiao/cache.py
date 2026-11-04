@@ -19,7 +19,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-from . import __version__, assinaturas, bases, compactados, heuristicas, regras_yara, scanner
+from . import __version__, assinaturas, bases, clamav, compactados, heuristicas, regras_yara, scanner
 
 PADRAO = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "guardiao" / "cache.sqlite"
 
@@ -34,9 +34,23 @@ def versao_motor() -> str:
         h.update(regras_yara.DESLIGADAS.read_bytes())
     h.update(assinaturas.ARQUIVO_PADRAO.read_bytes())
     h.update(bases.versoes_em_uso(bases.registradas()).encode())
+    h.update(_motor_clamav().encode())
     for modulo in (compactados, heuristicas, scanner):
         h.update(inspect.getsource(modulo).encode())
     return h.hexdigest()[:16]
+
+
+def _motor_clamav() -> str:
+    """ClamAV ligado e a versão do motor, mas não a das assinaturas: elas mudam
+    todo dia e o cache venceria junto. As novas pegam o que é novo, e arquivo
+    novo ou alterado nunca está no cache."""
+    cliente = clamav.conectar()
+    if cliente is None:
+        return "sem clamav"
+    try:
+        return cliente.versao()[0]
+    except OSError:
+        return "clamav"
 
 
 class Cache:
