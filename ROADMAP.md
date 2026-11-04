@@ -24,7 +24,9 @@ eBPF, ataques à cadeia de pacotes).
 - [x] Regras YARA da comunidade (YARA Forge), calibradas contra falsos positivos
 - [x] Varredura dentro de `.zip` e `.tar`, com proteção contra zip bombs
 - [x] Comando `atualizar` e atualização automática de hora em hora
-- [ ] Medir a taxa de detecção com amostras reais do MalwareBazaar
+- [x] Medir a taxa de detecção com amostras reais do MalwareBazaar (99,5% do já reportado,
+      cerca de metade do malware Linux novo; veja o README)
+- [ ] Medir de novo de tempos em tempos, e incluir JavaScript ofuscado nas regras
 - [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fase 3: caçador de persistência e rootkits

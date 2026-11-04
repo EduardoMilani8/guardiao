@@ -1,13 +1,17 @@
 # Guardião
 
-Antivírus de estudo para Linux, escrito em Python. Ele detecta ameaças em camadas
-(assinaturas, regras YARA e heurísticas), varre o computador inteiro ou só os locais
-de risco, isola arquivos em quarentena, vigia a pasta de Downloads em tempo real e
-audita projetos de programação atrás de riscos na cadeia de pacotes (npm, PyPI).
+Antivírus para Linux, escrito em Python. Ele detecta ameaças em camadas (hashes do
+MalwareBazaar, ClamAV, regras YARA e heurísticas) com bases atualizadas de hora em
+hora, varre o computador inteiro ou só os locais de risco, caça persistência e
+rootkits já instalados, isola arquivos em quarentena, vigia a pasta de Downloads em
+tempo real e audita projetos de programação atrás de riscos na cadeia de pacotes.
 
-> ⚠️ É um projeto de aprendizado: **não substitui um antivírus de verdade**. Para
-> proteção real no Linux, use o [ClamAV](https://www.clamav.net/) e bons hábitos
-> (ler scripts antes de rodar, desconfiar de `curl | sh`).
+> 📊 **Medido com 195 amostras reais** do MalwareBazaar (novembro de 2026): pega
+> **99,5%** do malware já reportado e **cerca de metade** do malware Linux novo, que
+> ninguém reportou ainda. Ainda não analisa comportamento nem bloqueia um arquivo
+> antes de ele ser aberto; veja [Taxa de detecção](#taxa-de-detecção) e o
+> [roadmap](ROADMAP.md). Bons hábitos continuam valendo: ler scripts antes de rodar
+> e desconfiar de `curl | sh`.
 
 ## O que ele faz
 
@@ -24,6 +28,33 @@ audita projetos de programação atrás de riscos na cadeia de pacotes (npm, PyP
 | **Monitor** | inotify (via watchdog) na pasta Downloads | Analisa cada download assim que termina |
 | **Caçador** | Procura o que já se instalou: bibliotecas injetadas, processos estranhos, persistência fora dos pacotes, binários alterados | Rootkit no `/etc/ld.so.preload`, minerador rodando de `/dev/shm`, serviço que voltou depois do reboot |
 | **Módulo de dev** | Audita um projeto | `postinstall` malicioso, typosquatting (`reqeusts`), `.vscode/tasks.json` com `runOn: folderOpen` |
+
+## Taxa de detecção
+
+Medida em 4 de novembro de 2026 com 195 amostras enviadas ao
+[MalwareBazaar](https://bazaar.abuse.ch) entre 2 e 4 de novembro: 98 programas
+Linux (ELF), 48 programas Windows (EXE), 24 scripts shell e 25 JavaScript. As
+amostras foram só lidas, nunca executadas, e apagadas depois.
+
+**Malware já reportado: 99,5%** (194 de 195). Os hashes do MalwareBazaar são
+baixados de hora em hora; uma amostra enviada por pesquisadores passa a ser
+reconhecida em até uma hora.
+
+**Malware novo**, medido *sem* a base de hashes (que daria 100% por construção,
+porque as amostras vieram dela):
+
+| | Todas | Linux (ELF) | Windows (EXE) | Shell | JavaScript |
+|---|---|---|---|---|---|
+| ClamAV sozinho | 22,1% | 39,8% | 8,3% | 0% | 0% |
+| Regras YARA sozinhas | 3,6% | 5,1% | 0% | 8,3% | 0% |
+| **Guardião: ameaça** | **25,6%** | **44,9%** | 8,3% | 8,3% | 0% |
+| **Guardião: ameaça ou suspeito** | **34,9%** | **54,1%** | 16,7% | 29,2% | 0% |
+
+O que mais escapou foram variantes recompiladas da botnet Mirai, cada uma com um
+hash novo, e JavaScript ofuscado (ladrões de senha do Windows). Detectar malware
+recém-criado só pelo conteúdo é difícil para qualquer antivírus; os comerciais
+compensam com análise de comportamento, que é a [Fase 4](ROADMAP.md). O caçador
+não entra nesta conta: ele procura o que já está rodando ou instalado.
 
 ## Instalação
 
