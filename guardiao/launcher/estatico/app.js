@@ -59,7 +59,8 @@ function contar(quem) {
 
 // --- registro ------------------------------------------------------------------
 
-function registrar(classe, quem, arquivo, detalhe) {
+// `cela`: o código que o servidor deu a uma ameaça; com ele, a linha ganha o botão Trancar.
+function registrar(classe, quem, arquivo, detalhe, cela) {
   $(".vazio").hidden = true;
   const item = document.createElement("li");
   item.className = `achado ${classe}`;
@@ -69,7 +70,136 @@ function registrar(classe, quem, arquivo, detalhe) {
     span.textContent = texto;
     item.append(span);
   }
+  if (cela) {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "cela";
+    botao.textContent = "Trancar";
+    botao.dataset.cela = cela;
+    botao.dataset.arquivo = arquivo;
+    botao.addEventListener("click", () => trancar(botao));
+    item.append(botao);
+    mostrarTrancarTodas();
+  }
   $("#lista").prepend(item);
+}
+
+// --- o carcereiro ------------------------------------------------------------------
+
+const abertas = () => [...document.querySelectorAll(".achado .cela:not(:disabled)")];
+
+function mostrarTrancarTodas() {
+  const n = abertas().length;
+  const botao = $("#btn-trancar-todas");
+  botao.hidden = n < 2 || Boolean(estado.fonte);
+  botao.textContent = `Trancar todas (${n})`;
+}
+
+async function trancar(botao, emLote = false) {
+  botao.disabled = true;
+  botao.textContent = "Trancando…";
+  const nome = botao.dataset.arquivo.split("/").pop();
+  try {
+    const resposta = await fetch("/api/isolar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: botao.dataset.cela }),
+    });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) throw new Error(dados.erro || `HTTP ${resposta.status}`);
+    botao.textContent = "Na cela";
+    botao.closest(".achado").classList.add("na-cela");
+    // O contador do Carcereiro é "quantos esperam cela": trancou, baixa um.
+    const contador = $("#carcereiro .contador");
+    estado.contadores.carcereiro = Math.max(0, estado.contadores.carcereiro - 1);
+    contador.textContent = estado.contadores.carcereiro;
+    contador.classList.toggle("tem", estado.contadores.carcereiro > 0);
+    animar("carcereiro", "ronda", 1500);
+    if (!emLote) falar("carcereiro", `${nome} está trancado. A chave fica comigo.`);
+    return true;
+  } catch (erro) {
+    botao.disabled = false;
+    botao.textContent = "Tentar de novo";
+    animar("carcereiro", "alerta", 1000);
+    falar("carcereiro", `Não consegui trancar ${nome}: ${erro.message}.`);
+    return false;
+  } finally {
+    mostrarTrancarTodas();
+  }
+}
+
+async function trancarTodas() {
+  const botoesAbertos = abertas();
+  let trancados = 0;
+  for (const botao of botoesAbertos) if (await trancar(botao, true)) trancados++;
+  if (trancados) falar("carcereiro", `${trancados} trancado(s). Celas cheias, chaves no bolso.`);
+  carregarHistorico();
+}
+
+// --- o que já aconteceu ----------------------------------------------------------
+
+const ORIGENS = { agendada: "agendada", terminal: "terminal", launcher: "aqui" };
+const dataCurta = (iso) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+function haQuanto(iso) {
+  if (!iso) return "nunca";
+  // Dias do calendário, não blocos de 24 h: 12:41 de ontem é "ontem", mesmo às 10:00 de hoje.
+  const meiaNoite = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dias = Math.round((meiaNoite(new Date()) - meiaNoite(new Date(iso))) / 86400000);
+  return dias <= 0 ? "hoje" : dias === 1 ? "ontem" : `há ${dias} dias`;
+}
+
+async function carregarHistorico(comPendentes = false) {
+  let dados;
+  try {
+    const resposta = await fetch("/api/historico");
+    if (!resposta.ok) return;
+    dados = await resposta.json();
+  } catch { return; }
+
+  const memoria = $(".memoria");
+  memoria.hidden = false;
+  memoria.textContent = `Última rápida: ${haQuanto(dados.ultimas["rápida"])} · última completa: ${haQuanto(dados.ultimas.completa)}`;
+
+  const lista = $("#historico");
+  lista.replaceChildren();
+  for (const r of dados.registros) {
+    const item = document.createElement("li");
+    const achou = r.ameacas || r.suspeitos;
+    const tipo = r.tipo === "rápida" || r.tipo === "completa" ? r.tipo : r.tipo.split("/").pop() || r.tipo;
+    for (const [cls, texto] of [
+      ["quando", dataCurta(r.inicio)],
+      ["tipo", `${tipo} (${ORIGENS[r.origem] || r.origem}) · ${n(r.total)} arquivos`],
+      [achou ? "resultado achou" : "resultado", achou ? `${r.ameacas} ameaça(s), ${r.suspeitos} suspeito(s)` : "limpo"],
+    ]) {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = texto;
+      item.append(span);
+    }
+    lista.append(item);
+  }
+  $(".historico").hidden = dados.registros.length === 0;
+
+  // Ao abrir: o que varreduras anteriores (as agendadas, de madrugada) acharam e segue no lugar.
+  if (comPendentes && dados.pendentes.length && !estado.fonte) {
+    for (const p of dados.pendentes) {
+      registrar("ameaca", "Carcereiro", p.caminho,
+                `Ameaça: ${p.ameaca} · achada na varredura ${ORIGENS[p.origem] || p.origem} de ${dataCurta(p.quando)}`, p.id);
+    }
+    contarPendentes(dados.pendentes.length);
+  }
+}
+
+function contarPendentes(quantos) {
+  const contador = $("#carcereiro .contador");
+  estado.contadores.carcereiro = quantos;
+  contador.textContent = quantos;
+  contador.classList.add("tem");
+  animar("carcereiro", "alerta", 1500);
+  falar("carcereiro", quantos === 1
+    ? "Tem um preso esperando cela desde a última patrulha. É só um clique."
+    : `Tem ${quantos} presos esperando cela desde as últimas patrulhas. É só um clique.`);
 }
 
 // --- reações a cada evento -----------------------------------------------------
@@ -129,7 +259,7 @@ async function aoArquivo(ev) {
     }
     contar("carcereiro");
     falar("carcereiro", `Mais um para a cela. Já são ${estado.contadores.carcereiro}.`);
-    registrar("ameaca", NOMES[quem], ev.caminho, `Ameaça: ${nome}`);
+    registrar("ameaca", NOMES[quem], ev.caminho, `Ameaça: ${nome}`, ev.isolar);
     await espera(1900);
   } else {
     const motivo = ev.motivos[0] || "algo não está certo";
@@ -167,7 +297,9 @@ async function aoTerminar(ev) {
     if (ev.ameaca > 0) {
       animar("carcereiro", "alerta", 1500);
       animar("carcereiro", "ativo", 2500);
-      falar("carcereiro", `Separei ${ev.ameaca} para trancar. No launcher final, é só um clique.`);
+      falar("carcereiro", abertas().length
+        ? `Separei ${ev.ameaca} para trancar. É só um clique em Trancar.`
+        : `Separei ${ev.ameaca}. Era só uma demonstração: nada para trancar.`);
     }
   }
   const fora = [];
@@ -175,6 +307,7 @@ async function aoTerminar(ev) {
   if (ev.grandes) fora.push(`${n(ev.grandes)} arquivos acima do limite de tamanho`);
   if (fora.length) registrar("info", "Guarda", "Fora do alcance", fora.join("; "));
   encerrar();
+  carregarHistorico();
 }
 
 // --- fluxo ------------------------------------------------------------------------
@@ -272,6 +405,7 @@ function encerrar() {
   trabalhando(false);
   estado.fonte = null;
   botoes(false);
+  mostrarTrancarTodas();
 }
 
 $("#btn-rapida").addEventListener("click", () => iniciar("alvo=rapida"));
@@ -279,3 +413,5 @@ $("#btn-completa").addEventListener("click", () => iniciar("alvo=completa"));
 $("#btn-pasta").addEventListener("click", escolherPasta);
 $("#btn-demo").addEventListener("click", () => iniciar("alvo=demo"));
 $("#btn-parar").addEventListener("click", parar);
+$("#btn-trancar-todas").addEventListener("click", trancarTodas);
+carregarHistorico(true);

@@ -115,3 +115,86 @@ def test_escuta_so_localmente():
         assert srv.server_address[0] == "127.0.0.1"
     finally:
         srv.server_close()
+
+
+def pedir_isolar(url, id_, tipo="application/json", host=None):
+    cabecalhos = {"Content-Type": tipo, **({"Host": host} if host else {})}
+    pedido = urllib.request.Request(f"{url}/api/isolar", data=json.dumps({"id": id_}).encode(),
+                                    method="POST", headers=cabecalhos)
+    try:
+        with urllib.request.urlopen(pedido, timeout=10) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as erro:
+        corpo = erro.read()
+        return erro.code, json.loads(corpo) if corpo.startswith(b"{") else {}
+
+
+def varrer_pasta(url, pasta, monkeypatch):
+    monkeypatch.setattr(servidor, "escolher_pasta", lambda: pasta)
+    return ler_eventos(f"{url}/api/varrer?alvo=pasta&id={escolher(url)['id']}")
+
+
+def test_carcereiro_tranca_com_um_clique(url, tmp_path, monkeypatch):
+    from guardiao import historico, quarentena
+    pasta = demo.criar_amostras(tmp_path)
+    evs = varrer_pasta(url, pasta, monkeypatch)
+    ameacas = [e for e in evs if e["tipo"] == "arquivo" and e["veredito"] == "ameaca"]
+    assert ameacas and all(e["isolar"] for e in ameacas)
+    assert all("isolar" not in e for e in evs if e.get("veredito") == "suspeito")
+    alvo = ameacas[0]
+    assert str(pasta) not in alvo["isolar"]                       # um código, não um caminho
+
+    status, resposta = pedir_isolar(url, alvo["isolar"])
+    assert status == 200 and not (pasta / alvo["caminho"]).exists()
+    assert resposta["quarentena"] in {e["id"] for e in quarentena.listar()}
+    # O histórico da varredura feita pelo launcher anota a cela.
+    [r] = historico.listar()
+    assert r.origem == "launcher"
+    assert [a["quarentena"] for a in r.achados if a["caminho"] == str(pasta / alvo["caminho"])] == [resposta["quarentena"]]
+    assert pedir_isolar(url, alvo["isolar"])[0] == 404             # o código vale uma vez
+
+
+def test_carcereiro_nao_tranca_arquivo_que_mudou(url, tmp_path, monkeypatch):
+    pasta = demo.criar_amostras(tmp_path)
+    alvo = next(e for e in varrer_pasta(url, pasta, monkeypatch) if e.get("veredito") == "ameaca")
+    (pasta / alvo["caminho"]).write_text("trocado depois da varredura")
+    status, resposta = pedir_isolar(url, alvo["isolar"])
+    assert status == 409 and "mudou" in resposta["erro"]
+    assert (pasta / alvo["caminho"]).exists()
+
+
+@pytest.mark.parametrize("id_, tipo, host, esperado", [
+    ("inventado", "application/json", None, 404),
+    ("qualquer", "text/plain", None, 415),                      # <form> de outro site
+    ("qualquer", "application/json", "malicioso.com:80", 403),  # DNS rebinding
+])
+def test_isolar_recusa(url, id_, tipo, host, esperado):
+    assert pedir_isolar(url, id_, tipo, host)[0] == esperado
+
+
+def test_historico_oferece_o_que_a_agendada_achou(url, tmp_path):
+    from datetime import datetime
+
+    from guardiao import historico, varredura
+    ruim = tmp_path / "ruim.bin"
+    ruim.write_bytes(b"conteudo")
+    sumiu = tmp_path / "sumiu.bin"
+    achados = [historico.achado(scanner.Resultado(c, scanner.calcular_sha256(ruim) if c == ruim else "0" * 64,
+                                                  ameaca="Teste.Ameaca")) for c in (ruim, sumiu)]
+    historico.registrar(historico.novo("rápida", "agendada", datetime(2026, 11, 4, 12, 30),
+                                       varredura.Resumo(analisados=5, ameacas=2), achados))
+    with urllib.request.urlopen(f"{url}/api/historico", timeout=5) as r:
+        dados = json.loads(r.read())
+    assert dados["ultimas"] == {"rápida": "2026-11-04T12:30:00", "completa": None}
+    assert dados["registros"][0]["origem"] == "agendada"
+    [pendente] = dados["pendentes"]                                  # o que sumiu não aparece
+    assert pendente["nome"] == "ruim.bin" and pendente["origem"] == "agendada"
+    assert pedir_isolar(url, pendente["id"])[0] == 200 and not ruim.exists()
+    with urllib.request.urlopen(f"{url}/api/historico", timeout=5) as r:
+        assert json.loads(r.read())["pendentes"] == []
+
+
+def test_demonstracao_nao_entra_no_historico_nem_oferece_trancar(url):
+    from guardiao import historico
+    evs = ler_eventos(f"{url}/api/varrer?alvo=demo")
+    assert not any("isolar" in e for e in evs) and historico.listar() == []

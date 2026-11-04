@@ -280,7 +280,7 @@ body {
 #lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .achado {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 4px 12px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -289,6 +289,28 @@ body {
   animation: surgir 0.3s ease-out;
 }
 .achado.ameaca { border-left-color: var(--perigo); }
+.achado.na-cela { border-left-color: var(--texto-suave); opacity: 0.75; }
+.achado .cela {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font: 700 0.85rem var(--corpo);
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid #f0b070;
+  background: #8a5a3a33;
+  color: #f0b070;
+  cursor: pointer;
+}
+.achado .cela:hover:not(:disabled) { background: #8a5a3a66; }
+.achado .cela:disabled { cursor: default; border-color: var(--borda); color: var(--texto-suave); background: none; }
+.botao.trancar-todas { border-color: #f0b070; color: #f0b070; }
+.memoria { margin: 12px 0 0; font-size: 0.85rem; color: var(--texto-suave); }
+.historico { margin-top: 18px; }
+#historico { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.88rem; }
+#historico li { display: grid; grid-template-columns: 110px 1fr auto; gap: 12px; color: var(--texto-suave); }
+#historico .resultado { color: var(--limpo); }
+#historico .resultado.achou { color: var(--perigo); }
 .achado.limpo { border-left-color: var(--limpo); }
 .achado.info { border-left-color: var(--texto-suave); }
 .achado .quem {
@@ -303,3 +325,8 @@ body {
 }
 .achado .arquivo { font-weight: 700; overflow-wrap: anywhere; }
 .achado .detalhe { font-size: 0.86rem; color: var(--texto-suave); }
+
+@media (max-width: 520px) {
+  #historico li { grid-template-columns: 92px 1fr; gap: 2px 10px; }
+  #historico .resultado { grid-column: 2; }
+}

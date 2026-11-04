@@ -116,3 +116,41 @@ def listar(limite: int | None = 20, arquivo: Path | None = None) -> list[Registr
 def ultima(tipo: str, arquivo: Path | None = None) -> Registro | None:
     return next((r for r in listar(None, arquivo) if r.tipo == tipo), None)
 
+
+def marcar_isolado(caminho: str, sha256: str, quarentena: str, arquivo: Path | None = None) -> None:
+    """Anota a quarentena nos achados daquele arquivo, para ele não aparecer mais como pendente."""
+    arquivo = arquivo or ARQUIVO
+    try:
+        linhas = arquivo.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    novas = []
+    for linha in linhas:
+        try:
+            dados = json.loads(linha)
+            for a in dados.get("achados", []):
+                if a.get("caminho") == caminho and a.get("sha256") == sha256 and not a.get("quarentena"):
+                    a["quarentena"] = quarentena
+            novas.append(json.dumps(dados, ensure_ascii=False))
+        except (ValueError, AttributeError):
+            novas.append(linha)
+    temporario = arquivo.with_suffix(".tmp")
+    try:
+        temporario.write_text("\n".join(novas) + "\n", encoding="utf-8")
+        temporario.replace(arquivo)
+    except OSError:
+        pass
+
+
+def pendentes(registros: list[Registro]) -> list[tuple[Registro, dict]]:
+    """Ameaças achadas que ainda estão no lugar: sem quarentena e o arquivo existe.
+    Um por caminho, o achado mais recente."""
+    vistos, lista = set(), []
+    for r in registros:
+        for a in r.achados:
+            if a.get("veredito") != "ameaca" or a.get("quarentena") or a["caminho"] in vistos:
+                continue
+            vistos.add(a["caminho"])
+            if os.path.isfile(a["caminho"]) and not os.path.islink(a["caminho"]):
+                lista.append((r, a))
+    return lista

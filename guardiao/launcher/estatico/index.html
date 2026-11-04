@@ -152,7 +152,9 @@
         <button id="btn-pasta" class="botao" type="button">Escolher pasta…</button>
         <button id="btn-demo" class="botao" type="button">Simular ataque <small>(demonstração)</small></button>
         <button id="btn-parar" class="botao parar" type="button" hidden>Parar</button>
+        <button id="btn-trancar-todas" class="botao trancar-todas" type="button" hidden>Trancar todas</button>
       </div>
+      <p class="memoria" hidden></p>
       <div class="progresso" hidden>
         <div class="barra"><div class="preenchido"></div></div>
         <p class="atual"></p>
@@ -163,6 +165,11 @@
       <h3>Registro da patrulha</h3>
       <p class="vazio">Nenhuma patrulha ainda. Chame os guardiões.</p>
       <ol id="lista"></ol>
+    </section>
+
+    <section class="registro historico" aria-label="Últimas patrulhas" hidden>
+      <h3>Últimas patrulhas</h3>
+      <ol id="historico"></ol>
     </section>
   </main>
 
