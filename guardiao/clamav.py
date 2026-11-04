@@ -27,6 +27,8 @@ class ErroClamAV(OSError):
 
 
 def encontrar_socket(config: Path | None = None) -> Path | None:
+    if escolhido := os.environ.get("GUARDIAO_CLAMD_SOCKET"):
+        return Path(escolhido)   # socket fora do padrão (e os testes, longe do clamd real)
     # O padrão é lido aqui, e não na assinatura: lá ele ficaria congelado no import.
     config = config or CONFIG_CLAMD
     try:

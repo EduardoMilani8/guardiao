@@ -63,8 +63,7 @@ class ClamdFalso:
 @pytest.fixture
 def clamd(tmp_path, monkeypatch):
     falso = ClamdFalso(tmp_path / "clamd.ctl")
-    monkeypatch.setattr(clamav, "CONFIG_CLAMD", tmp_path / "nao-existe.conf")
-    monkeypatch.setattr(clamav, "SOCKETS_COMUNS", (falso.caminho,))
+    monkeypatch.setenv("GUARDIAO_CLAMD_SOCKET", str(falso.caminho))
     yield falso
     falso.fechar()
 
@@ -75,15 +74,15 @@ def test_conecta_e_le_a_versao(clamd):
     assert (motor, numero, quando.day) == ("ClamAV 1.4.3", 27811, 3)
 
 
-def test_acha_socket_no_clamd_conf(tmp_path):
+def test_acha_socket_no_clamd_conf(tmp_path, monkeypatch):
+    monkeypatch.delenv("GUARDIAO_CLAMD_SOCKET")
     conf = tmp_path / "clamd.conf"
     conf.write_text("# comentário\nLocalSocket /run/outro/clamd.sock\nUser clamav\n")
     assert str(clamav.encontrar_socket(conf)) == "/run/outro/clamd.sock"
 
 
 def test_sem_clamd_a_camada_desliga(tmp_path, monkeypatch):
-    monkeypatch.setattr(clamav, "CONFIG_CLAMD", tmp_path / "nao-existe.conf")
-    monkeypatch.setattr(clamav, "SOCKETS_COMUNS", (tmp_path / "nao-existe.ctl",))
+    monkeypatch.setenv("GUARDIAO_CLAMD_SOCKET", str(tmp_path / "nao-existe.ctl"))
     assert clamav.conectar() is None
 
 

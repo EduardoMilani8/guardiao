@@ -10,6 +10,8 @@ _TMP = tempfile.mkdtemp(prefix="guardiao-testes-")
 atexit.register(shutil.rmtree, _TMP, ignore_errors=True)
 for variavel in ("XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_CONFIG_HOME"):
     os.environ[variavel] = os.path.join(_TMP, variavel.lower())
+# Nem o clamd de verdade, se estiver instalado: os testes usam um falso.
+os.environ["GUARDIAO_CLAMD_SOCKET"] = os.path.join(_TMP, "sem-clamd.ctl")
 
 import pytest  # noqa: E402
 
