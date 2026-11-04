@@ -26,6 +26,7 @@ tempo real e audita projetos de programação atrás de riscos na cadeia de paco
 | **Atualização** | Bases baixadas de hora em hora, com troca atômica | Download quebrado nunca deixa o Guardião sem a base anterior |
 | **Quarentena** | Move para `~/.local/share/guardiao/quarentena` sem permissão de execução | Reversível com `quarentena restaurar` |
 | **Monitor** | inotify (via watchdog) na pasta Downloads | Analisa cada download assim que termina |
+| **Protetor** | fanotify (`FAN_OPEN_EXEC_PERM`), serviço root | Bloqueia ameaças conhecidas *antes* de executarem, em qualquer pasta |
 | **Comportamento** | O que os processos fazem, lido do `/proc` a cada 5 s pelo monitor | Shell reverso (`bash` falando com a rede), minerador (CPU alta conectado a um pool) |
 | **Caçador** | Procura o que já se instalou: bibliotecas injetadas, processos estranhos, persistência fora dos pacotes, binários alterados | Rootkit no `/etc/ld.so.preload`, minerador rodando de `/dev/shm`, serviço que voltou depois do reboot |
 | **Módulo de dev** | Audita um projeto | `postinstall` malicioso, typosquatting (`reqeusts`), `.vscode/tasks.json` com `runOn: folderOpen` |
@@ -191,6 +192,38 @@ pid e o comando para encerrar; o Guardião não mata processos sozinho. Sem root
 só os seus processos são vistos, que é onde roda o que você baixa. O `cacar`
 também dá uma olhada de 3 segundos. Para desligar no monitor: `--sem-comportamento`.
 
+### Proteção antes da execução
+
+O monitor analisa o que chega; o protetor impede que rode. Com o `fanotify`, o
+kernel segura cada `execve()` até o Guardião responder: se o arquivo é uma ameaça
+(hash conhecido, ClamAV ou regra YARA alta), quem tentou executar recebe
+"Operação não permitida" e você recebe uma notificação.
+
+```bash
+sudo contrib/instalar-protetor.sh          # instala e liga o serviço
+journalctl -u guardiao-protetor -f         # o que ele está bloqueando
+```
+
+O instalador copia o Guardião para `/opt/guardiao`, de root: um serviço root
+rodando código que a sua conta pode alterar seria um atalho para root para
+qualquer malware que entrasse nela. Rode de novo depois de um `git pull`.
+
+O cuidado principal é não travar o computador:
+
+- **Prazo de 2 s:** se a análise demorar mais (um binário de 300 MB leva uns
+  3,5 s no YARA), a execução é liberada e, se der ameaça depois, você é avisado
+  com o comando para encerrá-la. Da próxima vez, ela já é bloqueada.
+- **Fail-open:** se o protetor cair, o kernel libera tudo que estava esperando.
+- **Programas do sistema passam direto** (`/usr`, `/bin`, `/lib`, de root e sem
+  escrita para outros); o resto é analisado uma vez e lembrado por 1 hora ou até
+  o arquivo mudar. Custo medido: 0,1 ms a mais por execução.
+- As análises rodam em processos separados: o YARA-X segura o GIL do Python e,
+  numa thread, congelaria o relógio do prazo.
+
+Limite: vale para o que é *executado*. `python script.py` executa o python, não
+o script; scripts com `#!` e permissão de execução, e binários, passam pelo
+protetor. `sudo python -m guardiao proteger --so-avisar` testa sem bloquear.
+
 ### Monitor como serviço
 
 Para o monitor iniciar junto com a sessão, há um serviço de usuário do systemd em
@@ -225,6 +258,7 @@ guardiao/
   quarentena.py    isola e restaura arquivos
   monitor.py       vigia pastas em tempo real
   comportamento.py shells reversos e mineradores em execução, pelo /proc
+  protetor.py      bloqueio antes da execução (fanotify), com prazo e fail-open
   cacador.py       caça persistência e rootkits (preload, processos, systemd, cron, dpkg)
   dev.py           auditoria de projetos (npm, PyPI, VS Code, hooks do git)
   eventos.py       converte resultados em eventos JSON para interfaces

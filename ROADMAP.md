@@ -42,7 +42,7 @@ eBPF, ataques à cadeia de pacotes).
 
 ## Fase 4: proteção em tempo real de verdade
 
-- [ ] On-access com `fanotify` (o kernel espera o veredito antes de abrir o arquivo),
+- [x] On-access com `fanotify` (o kernel espera o veredito antes de executar o arquivo),
       com limite de tempo e liberando o arquivo em caso de falha
 - [x] Monitor de comportamento leve: mineradores e shells reversos em execução
 
