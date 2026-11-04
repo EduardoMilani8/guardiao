@@ -1,9 +1,9 @@
 # Roadmap
 
-Plano para o Guardião se aproximar de um antivírus completo, baseado no que os
-antivírus populares (Bitdefender, Norton, ESET, Microsoft Defender, Sophos, ClamAV)
-oferecem hoje e no que de fato ataca Linux (mineradores via SSH, botnets, rootkits
-eBPF, ataques à cadeia de pacotes).
+O plano foi montado comparando o que os antivírus populares (Bitdefender, Norton,
+ESET, Microsoft Defender, Sophos, ClamAV) oferecem com o que de fato ataca Linux
+(mineradores via SSH, botnets, rootkits eBPF, ataques à cadeia de pacotes). As cinco
+fases estão concluídas; os itens em aberto estão em [Próximos passos](#próximos-passos).
 
 ## Fase 1: varredura completa
 
@@ -15,7 +15,7 @@ eBPF, ataques à cadeia de pacotes).
 - [x] Cache: pular arquivos que não mudaram desde a última varredura
 - [x] Análise em paralelo, um processo por núcleo
 - [x] Modo root opcional para as pastas do sistema
-- [x] Launcher com os novos modos e botão de parar
+- [x] Painel com os novos modos e botão de parar
 
 ## Fase 2: banco de detecção de verdade
 
@@ -25,10 +25,8 @@ eBPF, ataques à cadeia de pacotes).
 - [x] Varredura dentro de `.zip` e `.tar`, com proteção contra zip bombs
 - [x] Comando `atualizar` e atualização automática de hora em hora
 - [x] Medir a taxa de detecção com amostras reais do MalwareBazaar (99,5% do já reportado,
-      cerca de metade do malware Linux novo; veja o README)
+      cerca de metade do malware Linux novo; veja [docs/deteccao.md](docs/deteccao.md))
 - [x] Regras para JavaScript ofuscado do Windows Script Host (0% → 46,3% em amostras novas)
-- [ ] Medir de novo de tempos em tempos
-- [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fase 3: caçador de persistência e rootkits
 
@@ -50,7 +48,12 @@ eBPF, ataques à cadeia de pacotes).
 
 - [x] Varredura rápida diária e completa semanal (systemd timer)
 - [x] Histórico de varreduras
-- [x] Carcereiro isolando ameaças com um clique no launcher
+- [x] Carcereiro isolando ameaças com um clique no painel
+
+## Próximos passos
+
+- [ ] Medir a taxa de detecção de novo de tempos em tempos, com amostras recentes
+- [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fora do escopo
 
