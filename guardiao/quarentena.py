@@ -2,11 +2,19 @@
 
 import json
 import os
+import re
 import shutil
 import stat
 import uuid
 from datetime import datetime
 from pathlib import Path
+
+ID = re.compile(r"^[0-9a-f]{12}$")
+
+
+class NaoEncontrado(LookupError):
+    """Nenhuma entrada com esse id nesta quarentena."""
+
 
 PASTA_PADRAO = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "guardiao" / "quarentena"
 
@@ -37,14 +45,20 @@ def listar(pasta: Path = PASTA_PADRAO) -> list[dict]:
         return []
     entradas = []
     for meta in sorted(pasta.glob("*.json")):
-        dados = json.loads(meta.read_text())
+        try:
+            dados = json.loads(meta.read_text())
+        except (OSError, ValueError):
+            continue   # uma entrada estragada não esconde as outras
         dados["id"] = meta.stem
         entradas.append(dados)
     return entradas
 
 
 def restaurar(id_: str, pasta: Path = PASTA_PADRAO) -> Path:
+    # O id vira nome de arquivo: só o formato que o isolar() gera, nada de "../".
     meta = pasta / f"{id_}.json"
+    if not ID.match(id_) or not meta.is_file():
+        raise NaoEncontrado(id_)
     dados = json.loads(meta.read_text())
     original = Path(dados["original"])
     if original.exists():

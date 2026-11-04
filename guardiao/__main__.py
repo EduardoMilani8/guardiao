@@ -474,7 +474,16 @@ def cmd_quarentena(args) -> int:
         for e in entradas:
             print(f"{e['id']}  {e['data']}  {e['motivo']}\n              {e['original']}")
     else:
-        destino = quarentena.restaurar(args.id)
+        try:
+            destino = quarentena.restaurar(args.id)
+        except quarentena.NaoEncontrado:
+            print(f"{VERMELHO}Nada com o id {args.id} na quarentena (veja: guardiao quarentena listar).{FIM}")
+            if os.geteuid() != 0:
+                print(f"{CINZA}O que foi isolado com sudo fica na quarentena do root: use sudo para restaurar.{FIM}")
+            return 2
+        except (FileExistsError, PermissionError) as erro:
+            print(f"{VERMELHO}Não deu para restaurar: {erro}{FIM}")
+            return 2
         print(f"Restaurado em {destino} (sem permissão de execução).")
     return 0
 
