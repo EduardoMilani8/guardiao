@@ -1,7 +1,8 @@
 """Linha de comando.
 
     python -m guardiao varrer ~/Downloads [--isolar]
-    python -m guardiao varrer --rapida | --completa [--isolar] [--sem-cache]
+    python -m guardiao varrer --rapida | --completa [--isolar] [--sem-cache] [--agendada]
+    python -m guardiao historico [--achados]
     python -m guardiao atualizar [--forcar | --status]
     python -m guardiao monitorar [pastas...] [--isolar] [--sem-comportamento]
     python -m guardiao dev [pasta] [--todos]
@@ -67,13 +68,16 @@ def cmd_varrer(args) -> int:
         return 2
 
     avisar_camadas_desligadas()
-    from . import bases
+    from datetime import datetime
+
+    from . import bases, historico
     for aviso in bases.avisos():
         print(f"{AMARELO}Base desatualizada: {aviso}{FIM}")
     processos = args.processos or os.cpu_count() or 1
     print(f"Varredura {nome}: {len(raizes)} ponto(s) de partida, até {processos} processos")
     terminal = sys.stdout.isatty()
     resumo = varredura.Resumo()
+    inicio, achados = datetime.now(), []
 
     for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
         if isinstance(item, varredura.Progresso):
@@ -86,9 +90,10 @@ def cmd_varrer(args) -> int:
         elif isinstance(item, scanner.Resultado) and (item.infectado or item.suspeito):
             if terminal:
                 print("\r\033[K", end="")
-            relatar(item, args.isolar)
+            achados.append(historico.achado(item, relatar(item, args.isolar)))
     if terminal:
         print("\r\033[K", end="")
+    historico.registrar(historico.novo(nome, "agendada" if args.agendada else "terminal", inicio, resumo, achados))
 
     total = resumo.analisados + resumo.em_cache
     cor = VERDE if resumo.ameacas == resumo.suspeitos == 0 else VERMELHO
@@ -100,7 +105,44 @@ def cmd_varrer(args) -> int:
     if resumo.sem_permissao and os.geteuid() != 0:
         print(f"{CINZA}{resumo.sem_permissao} itens sem permissão de leitura. Para incluir os arquivos do sistema:\n"
               f"  sudo .venv/bin/python -m guardiao varrer {repetir}{FIM}")
+    if args.agendada:
+        # Agendada: ninguém está olhando o terminal. Avisa, e quem decide trancar é
+        # você, no launcher: um alarme falso no disco inteiro não some sem você ver.
+        if resumo.ameacas or resumo.suspeitos:
+            notificacao.notificar(
+                f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)",
+                "Abra o launcher para ver e trancar: python -m guardiao launcher",
+                urgente=bool(resumo.ameacas))
+        return 0   # "falhou" no systemd fica para quando a varredura quebrar
     return 1 if resumo.ameacas else 0
+
+
+def cmd_historico(args) -> int:
+    from . import historico
+
+    registros = historico.listar(args.quantos)
+    if not registros:
+        print("Nenhuma varredura registrada ainda.")
+        return 0
+    for tipo in ("rápida", "completa"):
+        ultima = historico.ultima(tipo)
+        quando = ultima.quando.strftime("%d/%m %H:%M") if ultima else "nunca"
+        print(f"Última varredura {tipo}: {quando}")
+    print()
+    print(f"{'quando':<12} {'tipo':<22} {'origem':<9} {'arquivos':>9} {'tempo':>7}  resultado")
+    for r in registros:
+        # Decide pelo número, não pela cor: fora de um terminal as cores são "".
+        achou = r.ameacas or r.suspeitos
+        cor = VERMELHO if r.ameacas else AMARELO if r.suspeitos else ""
+        resultado = f"{r.ameacas} ameaça(s), {r.suspeitos} suspeito(s)" if achou else "limpo"
+        tipo = r.tipo if len(r.tipo) <= 22 else "…" + r.tipo[-21:]
+        print(f"{cor}{r.quando.strftime('%d/%m %H:%M'):<12} {tipo:<22} {r.origem:<9} {r.total:>9} "
+              f"{r.segundos:>6.0f}s  {resultado}{FIM if achou else ''}")
+        if args.achados:
+            for a in r.achados:
+                cela = f"  (na quarentena: {a['quarentena']})" if a.get("quarentena") else ""
+                print(f"{CINZA}             {a['veredito']:<9} {a['caminho']}  {a['ameaca'] or ''}{cela}{FIM}")
+    return 0
 
 
 def _ha_quanto(segundos: float | None) -> str:
@@ -373,7 +415,14 @@ def main() -> int:
     p_varrer.add_argument("--sem-cache", action="store_true", help="reanalisa mesmo o que não mudou")
     p_varrer.add_argument("--processos", type=int, help="padrão: um por núcleo")
     p_varrer.add_argument("--incluir-externos", action="store_true", help="inclui /media e /mnt na completa")
+    p_varrer.add_argument("--agendada", action="store_true",
+                          help="feita pelo timer: notifica o que achar e não falha por achar ameaça")
     p_varrer.set_defaults(func=cmd_varrer)
+
+    p_h = sub.add_parser("historico", help="as últimas varreduras e o que acharam")
+    p_h.add_argument("--achados", action="store_true", help="lista também o que cada uma achou")
+    p_h.add_argument("--quantos", type=int, default=15, help="padrão: 15")
+    p_h.set_defaults(func=cmd_historico)
 
     p_at = sub.add_parser("atualizar", help="baixa as bases de detecção mais recentes")
     modo_at = p_at.add_mutually_exclusive_group()

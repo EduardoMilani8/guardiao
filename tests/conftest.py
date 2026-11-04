@@ -29,3 +29,9 @@ def bases_isoladas(tmp_path, monkeypatch):
     # Nem as bases baixadas de verdade em ~/.local/share/guardiao/bases.
     from guardiao import bases
     monkeypatch.setattr(bases, "PASTA", tmp_path / "bases")
+
+
+@pytest.fixture(autouse=True)
+def historico_isolado(tmp_path, monkeypatch):
+    from guardiao import historico
+    monkeypatch.setattr(historico, "ARQUIVO", tmp_path / "historico.jsonl")
