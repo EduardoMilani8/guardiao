@@ -37,6 +37,7 @@ MINIMO_SUSPEITO = 2        # um só costuma ser alarme falso daquele antivírus
 VALIDADE_CONHECIDO = 7 * 86400
 VALIDADE_DESCONHECIDO = 86400   # um arquivo novo pode ser enviado amanhã
 TEMPO_LIMITE = 15
+VEREDITOS = ("malicious", "suspicious", "undetected", "harmless")
 
 
 class SemCota(Exception):
@@ -79,7 +80,8 @@ def _pedir(sha256: str, chave_api: str) -> Laudo:
     estatisticas = atributos.get("last_analysis_stats", {})
     rotulo = (atributos.get("popular_threat_classification") or {}).get("suggested_threat_label")
     return Laudo(maliciosos=estatisticas.get("malicious", 0),
-                 total=sum(v for v in estatisticas.values() if isinstance(v, int)),
+                 # Só quem deu veredito: "tipo não suportado" e "tempo esgotado" não contam.
+                 total=sum(estatisticas.get(c, 0) for c in VEREDITOS),
                  nome=rotulo)
 
 

@@ -100,7 +100,8 @@ def resposta_http(codigo, corpo=b"{}"):
 
 def test_le_a_resposta_da_api(monkeypatch):
     corpo = json.dumps({"data": {"attributes": {
-        "last_analysis_stats": {"malicious": 40, "suspicious": 2, "undetected": 20, "harmless": 0},
+        "last_analysis_stats": {"malicious": 40, "suspicious": 2, "undetected": 20, "harmless": 0,
+                                "type-unsupported": 9, "timeout": 1},
         "popular_threat_classification": {"suggested_threat_label": "trojan.gafgyt"}}}}).encode()
     monkeypatch.setattr(virustotal.urllib.request, "urlopen", resposta_http(200, corpo))
     assert virustotal._pedir(SHA, "k") == Laudo(40, 62, "trojan.gafgyt")
