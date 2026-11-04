@@ -8,6 +8,7 @@ para quem quer entender as decisões ou ajustar o comportamento.
 - [Monitor de comportamento](#monitor-de-comportamento)
 - [Atualização das bases](#atualização-das-bases)
 - [Varreduras](#varreduras)
+- [VirusTotal](#virustotal)
 - [Painel](#painel)
 - [Caçador](#caçador)
 - [Auditoria de projetos](#auditoria-de-projetos)
@@ -130,6 +131,39 @@ varredura do disco inteiro moveria um arquivo seu sem você ver.
 **Histórico.** Toda varredura (do terminal, agendada ou do painel) grava quando foi,
 quanto levou e o que achou em `~/.local/share/guardiao/historico.jsonl`.
 `guardiao historico --achados` mostra as últimas.
+
+## VirusTotal
+
+Opcional e desligado por padrão. Com uma chave grátis, criada em
+[virustotal.com](https://www.virustotal.com), no `~/.config/guardiao/config.toml`:
+
+```toml
+[virustotal]
+chave = "..."
+```
+
+o Guardião pergunta ao VirusTotal o que uns 70 antivírus acham de um arquivo. Só
+o SHA-256 sai do computador, nunca o conteúdo. Ainda assim, cada consulta conta ao
+VirusTotal que aquele hash existe na sua máquina, então ela é feita só em três
+casos:
+
+- **downloads novos**, pelo monitor (reinicie o serviço depois de pôr a chave:
+  `systemctl --user restart guardiao-monitor`);
+- **arquivos suspeitos** encontrados pela varredura, no máximo 20 por varredura;
+- quando você pede: `guardiao virustotal <arquivo>`.
+
+| Antivírus que apontam "malicioso" | Resultado |
+|---|---|
+| 5 ou mais | ameaça (e vai para a quarentena se o monitor estiver com `--isolar`) |
+| 2 a 4 | suspeito |
+| 1 | só uma observação: um antivírus sozinho costuma ser alarme falso |
+
+A chave grátis permite 4 consultas por minuto e 500 por dia. As respostas ficam
+guardadas (arquivos conhecidos por 7 dias, desconhecidos por 1 dia) e a cota é
+contada num arquivo com trava, que o monitor e as varreduras dividem. Passado o
+limite por minuto, o Guardião espera a vaga; acabada a cota do dia, ele avisa e
+segue sem o VirusTotal. O protetor não consulta: ele tem 2 segundos para decidir,
+e a rede não cabe nesse prazo.
 
 ## Painel
 

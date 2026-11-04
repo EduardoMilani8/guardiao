@@ -53,7 +53,8 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
 ## Próximos passos
 
 - [ ] Medir a taxa de detecção de novo de tempos em tempos, com amostras recentes
-- [ ] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
+      (`ferramentas/medir_deteccao.py`; a próxima a partir de 11/11/2026)
+- [x] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 
 ## Fora do escopo
 

@@ -53,6 +53,10 @@ Cada arquivo passa por quatro camadas:
 
 Arquivos `.zip`, `.tar`, `.docx` e `.jar` são abertos e analisados por dentro.
 
+Opcionalmente, o [VirusTotal](https://www.virustotal.com) confere os downloads
+novos e o que a varredura achou suspeito, com a opinião de uns 70 antivírus. Só o
+hash do arquivo é enviado, nunca o arquivo.
+
 Medido com 195 amostras reais de novembro de 2026: reconhece **99,5%** do malware
 já reportado e cerca de **metade** do malware Linux novo. Os números completos e o
 método estão em [docs/deteccao.md](docs/deteccao.md).
@@ -84,7 +88,8 @@ e colocada em `~/.config/guardiao/config.toml`:
 chave = "..."
 ```
 
-Sem o ClamAV ou sem a chave, aquela camada fica desligada e o resto funciona
+Para o VirusTotal (opcional), a chave grátis vai no mesmo arquivo, na seção
+`[virustotal]`. Sem o ClamAV ou sem uma das chaves, aquela camada fica desligada e o resto funciona
 normalmente.
 
 ## Uso pelo terminal
@@ -94,6 +99,7 @@ normalmente.
 .venv/bin/python -m guardiao varrer ~/Downloads --isolar
 sudo .venv/bin/python -m guardiao varrer --completa      # inclui arquivos do sistema
 .venv/bin/python -m guardiao historico --achados
+.venv/bin/python -m guardiao virustotal arquivo.exe        # só o hash é enviado
 .venv/bin/python -m guardiao quarentena listar
 .venv/bin/python -m guardiao quarentena restaurar <id>
 ```
