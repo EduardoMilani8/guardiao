@@ -30,6 +30,8 @@ PASTAS_TEMPORARIAS = ("/tmp/", "/var/tmp/", "/dev/shm/")
 FUNDIDAS = ("bin", "sbin", "lib", "lib32", "lib64", "libx32")   # usrmerge: /lib → /usr/lib
 EXECUTAVEIS = tuple(f"/usr/{p}/" for p in (*FUNDIDAS, "libexec")) + tuple(f"/{p}/" for p in FUNDIDAS) + ("/boot/",)
 ORDEM = {"alta": 0, "media": 1, "info": 2}
+PASTAS_DE_BIBLIOTECAS = (f"/usr/lib/{os.uname().machine}-linux-gnu", f"/lib/{os.uname().machine}-linux-gnu",
+                         "/usr/local/lib", "/usr/lib", "/lib", "/usr/lib64", "/lib64")
 
 Julgar = Callable[[Path], "scanner.Resultado | None"]
 
@@ -168,14 +170,26 @@ def nome_do_processo(pid: Path) -> str:
         return "?"
 
 
+def resolver_biblioteca(nome: str, ld_library_path: str) -> str:
+    """Onde o ld.so acha uma biblioteca dada só pelo nome (ex.: o Firefox usa
+    LD_PRELOAD=libmozsandbox.so): nas pastas do LD_LIBRARY_PATH, depois nas do sistema."""
+    if "/" in nome:
+        return nome
+    for pasta in (*ld_library_path.split(":"), *PASTAS_DE_BIBLIOTECAS):
+        if pasta and os.path.isfile(candidata := os.path.join(pasta, nome)):
+            return candidata
+    return nome
+
+
 def ld_preload_em_processos(pacotes: Pacotes, proc: Path = PROC) -> Iterator[Achado]:
     """LD_PRELOAD faz o mesmo que o ld.so.preload, só para um processo e seus filhos."""
     por_lib: dict[str, list[str]] = {}
     for pid in proc.iterdir():
         if not pid.name.isdigit():
             continue
-        valor = _ler_ambiente(pid).get("LD_PRELOAD", "")
-        for lib in valor.replace(":", " ").split():
+        ambiente = _ler_ambiente(pid)
+        for lib in ambiente.get("LD_PRELOAD", "").replace(":", " ").split():
+            lib = resolver_biblioteca(lib, ambiente.get("LD_LIBRARY_PATH", ""))
             # Snaps carregam bibliotecas do próprio pacote, com $LIB que o ld.so expande.
             if lib.startswith("/snap/"):
                 continue

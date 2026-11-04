@@ -94,6 +94,19 @@ def test_ld_preload_do_snap_e_ignorado(tmp_path, pacotes):
     assert list(cacador.ld_preload_em_processos(pacotes, proc)) == []
 
 
+def test_ld_preload_so_com_o_nome_e_procurado_como_o_ld_so(tmp_path, pacotes, tmp_nao_e_temporaria):
+    pasta = tmp_path / "firefox"
+    pasta.mkdir()
+    (pasta / "libmozsandbox.so").write_bytes(b"\x7fELF")
+    proc = tmp_path / "proc"
+    processo(proc, 35, "forkserver", {"LD_PRELOAD": "libmozsandbox.so", "LD_LIBRARY_PATH": f"/nao/existe:{pasta}"})
+    processo(proc, 36, "outro", {"LD_PRELOAD": "libsumida.so"})
+    achados = {str(a.arquivo): a.gravidade for a in cacador.ld_preload_em_processos(pacotes, proc)}
+    # Achada pelo LD_LIBRARY_PATH: julgada pelo caminho de verdade (aqui, fora de pacote).
+    assert achados[str(pasta / "libmozsandbox.so")] == "alta"
+    assert achados["libsumida.so"] == "media"
+
+
 def test_ld_preload_de_pacote_e_informativo(tmp_path, pacotes, monkeypatch):
     proc = tmp_path / "proc"
     processo(proc, 40, "app", {"LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libc.so.6"})
