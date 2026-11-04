@@ -11,12 +11,15 @@ registrado em /var/lib/dpkg/info; o resto é listado e entregue ao scanner,
 que já sabe julgar conteúdo (hash, ClamAV, YARA, heurísticas).
 """
 
+import base64
+import hashlib
 import os
 import pwd
 import re
 import shlex
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator
@@ -113,6 +116,7 @@ def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
         *processos(julgar, pacotes),
         *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
         *(a for arquivo in arquivos_de_shell(lares) if (a := shell(arquivo, julgar, pacotes))),
+        *chaves_autorizadas(lares, julgar),
         *(pacotes_alterados(julgar, dpkg_verify()) if conferir_pacotes else []),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
@@ -596,3 +600,84 @@ def shell(arquivo: Path, julgar: Juiz, pacotes: Pacotes) -> Achado | None:
     gravidade = min((g for g, _ in notas), key=ORDEM.__getitem__)
     mensagem = "todo terminal novo executa este arquivo" + "".join(f"\n           - {n}" for _, n in notas)
     return Achado(gravidade, "shell", arquivo, mensagem)
+
+
+# --- chaves SSH autorizadas -------------------------------------------------
+
+MARCAS_DE_BOTNET = {"mdrfckr": "botnet Outlaw"}   # comentário que ela deixa na chave que acrescenta
+RECENTE = 7 * 86400
+CHAVE = re.compile(r"(?:^|\s)((?:ssh-|ecdsa-|sk-)\S+)\s+([A-Za-z0-9+/]+=*)(?:\s+(.*))?$")
+PROC_TCP = (Path("/proc/net/tcp"), Path("/proc/net/tcp6"))
+
+
+@dataclass
+class Chave:
+    opcoes: str           # ex.: command="...",no-pty
+    tipo: str
+    impressao: str        # como o ssh-keygen -l mostra: SHA256:...
+    comentario: str
+
+
+def ler_chave(linha: str) -> Chave | None:
+    if not (m := CHAVE.search(linha)):
+        return None
+    try:
+        bruto = base64.b64decode(m.group(2), validate=True)
+        impressao = "SHA256:" + base64.b64encode(hashlib.sha256(bruto).digest()).decode().rstrip("=")
+    except ValueError:
+        impressao = "ilegível"
+    return Chave(linha[:m.start(1)].strip(), m.group(1), impressao, (m.group(3) or "").strip())
+
+
+def ssh_escutando(tabelas: tuple[Path, ...] = PROC_TCP) -> bool:
+    """Alguém aceita conexões na porta 22? (estado 0A = LISTEN, porta em hexadecimal)"""
+    for tabela in tabelas:
+        try:
+            linhas = tabela.read_text().splitlines()[1:]
+        except OSError:
+            continue
+        if any(len(c := l.split()) > 3 and c[3] == "0A" and c[1].endswith(":0016") for l in linhas):
+            return True
+    return False
+
+
+def chaves_autorizadas(lares: list[Path], julgar: Juiz, agora: float | None = None,
+                       ssh_ligado: bool | None = None) -> Iterator[Achado]:
+    """Quem tem a chave privada de uma destas entra como o usuário, sem senha.
+
+    Botnets de mineração (Outlaw, Kinsing) acrescentam a própria chave para
+    voltar quando quiserem. Arquivo vazio ou inexistente não vira achado.
+    """
+    agora = time.time() if agora is None else agora
+    ssh_ligado = ssh_escutando() if ssh_ligado is None else ssh_ligado
+    for casa in lares:
+        for nome in ("authorized_keys", "authorized_keys2"):
+            arquivo = casa / ".ssh" / nome
+            try:
+                linhas = arquivo.read_text(errors="replace").splitlines()
+                mudou = arquivo.stat().st_mtime
+            except OSError:
+                continue
+            chaves = [c for l in linhas if l.strip() and not l.lstrip().startswith("#") if (c := ler_chave(l))]
+            if not chaves:
+                continue
+            gravidade, notas = "info", []
+            for c in chaves:
+                notas.append(f"{c.tipo} {c.impressao} {c.comentario or '(sem comentário)'}")
+                marcas = f"{c.comentario} {c.opcoes}".lower()
+                if botnet := next((b for marca, b in MARCAS_DE_BOTNET.items() if marca in marcas), None):
+                    gravidade = "alta"
+                    notas.append(f"  é a marca da {botnet}")
+                if m := re.search(r'command="((?:[^"\\]|\\.)*)"', c.opcoes):
+                    notas.append(f"  só pode rodar: {m.group(1)}")
+                    for o in julgar.comandos([m.group(1)]):
+                        gravidade = o.gravidade if ORDEM[o.gravidade] < ORDEM[gravidade] else gravidade
+                        notas.append(f"  regra YARA {o.regra}: {o.descricao}")
+            if agora - mudou < RECENTE and gravidade == "info":
+                gravidade = "media"
+                notas.insert(0, "o arquivo mudou nos últimos 7 dias: confira se foi você que acrescentou")
+            estado = ("o SSH está ligado: quem tiver a chave privada entra" if ssh_ligado
+                      else "o SSH está desligado: elas só valem se ele for ligado")
+            mensagem = f"{len(chaves)} chave(s) entram como este usuário sem senha; {estado}"
+            mensagem += "".join(f"\n           - {n}" for n in notas)
+            yield Achado(gravidade, "ssh", arquivo, mensagem)
