@@ -1,0 +1,56 @@
+name: Erro
+description: Algo quebrou, travou ou deu mensagem de erro.
+title: "[Erro] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu?
+      description: Se apareceu uma mensagem de erro, cole ela inteira.
+      placeholder: "Rodei ... e apareceu ..."
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava que acontecesse?
+    validations:
+      required: true
+  - type: dropdown
+    id: parte
+    attributes:
+      label: Em qual parte?
+      options:
+        - Protetor
+        - Monitor (downloads ou comportamento)
+        - Varredura
+        - Atualização das bases
+        - Painel
+        - Quarentena
+        - Caçador (cacar)
+        - Auditoria de projetos (dev)
+        - VirusTotal
+        - Instalação
+        - Não sei
+    validations:
+      required: true
+  - type: textarea
+    id: sistema
+    attributes:
+      label: Seu sistema
+      description: Cole a saída destes comandos.
+      render: text
+      placeholder: |
+        lsb_release -ds
+        python3 --version
+        git log -1 --oneline
+        .venv/bin/python -m guardiao atualizar --status
+    validations:
+      required: true
+  - type: textarea
+    id: registro
+    attributes:
+      label: Registro do serviço
+      description: "Opcional. Se o erro foi num serviço, cole as últimas linhas de `journalctl --user -u guardiao-monitor -n 50` (ou `sudo journalctl -u guardiao-protetor -n 50`)."
+      render: text

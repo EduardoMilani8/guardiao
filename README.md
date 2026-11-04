@@ -130,6 +130,12 @@ Duas ferramentas para usar quando quiser:
 - [Taxa de detecção](docs/deteccao.md): como foi medida e o que escapou.
 - [Roadmap](ROADMAP.md): o que já foi feito e os próximos passos.
 
+## Contribuir
+
+Achou um erro, um falso positivo ou um malware que passou? Veja o
+[CONTRIBUTING.md](CONTRIBUTING.md). Falhas de segurança no próprio Guardião vão
+pelo [aviso privado](SECURITY.md), nunca por issue pública.
+
 ## Testes
 
 ```bash

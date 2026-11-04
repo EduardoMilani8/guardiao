@@ -1,0 +1,38 @@
+name: Falso positivo
+description: Um arquivo seu, legítimo, foi marcado como ameaça ou suspeito.
+title: "[Falso positivo] "
+labels: ["falso positivo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado! Falsos positivos são o que mais faz as pessoas desligarem um antivírus.
+        Não anexe o arquivo se ele tiver dados pessoais: o hash e o nome da regra já ajudam muito.
+  - type: input
+    id: deteccao
+    attributes:
+      label: O que o Guardião disse?
+      description: Copie a linha da varredura ou da notificação.
+      placeholder: "[suspeito] /home/.../arquivo (60/100) ou [AMEAÇA] ... → nome_da_regra (YARA)"
+    validations:
+      required: true
+  - type: input
+    id: sha256
+    attributes:
+      label: SHA-256 do arquivo
+      description: "Rode `sha256sum caminho/do/arquivo`."
+    validations:
+      required: true
+  - type: textarea
+    id: origem
+    attributes:
+      label: Que arquivo é e de onde ele veio?
+      placeholder: "É o instalador do programa X, baixado do site oficial https://..."
+    validations:
+      required: true
+  - type: input
+    id: virustotal
+    attributes:
+      label: Link do arquivo no VirusTotal
+      description: Opcional. Mostra o que os outros antivírus acham dele.
+      placeholder: https://www.virustotal.com/gui/file/...

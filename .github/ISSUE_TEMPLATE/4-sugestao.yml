@@ -1,0 +1,29 @@
+name: Sugestão
+description: Uma ideia de melhoria ou de nova forma de detectar ameaças.
+title: "[Sugestão] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Toda ideia é bem-vinda. Para caber no projeto, ela não pode deixar o computador mais lento no dia a dia
+        nem mandar arquivos do usuário para fora (só hashes).
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Qual é a ideia?
+    validations:
+      required: true
+  - type: textarea
+    id: motivo
+    attributes:
+      label: Que problema ela resolve?
+      placeholder: "Hoje, quando ..., o Guardião ..."
+    validations:
+      required: true
+  - type: checkboxes
+    id: ajuda
+    attributes:
+      label: Você quer ajudar a fazer?
+      options:
+        - label: Posso abrir um pull request para isso.

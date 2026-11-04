@@ -1,0 +1,47 @@
+name: Não detectado
+description: Um malware passou sem ser detectado.
+title: "[Não detectado] "
+labels: ["não detectado"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Não anexe o malware**, nem dentro de um .zip. Mande só o SHA-256 ou o link dele no MalwareBazaar ou no VirusTotal.
+        Se você baixou o arquivo, mantenha ele longe de execução (`chmod a-x arquivo`) e apague quando não precisar mais.
+  - type: input
+    id: sha256
+    attributes:
+      label: SHA-256 do arquivo
+      description: "Rode `sha256sum arquivo`, sem executá-lo."
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link no MalwareBazaar ou no VirusTotal
+      placeholder: https://bazaar.abuse.ch/sample/...
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que é e como ele chegou até você?
+      placeholder: "Veio num e-mail como anexo ..., ou é a família X de minerador ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: onde
+    attributes:
+      label: Onde ele passou?
+      multiple: true
+      options:
+        - Monitor (baixei e não avisou)
+        - Varredura
+        - Protetor (executou sem ser bloqueado)
+        - Comportamento (rodou fazendo algo perigoso sem alerta)
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Situação das bases
+      description: "Cole a saída de `.venv/bin/python -m guardiao atualizar --status`. Um malware novo costuma ser reconhecido depois de a base atualizar."
+      render: text
