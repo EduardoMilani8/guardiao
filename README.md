@@ -26,6 +26,7 @@ tempo real e audita projetos de programação atrás de riscos na cadeia de paco
 | **Atualização** | Bases baixadas de hora em hora, com troca atômica | Download quebrado nunca deixa o Guardião sem a base anterior |
 | **Quarentena** | Move para `~/.local/share/guardiao/quarentena` sem permissão de execução | Reversível com `quarentena restaurar` |
 | **Monitor** | inotify (via watchdog) na pasta Downloads | Analisa cada download assim que termina |
+| **Comportamento** | O que os processos fazem, lido do `/proc` a cada 5 s pelo monitor | Shell reverso (`bash` falando com a rede), minerador (CPU alta conectado a um pool) |
 | **Caçador** | Procura o que já se instalou: bibliotecas injetadas, processos estranhos, persistência fora dos pacotes, binários alterados | Rootkit no `/etc/ld.so.preload`, minerador rodando de `/dev/shm`, serviço que voltou depois do reboot |
 | **Módulo de dev** | Audita um projeto | `postinstall` malicioso, typosquatting (`reqeusts`), `.vscode/tasks.json` com `runOn: folderOpen` |
 
@@ -172,6 +173,24 @@ pacote mas não tem nada de estranho aparece como informativo, com `--todos`.
 O `dpkg --verify` leva uns 30 segundos (`--sem-pacotes` pula esse passo). Sem
 root, só os seus processos e os arquivos legíveis por você são conferidos.
 
+### Comportamento
+
+Assinaturas e regras olham o arquivo, e malware novo muda o arquivo o tempo
+todo; o que ele *faz* muda bem menos. O monitor olha os processos a cada 5
+segundos (uns 0,7% de um núcleo) e notifica quando encontra:
+
+- **Shell reverso**: um shell ou interpretador (`bash`, `python`, `nc`...) com a
+  entrada e a saída ligadas a uma conexão TCP, ou um shell aberto pelo `socat`/`nc`
+  com uma conexão (a variante com terminal falso). Quem está do outro lado digita
+  comandos como você.
+- **Minerador**: um processo usando mais de meio núcleo e conectado a uma porta
+  típica de pool de mineração (3333, 4444, 14444...).
+
+Conexões dentro da própria máquina (127.0.0.1) pedem só atenção. O alerta traz o
+pid e o comando para encerrar; o Guardião não mata processos sozinho. Sem root,
+só os seus processos são vistos, que é onde roda o que você baixa. O `cacar`
+também dá uma olhada de 3 segundos. Para desligar no monitor: `--sem-comportamento`.
+
 ### Monitor como serviço
 
 Para o monitor iniciar junto com a sessão, há um serviço de usuário do systemd em
@@ -205,6 +224,7 @@ guardiao/
   heuristicas.py   sinais e pontuação de suspeita
   quarentena.py    isola e restaura arquivos
   monitor.py       vigia pastas em tempo real
+  comportamento.py shells reversos e mineradores em execução, pelo /proc
   cacador.py       caça persistência e rootkits (preload, processos, systemd, cron, dpkg)
   dev.py           auditoria de projetos (npm, PyPI, VS Code, hooks do git)
   eventos.py       converte resultados em eventos JSON para interfaces

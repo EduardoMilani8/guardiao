@@ -44,7 +44,7 @@ eBPF, ataques à cadeia de pacotes).
 
 - [ ] On-access com `fanotify` (o kernel espera o veredito antes de abrir o arquivo),
       com limite de tempo e liberando o arquivo em caso de falha
-- [ ] Monitor de comportamento leve: mineradores e shells reversos em execução
+- [x] Monitor de comportamento leve: mineradores e shells reversos em execução
 
 ## Fase 5: rotina e painel
 
