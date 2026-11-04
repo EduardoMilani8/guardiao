@@ -166,7 +166,7 @@ def cmd_varrer(args) -> int:
 
     total = resumo.analisados + resumo.em_cache
     cor = VERDE if resumo.ameacas == resumo.suspeitos == 0 else VERMELHO
-    print(f"\n{cor}{total} arquivos verificados · {resumo.ameacas} ameaças · {resumo.suspeitos} suspeitos"
+    print(f"\n{cor}{total} arquivos verificados · {resumo.ameacas} ameaça(s) · {resumo.suspeitos} suspeito(s)"
           f" · {resumo.segundos:.1f}s{FIM}")
     print(f"{CINZA}{resumo.analisados} analisados agora, {resumo.em_cache} sem mudanças desde a última vez{FIM}")
     if resumo.grandes:
@@ -336,7 +336,7 @@ def cmd_proteger(args) -> int:
 
     if os.geteuid() != 0:
         print(f"{VERMELHO}O protetor precisa de root: o kernel só dá o fanotify de permissão a ele.{FIM}")
-        print("Instalação como serviço: veja contrib/guardiao-protetor.service")
+        print("Para instalar como serviço: sudo contrib/instalar-protetor.sh")
         return 2
     codigo = Path(protetor.__file__).parent
     if any(os.stat(p).st_uid != 0 or os.stat(p).st_mode & 0o022 for p in (codigo, *codigo.glob("*.py"))):
