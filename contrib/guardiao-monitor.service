@@ -10,7 +10,7 @@
 # Desinstalar:                 systemctl --user disable --now guardiao-monitor
 
 [Unit]
-Description=Guardião: monitor de Downloads
+Description=Guardião: monitor de downloads e comportamento
 After=graphical-session.target
 
 [Service]
