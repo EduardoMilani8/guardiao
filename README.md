@@ -124,6 +124,9 @@ sudo .venv/bin/python -m guardiao cacar --todos
 # Auditar um projeto de programação
 .venv/bin/python -m guardiao dev ~/meu-projeto
 
+# As últimas varreduras e o que cada uma achou
+.venv/bin/python -m guardiao historico --achados
+
 # Gerenciar a quarentena
 .venv/bin/python -m guardiao quarentena listar
 .venv/bin/python -m guardiao quarentena restaurar <id>
@@ -230,6 +233,25 @@ Para o monitor iniciar junto com a sessão, há um serviço de usuário do syste
 [`contrib/guardiao-monitor.service`](contrib/guardiao-monitor.service), com as
 instruções de instalação no próprio arquivo.
 
+### Varreduras agendadas e histórico
+
+Dois timers de usuário do systemd fazem a rotina sozinhos: a varredura **rápida todo
+dia** (12:30) e a **completa todo domingo** (13:00, só com o carregador ligado). Se o
+computador estiver desligado na hora, ela roda assim que ligar, em prioridade
+mínima de CPU e disco.
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp contrib/guardiao-varrer-*.service contrib/guardiao-varrer-*.timer ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now guardiao-varrer-rapida.timer guardiao-varrer-completa.timer
+```
+
+As agendadas **não isolam sozinhas**: notificam o que acharem, e você decide no
+launcher. Um alarme falso numa varredura do disco inteiro moveria um arquivo seu
+sem você ver. Toda varredura, do terminal, agendada ou do launcher, fica no
+histórico (`guardiao historico`), com o que achou e onde foi parar.
+
 ## Launcher (protótipo)
 
 Uma página local onde cada guardião representa uma camada do motor e reage quando
@@ -245,6 +267,14 @@ num seletor nativo, e dá para **parar** no meio. **Simular ataque** cria amostr
 inofensivas numa pasta temporária para mostrar cada guardião em ação. O launcher
 nunca roda como root; para os arquivos do sistema, use `sudo` na linha de comando.
 
+Cada ameaça ganha um botão **Trancar**, e o Carcereiro a leva para a quarentena;
+com várias, **Trancar todas**. Ao abrir, o launcher mostra quando foram as últimas
+varreduras e o que as agendadas acharam e continua no lugar, pronto para trancar.
+A página nunca diz ao servidor *qual caminho* mover: ela manda um código que o
+próprio servidor deu à ameaça, e o arquivo só é movido se ainda for exatamente o
+que foi analisado (mesmo SHA-256). Um site aberto no navegador não tem como pedir
+"mova /tal/arquivo".
+
 ## Estrutura
 
 ```
@@ -259,6 +289,7 @@ guardiao/
   monitor.py       vigia pastas em tempo real
   comportamento.py shells reversos e mineradores em execução, pelo /proc
   protetor.py      bloqueio antes da execução (fanotify), com prazo e fail-open
+  historico.py     uma linha por varredura: quando, quanto, o que achou
   cacador.py       caça persistência e rootkits (preload, processos, systemd, cron, dpkg)
   dev.py           auditoria de projetos (npm, PyPI, VS Code, hooks do git)
   eventos.py       converte resultados em eventos JSON para interfaces

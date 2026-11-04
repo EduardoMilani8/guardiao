@@ -48,9 +48,9 @@ eBPF, ataques à cadeia de pacotes).
 
 ## Fase 5: rotina e painel
 
-- [ ] Varredura rápida diária e completa semanal (systemd timer)
-- [ ] Histórico de varreduras
-- [ ] Carcereiro isolando ameaças com um clique no launcher
+- [x] Varredura rápida diária e completa semanal (systemd timer)
+- [x] Histórico de varreduras
+- [x] Carcereiro isolando ameaças com um clique no launcher
 
 ## Fora do escopo
 
