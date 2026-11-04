@@ -106,7 +106,8 @@ class Juiz:
 
 
 def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
-          casa: Path | None = None, conferir_pacotes: bool = True) -> list[Achado]:
+          casa: Path | None = None, conferir_pacotes: bool = True,
+          olhar_comportamento: bool = True) -> list[Achado]:
     julgar = julgar or Juiz()
     pacotes = pacotes or Pacotes()
     lares = casas() if casa is None else [casa]
@@ -117,6 +118,7 @@ def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
         *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
         *(a for arquivo in arquivos_de_shell(lares) if (a := shell(arquivo, julgar, pacotes))),
         *chaves_autorizadas(lares, julgar),
+        *(comportamento_agora() if olhar_comportamento else []),
         *(pacotes_alterados(julgar, dpkg_verify()) if conferir_pacotes else []),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
@@ -681,3 +683,11 @@ def chaves_autorizadas(lares: list[Path], julgar: Juiz, agora: float | None = No
             mensagem = f"{len(chaves)} chave(s) entram como este usuário sem senha; {estado}"
             mensagem += "".join(f"\n           - {n}" for n in notas)
             yield Achado(gravidade, "ssh", arquivo, mensagem)
+
+
+# --- comportamento ----------------------------------------------------------
+
+def comportamento_agora() -> list[Achado]:
+    """Uma olhada de 3 s no que os processos fazem (ver comportamento.py)."""
+    from . import comportamento
+    return [Achado(a.gravidade, a.tipo, Path(a.processo.exe), a.mensagem) for a in comportamento.examinar(3.0)]

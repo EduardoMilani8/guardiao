@@ -3,7 +3,7 @@
     python -m guardiao varrer ~/Downloads [--isolar]
     python -m guardiao varrer --rapida | --completa [--isolar] [--sem-cache]
     python -m guardiao atualizar [--forcar | --status]
-    python -m guardiao monitorar [pastas...] [--isolar]
+    python -m guardiao monitorar [pastas...] [--isolar] [--sem-comportamento]
     python -m guardiao dev [pasta] [--todos]
     python -m guardiao cacar [--todos] [--sem-pacotes]
     python -m guardiao launcher [--porta 8765] [--sem-navegador]
@@ -188,9 +188,21 @@ def cmd_monitorar(args) -> int:
     def ao_sigterm(*_):
         raise KeyboardInterrupt   # `systemctl stop` encerra igual a um Ctrl+C
 
+    def ao_alertar(alerta) -> None:
+        cor = VERMELHO if alerta.gravidade == "alta" else AMARELO
+        print(f"{cor}[{alerta.tipo.upper()}] {alerta.processo.exe}  →  {alerta.mensagem}{FIM}")
+        notificacao.notificar(f"Comportamento perigoso: {alerta.tipo}", alerta.mensagem,
+                              urgente=alerta.gravidade == "alta")
+
     signal.signal(signal.SIGTERM, ao_sigterm)
     print(f"{VERDE}Vigiando {', '.join(map(str, pastas))}  (Ctrl+C para sair){FIM}")
-    with monitor.Monitor(pastas, banco, ao_analisar, ao_erro):
+    from contextlib import nullcontext
+
+    from . import comportamento
+    vigia = nullcontext() if args.sem_comportamento else comportamento.Vigia(ao_alertar)
+    if not args.sem_comportamento:
+        print(f"{VERDE}Vigiando também o comportamento dos processos (shells reversos, mineradores){FIM}")
+    with monitor.Monitor(pastas, banco, ao_analisar, ao_erro), vigia:
         try:
             while True:
                 time.sleep(1)
@@ -241,7 +253,7 @@ def cmd_cacar(args) -> int:
     if os.geteuid() != 0:
         print(f"{CINZA}Sem root, só os seus processos são verificados. Para todos:\n"
               f"  sudo .venv/bin/python -m guardiao cacar{FIM}")
-    print("Procurando bibliotecas injetadas, processos estranhos e persistência...")
+    print("Procurando bibliotecas injetadas, processos estranhos, persistência e comportamento...")
     if not args.sem_pacotes:
         print(f"{CINZA}Conferindo os arquivos dos pacotes com o dpkg (uns 30 s; --sem-pacotes pula){FIM}")
     return imprimir_achados(cacador.cacar(julgar, conferir_pacotes=not args.sem_pacotes), args.todos)
@@ -312,6 +324,8 @@ def main() -> int:
     p_mon = sub.add_parser("monitorar", help="analisa em tempo real os arquivos que chegam")
     p_mon.add_argument("pastas", nargs="*", help="padrão: ~/Downloads")
     p_mon.add_argument("--isolar", action="store_true", help="move ameaças para a quarentena")
+    p_mon.add_argument("--sem-comportamento", action="store_true",
+                       help="não vigia o que os processos fazem (shells reversos, mineradores)")
     p_mon.set_defaults(func=cmd_monitorar)
 
     p_dev = sub.add_parser("dev", help="audita um projeto: pacotes, scripts de instalação, auto-execução")
