@@ -84,7 +84,10 @@ class ClamAV:
 
     def verificar(self, caminho: Path) -> str | None:
         """Nome da ameaça, ou None se o ClamAV não achou nada."""
-        fd = os.open(caminho, os.O_RDONLY | os.O_NOFOLLOW)
+        # O_NOFOLLOW: um link plantado numa pasta varrida não leva a outro arquivo.
+        # A exceção é o /proc/<pid>/fd do protetor, que é um link por natureza.
+        pelo_fd = re.fullmatch(r"/proc/\d+/fd/\d+", str(caminho)) is not None
+        fd = os.open(caminho, os.O_RDONLY | (0 if pelo_fd else os.O_NOFOLLOW))
         try:
             resposta = self._conversar("FILDES", fd)
         finally:
