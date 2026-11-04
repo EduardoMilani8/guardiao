@@ -1,0 +1,16 @@
+# Varredura rápida agendada. Chamado pelo guardiao-varrer-rapida.timer.
+# A instalação está no guardiao-varrer-rapida.timer.
+
+[Unit]
+Description=Guardião: varredura rápida agendada
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/guardiao
+# Sem --isolar: avisa e quem decide trancar é você, no launcher.
+ExecStart=%h/guardiao/.venv/bin/python -m guardiao varrer --rapida --agendada
+Environment=PYTHONUNBUFFERED=1
+# Tarefa de fundo: cede CPU e disco a qualquer coisa que você estiver fazendo.
+Nice=19
+CPUSchedulingPolicy=idle
+IOSchedulingClass=idle
