@@ -12,6 +12,7 @@ que já sabe julgar conteúdo (hash, ClamAV, YARA, heurísticas).
 """
 
 import os
+import pwd
 import re
 import shlex
 import shutil
@@ -105,11 +106,13 @@ def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
           casa: Path | None = None, conferir_pacotes: bool = True) -> list[Achado]:
     julgar = julgar or Juiz()
     pacotes = pacotes or Pacotes()
+    lares = casas() if casa is None else [casa]
     achados = [
         *preload(pacotes),
         *ld_preload_em_processos(pacotes),
         *processos(julgar, pacotes),
         *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
+        *(a for arquivo in arquivos_de_shell(lares) if (a := shell(arquivo, julgar, pacotes))),
         *(pacotes_alterados(julgar, dpkg_verify()) if conferir_pacotes else []),
     ]
     return sorted(achados, key=lambda a: (ORDEM.get(a.gravidade, 9), a.categoria, str(a.arquivo)))
@@ -485,3 +488,111 @@ def pacotes_alterados(julgar: Juiz | Julgar, saida: str) -> Iterator[Achado]:
     if sem_conferir:
         yield Achado("info", "pacote alterado", Path("dpkg --verify"),
                      f"{sem_conferir} arquivos só legíveis pelo root ficaram sem conferir (rode com sudo)")
+
+
+# --- arquivos de inicialização do shell -------------------------------------
+
+DO_USUARIO = (".bashrc", ".bash_profile", ".bash_login", ".profile", ".bash_logout",
+              ".zshrc", ".zprofile", ".zshenv", ".zlogin", ".zlogout")
+DO_SISTEMA = (Path("/etc/profile"), Path("/etc/bash.bashrc"), Path("/etc/zsh/zshenv"),
+              Path("/etc/zsh/zprofile"), Path("/etc/zsh/zshrc"), Path("/etc/zsh/zlogin"))
+COMANDOS_DE_SENHA = r"(sudo|su|doas|passwd|ssh)"
+ALIAS = re.compile(rf"^\s*alias\s+(?:-\w+\s+)*{COMANDOS_DE_SENHA}=(['\"]?)(.*)\2\s*$")
+FUNCAO = re.compile(rf"^\s*(?:function\s+{COMANDOS_DE_SENHA}\b|{COMANDOS_DE_SENHA}\s*\(\s*\))")
+EMBRULHOS = ("nocorrect", "noglob", "command", "builtin", "exec")   # ex.: alias sudo='nocorrect sudo'
+PATH_TEMPORARIO = re.compile(r"\bPATH=.*(?<![\w.])(?:/tmp|/var/tmp|/dev/shm)(?:[/:\"']|$)")
+LD_PRELOAD_EXPORTADO = re.compile(r"\bLD_PRELOAD=['\"]?([^'\"\s;]+)")
+SOURCE = re.compile(r"(?:^|[;&|]|\bthen)\s*(?:source|\.)\s+['\"]?([^'\"\s;&|]+)")   # também `[ -f x ] && . x`
+
+
+def casas() -> list[Path]:
+    """Com root, a casa de todo usuário de verdade; sem root, só a sua."""
+    if os.geteuid() != 0:
+        return [casa_real()]
+    lares = [Path("/root")]
+    for u in pwd.getpwall():
+        if u.pw_uid >= 1000 and u.pw_uid != 65534 and os.path.isdir(u.pw_dir):
+            lares.append(Path(u.pw_dir))
+    return lares
+
+
+def arquivos_de_shell(lares: list[Path]) -> list[Path]:
+    arquivos = [*DO_SISTEMA, *sorted(Path("/etc/profile.d").glob("*"))]
+    arquivos += [casa / nome for casa in lares for nome in DO_USUARIO]
+    return [a for a in arquivos if a.is_file()]
+
+
+def _alias_suspeito(nome: str, valor: str) -> bool:
+    palavras = valor.replace("\\", "").split()
+    while palavras and palavras[0] in EMBRULHOS:
+        palavras.pop(0)
+    # alias sudo='sudo ' (o espaço faz o shell expandir aliases depois) é comum e inofensivo;
+    # o mesmo nome em outra pasta (~/.local/.s/sudo) é justamente o truque.
+    do_sistema = {nome, *(f"{pasta}/{nome}" for pasta in ("/usr/bin", "/bin", "/usr/sbin", "/sbin"))}
+    return not palavras or palavras[0] not in do_sistema
+
+
+def _carregados(arquivo: Path, linhas: list[str], casa: Path) -> list[Path]:
+    """Arquivos que este carrega com `source` ou `.`: um esconderijo a um passo."""
+    saida = []
+    for linha in linhas:
+        for m in SOURCE.finditer(linha):
+            alvo = m.group(1).replace("${HOME}", str(casa)).replace("$HOME", str(casa))
+            alvo = str(casa) + alvo[1:] if alvo.startswith("~/") else alvo
+            if "$" not in alvo and os.path.isfile(alvo) and Path(alvo) != arquivo:
+                saida.append(Path(alvo))
+    return saida
+
+
+def _linhas_suspeitas(linhas: list[str], pacotes: Pacotes) -> list[tuple[str, str]]:
+    notas = []
+    for linha in linhas:
+        if not linha.strip() or linha.lstrip().startswith("#"):
+            continue
+        if (m := ALIAS.match(linha)) and _alias_suspeito(m.group(1), m.group(3)):
+            notas.append(("media", f"redefine o {m.group(1)}, truque para capturar a senha: {linha.strip()}"))
+        elif m := FUNCAO.match(linha):
+            nome = next(g for g in m.groups() if g)
+            notas.append(("media", f"troca o {nome} por uma função, truque para capturar a senha: {linha.strip()}"))
+        if PATH_TEMPORARIO.search(linha):
+            notas.append(("alta", f"põe uma pasta temporária no PATH: {linha.strip()}"))
+        if m := LD_PRELOAD_EXPORTADO.search(linha):
+            for lib in m.group(1).replace(":", " ").split():
+                gravidade, motivo = _gravidade_da_biblioteca(lib, pacotes)
+                notas.append(("media" if gravidade == "info" else gravidade, f"exporta LD_PRELOAD={lib}; {motivo}"))
+        if (programa := executavel(linha.strip())) and em_pasta_temporaria(programa):
+            notas.append(("alta", f"roda {programa}, de uma pasta temporária"))
+    return notas
+
+
+def shell(arquivo: Path, julgar: Juiz, pacotes: Pacotes) -> Achado | None:
+    """Linhas com cara de ataque nos arquivos que todo terminal novo executa.
+
+    Arquivos limpos não viram achado: o .bashrc é de cada um, e listar todos
+    só esconderia o que importa.
+    """
+    casa = arquivo.parent if arquivo.name in DO_USUARIO else casa_real()
+    notas: list[tuple[str, str]] = []
+    vistos = [arquivo]
+    try:
+        linhas = arquivo.read_text(errors="replace").splitlines()
+    except OSError:
+        return None
+    for alvo in _carregados(arquivo, linhas, casa):
+        try:
+            carregadas = alvo.read_text(errors="replace").splitlines()
+        except OSError:
+            continue
+        vistos.append(alvo)
+        notas += [(g, f"em {alvo}: {n}") for g, n in _linhas_suspeitas(carregadas, pacotes)]
+        notas += [(o.gravidade, f"em {alvo}: regra YARA {o.regra}: {o.descricao}") for o in julgar.comandos(carregadas)]
+    notas = _linhas_suspeitas(linhas, pacotes) + notas
+    notas += [(o.gravidade, f"regra YARA {o.regra}: {o.descricao}") for o in julgar.comandos(linhas)]
+    for alvo in vistos:
+        if (resultado := julgar(alvo)) and resultado.infectado:
+            notas.insert(0, ("alta", f"{alvo}: {resultado.ameaca}"))
+    if not notas:
+        return None
+    gravidade = min((g for g, _ in notas), key=ORDEM.__getitem__)
+    mensagem = "todo terminal novo executa este arquivo" + "".join(f"\n           - {n}" for _, n in notas)
+    return Achado(gravidade, "shell", arquivo, mensagem)

