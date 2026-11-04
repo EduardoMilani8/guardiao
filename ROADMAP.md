@@ -55,6 +55,20 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
 - [ ] Medir a taxa de detecção de novo de tempos em tempos, com amostras recentes
       (`ferramentas/medir_deteccao.py`; a próxima a partir de 11/11/2026)
 - [x] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
+- [ ] **Painel novo**: um visual mais bonito para o painel, que vai servir de base
+      para a arte dos avisos
+- [ ] **Avisos que mostram que o Guardião está trabalhando, sem cansar.** O objetivo é a
+      pessoa lembrar que está protegida sem ser incomodada:
+  - [x] Ameaça: aviso forte, que fica até a pessoa agir
+  - [ ] Varredura automática que terminou limpa: resumo discreto, que some sozinho
+        (no máximo um por dia)
+  - [x] Downloads limpos: sem aviso (já é assim)
+  - [ ] Extensão do GNOME com a mesma arte do painel: o aviso no canto da tela e um
+        escudo na barra de cima que mostra o estado (no Wayland, um aplicativo comum
+        não pode escolher onde a janela aparece)
+- [ ] **Desempenho em segundo plano**: medir com calma e reduzir o que der. Medido em
+      04/11/2026: protetor e monitor somam cerca de 400 MB de memória e menos de 1% de
+      um núcleo; as regras YARA são carregadas duas vezes (no monitor e no protetor)
 
 ## Fora do escopo
 
