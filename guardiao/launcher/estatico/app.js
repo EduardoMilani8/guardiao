@@ -1,4 +1,4 @@
-// Protótipo do launcher: recebe os eventos da varredura e anima os guardiões.
+// Painel: recebe os eventos da varredura e anima os guardiões.
 // O servidor manda o progresso de tempos em tempos e um evento só para cada
 // ameaça ou suspeito; esta página os coloca numa fila e define o próprio ritmo,
 // para as reações serem visíveis.

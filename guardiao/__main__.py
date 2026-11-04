@@ -377,7 +377,7 @@ def cmd_launcher(args) -> int:
         print(f"{VERMELHO}Não consegui abrir a porta {args.porta}: {erro.strerror}{FIM}")
         return 2
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
-    print(f"{VERDE}Launcher (protótipo) em {url}  (Ctrl+C para sair){FIM}")
+    print(f"{VERDE}Painel em {url}  (Ctrl+C para sair){FIM}")
     if not args.sem_navegador:
         webbrowser.open(url)
     try:
@@ -403,7 +403,7 @@ def cmd_quarentena(args) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(prog="guardiao", description="Antivírus de estudo")
+    parser = argparse.ArgumentParser(prog="guardiao", description="Antivírus para Linux")
     sub = parser.add_subparsers(dest="comando", required=True)
 
     p_varrer = sub.add_parser("varrer", help="analisa um arquivo, uma pasta ou o computador")
@@ -453,7 +453,7 @@ def main() -> int:
                      help="segundos até liberar uma execução sem veredito (padrão: 2)")
     p_p.set_defaults(func=cmd_proteger)
 
-    p_l = sub.add_parser("launcher", help="abre o protótipo do launcher com os guardiões")
+    p_l = sub.add_parser("launcher", help="abre o painel no navegador")
     p_l.add_argument("--porta", type=int, default=8765)
     p_l.add_argument("--sem-navegador", action="store_true", help="não abre o navegador sozinho")
     p_l.set_defaults(func=cmd_launcher)

@@ -1,4 +1,4 @@
-"""Servidor local do protótipo: entrega a página e transmite a varredura ao vivo (SSE)."""
+"""Servidor local do painel: entrega a página e transmite a varredura ao vivo (SSE)."""
 
 import json
 import secrets

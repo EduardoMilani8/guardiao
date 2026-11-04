@@ -1,3 +1,3 @@
-"""Guardião: antivírus de estudo — scanner por hash, heurísticas e quarentena."""
+"""Guardião: antivírus para Linux."""
 
 __version__ = "0.1.0"
