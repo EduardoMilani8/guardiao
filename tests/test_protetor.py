@@ -213,3 +213,17 @@ def test_carona_ainda_esperando_recebe_o_veredito(cenario):
     c.liberar_analise.set()
     assert esperar(lambda: len(c.respostas) == 2)
     assert sorted(c.respostas) == sorted([(a, False), (b, False)]) and c.analises == 1
+
+
+def test_arquivo_apagado_durante_a_analise_ainda_e_julgado(cenario):
+    """Malware que se apaga logo depois de executar não escapa: sobra o descritor do kernel."""
+    c = cenario(prazo=5, atraso=True)
+    ruim = c.arquivo("some", MARCA)
+    fd = os.open(ruim, os.O_RDONLY)
+    c.p.tratar(protetor.Evento(protetor.FAN_OPEN_EXEC_PERM, fd, 1))
+    assert esperar(lambda: c.analises == 1)
+    ruim.unlink()
+    c.liberar_analise.set()
+    assert esperar(lambda: c.respostas) and c.respostas == [(fd, False)]
+    assert esperar(lambda: c.avisos) and c.avisos[0].motivo == "ameaça"
+    assert c.avisos[0].caminho == ruim

@@ -348,7 +348,14 @@ class Protetor:
         except OSError:
             alvo = pelo_fd
         try:
-            resultado = analisar(alvo)
+            try:
+                resultado = analisar(alvo)
+            except OSError:
+                if alvo == pelo_fd:
+                    raise
+                # Apagado ou trocado no meio da análise (malware que se apaga
+                # depois de executar): o descritor do kernel ainda é o arquivo.
+                resultado = analisar(pelo_fd)
             resultado.caminho = Path(p.caminho)
         except Exception as erro:
             p.responder(self._enviar, True)
@@ -406,7 +413,11 @@ RECONFERIR = 60.0
 
 
 def _iniciar_processo() -> None:
+    import signal
+
     from . import assinaturas, clamav, regras_yara
+    # Ctrl+C no terminal chega ao grupo inteiro; quem encerra os analisadores é o principal.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     _estado.update(banco=assinaturas.carregar(), yara=regras_yara.carregar(), clamav=clamav.conectar(),
                    regras=regras_yara.regras_das_bases(), conferido=time.monotonic())
 
@@ -427,7 +438,8 @@ def _analisar_no_processo(caminho: str) -> Resultado:
 class Analisadores:
     """Um grupo de processos que analisam; `analisar` serve de Analisador para o Protetor."""
 
-    def __init__(self, processos: int = 3, limite: float = 120.0):
+    def __init__(self, processos: int = 2, limite: float = 120.0):
+        # Cada processo tem as regras compiladas (uns 170 MB com o YARA Forge).
         self.limite = limite
         self.grupo = ProcessPoolExecutor(processos, mp_context=multiprocessing.get_context("forkserver"),
                                          initializer=_iniciar_processo)
