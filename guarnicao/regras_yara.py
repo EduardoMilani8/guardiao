@@ -44,17 +44,72 @@ def regras_das_bases() -> list[Path]:
 
 def carregar(pasta: Path = PASTA_PADRAO, com_bases: bool | None = None) -> "yara_x.Scanner | None":
     """Compila os .yar da pasta (e, na pasta padrão, os das bases baixadas).
-    Retorna None se o yara-x não estiver instalado."""
+    Retorna None se o yara-x não estiver instalado.
+
+    Se este processo nasceu do forkserver de contexto(), as regras já vêm
+    compiladas e divididas com os outros processos: só cria o Scanner."""
     if yara_x is None:
         return None
-    extras = regras_das_bases() if (pasta == PASTA_PADRAO if com_bases is None else com_bases) else []
-    try:
-        regras = _compilar(pasta, extras)
-    except yara_x.CompileError:
-        regras = _compilar(pasta, [])   # base estragada: seguimos ao menos com as nossas
+    usa_bases = pasta == PASTA_PADRAO if com_bases is None else com_bases
+    extras = regras_das_bases() if usa_bases else []
+    if pasta == PASTA_PADRAO and usa_bases and _compartilhadas and _compartilhadas[0] == extras:
+        regras = _compartilhadas[1]
+    else:
+        regras = _compilar_com_reserva(pasta, extras)
     scanner = yara_x.Scanner(regras)
     scanner.set_timeout(TEMPO_MAXIMO)
     return scanner
+
+
+def _compilar_com_reserva(pasta: Path, extras: list[Path]):
+    try:
+        return _compilar(pasta, extras)
+    except yara_x.CompileError:
+        return _compilar(pasta, [])   # base estragada: seguimos ao menos com as nossas
+
+
+# --- regras divididas entre processos ------------------------------------------
+#
+# Cada processo que analisa precisa das regras compiladas (uns 170 MB com o YARA
+# Forge). Compiladas uma vez no forkserver, os filhos nascem com elas e o Linux
+# divide as páginas (copy-on-write): as regras só são lidas, nunca copiadas.
+# 4 processos da varredura: de ~670 MB para ~240 MB, medido em 07/11/2026.
+
+_compartilhadas: "tuple[list[Path], yara_x.Rules] | None" = None
+_fontes_no_servidor: list[Path] | None = None   # com que fontes o forkserver atual compilou
+
+
+def preparar_compartilhadas() -> None:
+    """Compila as regras padrão e guarda para os processos que nascerem daqui."""
+    global _compartilhadas
+    if yara_x is None:
+        return
+    extras = regras_das_bases()
+    _compartilhadas = (extras, _compilar_com_reserva(PASTA_PADRAO, extras))
+
+
+def base_mudou() -> bool:
+    """As bases mudaram depois que o forkserver compilou as regras dele?"""
+    return _fontes_no_servidor is not None and _fontes_no_servidor != regras_das_bases()
+
+
+def contexto():
+    """O contexto de multiprocessing para os processos que analisam.
+
+    forkserver, e não fork: copiar um processo com threads (o launcher, o
+    protetor) pode travar. O forkserver tem uma thread só e carrega as regras
+    uma vez. Se as bases mudaram, encerra o forkserver velho para o próximo
+    grupo de processos nascer com as regras novas."""
+    import multiprocessing
+    from multiprocessing import forkserver
+    global _fontes_no_servidor
+    servidor = forkserver._forkserver
+    if base_mudou() and (parar := getattr(servidor, "_stop", None)):
+        parar()   # API interna; sem ela, cada processo recompila sozinho (funciona, só gasta mais)
+    if getattr(servidor, "_forkserver_pid", None) is None:
+        servidor.set_forkserver_preload(["guarnicao.regras_compartilhadas"])
+        _fontes_no_servidor = regras_das_bases()
+    return multiprocessing.get_context("forkserver")
 
 
 def _compilar(pasta: Path, extras: list[Path]):

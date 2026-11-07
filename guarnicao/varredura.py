@@ -7,7 +7,6 @@ analisado e um `Resumo` no final.
 """
 
 import fnmatch
-import multiprocessing
 import os
 import re
 import time
@@ -193,7 +192,8 @@ _clamav = None
 
 
 def _iniciar_processo() -> None:
-    # Cada processo carrega o próprio banco e o próprio Scanner do YARA-X.
+    # Cada processo tem o próprio banco e o próprio Scanner do YARA-X; as regras
+    # compiladas por baixo do Scanner vêm do forkserver, divididas entre todos.
     global _banco, _yara, _clamav
     _banco = assinaturas.carregar()
     _yara = regras_yara.carregar()
@@ -284,8 +284,8 @@ def _mapear(caminhos: list[str], processos: int):
             except OSError as erro:
                 yield Path(caminho), erro
         return
-    contexto = multiprocessing.get_context("forkserver")
-    with contexto.Pool(processos, initializer=_iniciar_processo) as pool:
+    # Os processos nascem do forkserver já com as regras YARA, divididas na memória.
+    with regras_yara.contexto().Pool(processos, initializer=_iniciar_processo) as pool:
         # Se quem consome parar no meio (ex.: a página do launcher foi fechada),
         # o `with` encerra os processos.
         yield from pool.imap_unordered(_analisar, caminhos, chunksize=16)

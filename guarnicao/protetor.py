@@ -24,7 +24,6 @@ binários, passam por aqui.
 import ctypes
 import ctypes.util
 import errno
-import multiprocessing
 import os
 import queue
 import select
@@ -439,16 +438,48 @@ class Analisadores:
     """Um grupo de processos que analisam; `analisar` serve de Analisador para o Protetor."""
 
     def __init__(self, processos: int = 2, limite: float = 120.0):
-        # Cada processo tem as regras compiladas (uns 170 MB com o YARA Forge).
-        self.limite = limite
-        self.grupo = ProcessPoolExecutor(processos, mp_context=multiprocessing.get_context("forkserver"),
-                                         initializer=_iniciar_processo)
+        # As regras compiladas (uns 170 MB com o YARA Forge) ficam no forkserver,
+        # divididas pelos processos; cada um só tem a parte que é dele.
+        self.processos, self.limite = processos, limite
+        self.conferido = time.monotonic()
+        self._trava = threading.Lock()
+        self.grupo = self._novo_grupo()
+
+    def _novo_grupo(self) -> ProcessPoolExecutor:
+        from . import regras_yara
+        grupo = ProcessPoolExecutor(self.processos, mp_context=regras_yara.contexto(),
+                                    initializer=_iniciar_processo)
         # Sobe os processos e compila as regras já, antes de o kernel começar a perguntar.
-        for f in [self.grupo.submit(time.sleep, 0.5) for _ in range(processos)]:
+        for f in [grupo.submit(time.sleep, 0.5) for _ in range(self.processos)]:
             f.result()
+        return grupo
 
     def analisar(self, caminho: Path) -> Resultado:
+        self._conferir_bases()
         return self.grupo.submit(_analisar_no_processo, str(caminho)).result(timeout=self.limite)
+
+    def _conferir_bases(self) -> None:
+        # Bases novas: um grupo novo nasce com elas divididas. Enquanto ele sobe
+        # (uns 15 s), o velho continua respondendo, cada processo com a própria
+        # cópia nova (_analisar_no_processo); ninguém fica sem análise.
+        from . import regras_yara
+        if time.monotonic() - self.conferido < RECONFERIR or not self._trava.acquire(blocking=False):
+            return
+        self.conferido = time.monotonic()
+        if regras_yara.base_mudou():
+            threading.Thread(target=self._renovar, daemon=True, name="renovar-analisadores").start()
+        else:
+            self._trava.release()
+
+    def _renovar(self) -> None:
+        try:
+            novo = self._novo_grupo()
+            velho, self.grupo = self.grupo, novo
+            velho.shutdown(wait=True)   # termina o que já estava sendo analisado
+        except Exception as erro:  # noqa: BLE001 — sem grupo novo, o velho segue funcionando
+            print(f"Não deu para renovar os analisadores: {erro}", flush=True)
+        finally:
+            self._trava.release()
 
     def fechar(self) -> None:
         self.grupo.shutdown(wait=False, cancel_futures=True)
