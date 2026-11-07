@@ -85,25 +85,47 @@ def texto_resumo_limpo(nome: str, total: int, quando: datetime) -> tuple[str, st
     return f"Varredura {nome} concluída ✓", f"{arquivos} arquivos, tudo limpo · hoje, {quando:%H:%M}"
 
 
-def resumo_limpo(nome: str, total: int, quando: datetime, marca: Path | None = None) -> bool:
-    """Avisa que a varredura agendada terminou limpa, no máximo uma vez por dia.
+MARCA_BASES = MARCA_RESUMO.with_name("ultimo-aviso-bases")
 
-    Devolve True se avisou. O resto do tempo, o silêncio é o aviso: quem lembra
-    que a Guarnição está ali é o escudo da barra, não uma pilha de notificações.
-    """
-    marca = marca or MARCA_RESUMO
+
+def uma_vez_por_dia(marca: Path, quando: datetime) -> bool:
+    """True se ainda não marcou hoje (e marca). Sem onde gravar, deixa avisar:
+    no pior caso avisa de novo amanhã cedo, nunca quebra quem chamou."""
     hoje = quando.date().isoformat()
     try:
         if marca.read_text().strip() == hoje:
             return False
     except OSError:
         pass
-    notificar(*texto_resumo_limpo(nome, total, quando), discreto=True, dados={"tipo": "limpa"})
     try:
         marca.parent.mkdir(parents=True, exist_ok=True)
         marca.write_text(hoje)
     except OSError:
-        pass   # sem onde guardar: no pior caso avisa de novo amanhã cedo, nunca quebra a varredura
+        pass
+    return True
+
+
+def resumo_limpo(nome: str, total: int, quando: datetime, marca: Path | None = None) -> bool:
+    """Avisa que a varredura agendada terminou limpa, no máximo uma vez por dia.
+
+    Devolve True se avisou. O resto do tempo, o silêncio é o aviso: quem lembra
+    que a Guarnição está ali é o escudo da barra, não uma pilha de notificações.
+    """
+    if not uma_vez_por_dia(marca or MARCA_RESUMO, quando):
+        return False
+    notificar(*texto_resumo_limpo(nome, total, quando), discreto=True, dados={"tipo": "limpa"})
+    return True
+
+
+def aviso_bases(avisos: list[str], freshclam_parado: bool, quando: datetime,
+                marca: Path | None = None) -> bool:
+    """Bases velhas ou freshclam parado: avisa no máximo uma vez por dia (avisos-v3)."""
+    if not avisos and not freshclam_parado:
+        return False
+    if not uma_vez_por_dia(marca or MARCA_BASES, quando):
+        return False
+    corpo = avisos[0] if avisos else "O serviço do ClamAV que baixa assinaturas (freshclam) está parado."
+    notificar("Suas bases estão desatualizadas", corpo, dados={"tipo": "bases", "personagem": "cavaleiro"})
     return True
 
 

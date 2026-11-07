@@ -78,3 +78,19 @@ def test_dados_de_um_resultado():
     assert d == {"tipo": "ameaca", "personagem": "arqueira", "arquivo": "fatura.pdf.exe",
                  "caminho": "/home/x/Downloads/fatura.pdf.exe", "sha256": "ab" * 32, "quarentena": ""}
     assert notificacao.dados_de(r, "trancado", "id1")["personagem"] == "carcereiro"
+
+
+def test_aviso_de_bases_uma_vez_por_dia(tmp_path, monkeypatch):
+    from datetime import datetime
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    marca = tmp_path / "ultimo-aviso-bases"
+    dia = datetime(2026, 11, 8, 9, 0)
+    assert not notificacao.aviso_bases([], False, dia, marca)              # tudo em dia: silêncio
+    assert notificacao.aviso_bases(["yara-forge: sem atualizar há 9 dia(s)"], False, dia, marca)
+    assert not notificacao.aviso_bases(["yara-forge: sem atualizar há 9 dia(s)"], False, dia, marca)
+    assert notificacao.aviso_bases([], True, datetime(2026, 11, 9, 9, 0), marca)
+    (titulo, corpo), opcoes = avisos[0]
+    assert titulo == "Suas bases estão desatualizadas" and "yara-forge" in corpo
+    assert opcoes["dados"] == {"tipo": "bases", "personagem": "cavaleiro"}
+    assert "freshclam" in avisos[1][0][1]

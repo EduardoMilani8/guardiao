@@ -342,8 +342,16 @@ def cmd_monitorar(args) -> int:
         print(f"{VERDE}Vigiando também o comportamento dos processos (shells reversos, mineradores){FIM}")
     with monitor.Monitor(pastas, banco, ao_analisar, ao_erro), vigia:
         try:
+            conferido = 0.0
             while True:
                 time.sleep(1)
+                # O monitor está sempre ligado; o timer das bases pode ter parado.
+                if time.monotonic() - conferido > 3600:
+                    conferido = time.monotonic()
+                    from datetime import datetime
+
+                    from . import bases
+                    notificacao.aviso_bases(bases.avisos(), bases.freshclam_parado(), datetime.now())
         except KeyboardInterrupt:
             print("\nMonitor encerrado.")
     return 0
