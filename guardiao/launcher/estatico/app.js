@@ -797,6 +797,9 @@ function rota() {
   $('#muralha').hidden = aba !== 'painel';
   $('#pergaminho').hidden = aba !== 'historico';
   $('#cela').hidden = aba !== 'quarentena';
+  document.querySelectorAll('.gn-nav a').forEach((l) => {
+    if (l.getAttribute('href') === `#${aba}`) l.setAttribute('aria-current', 'page'); else l.removeAttribute('aria-current');
+  });
   fecharModal();
   if (aba === 'historico') {
     arte('pergaminho', '#arte-pergaminho');

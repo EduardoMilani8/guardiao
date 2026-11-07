@@ -226,3 +226,7 @@
 @keyframes cqBalanca{0%,22%{transform:rotate(0)}26%{transform:rotate(2.4deg)}31%{transform:rotate(-1.6deg)}36%{transform:rotate(.9deg)}41%{transform:rotate(-.4deg)}46%,100%{transform:rotate(0)}}
 .cq-algema{animation-timing-function:ease-in-out !important}
 @media (prefers-reduced-motion: reduce){.cq-luz,.cq-chama,.cq-algema,.cq-sombra,.cq-espia,.cq-lampiao,.cq-porta,.cq-placa,.cq-corrente,.cq-arco{animation:none !important}}
+
+/* ---- as três cenas começam embaixo da barra de cima (estilo.css) e ocupam o resto da janela ---- */
+.mu-raiz,.hp-mesa{margin-top:var(--barra);height:calc(100vh - var(--barra));height:calc(100dvh - var(--barra))}
+.cq-cela{margin-top:var(--barra);min-height:calc(100vh - var(--barra));min-height:calc(100dvh - var(--barra))}

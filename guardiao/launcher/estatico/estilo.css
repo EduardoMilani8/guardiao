@@ -161,3 +161,20 @@ html,body{margin:0;background:#04080f;color:var(--texto)}
   .mu-ameias,.mu-placas{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}
   .mu-placas>div:empty{display:none}
 }
+
+/* ---- barra de cima, igual nas três telas ---- */
+:root{--barra:68px}
+.gn-barra{position:fixed;top:0;left:0;right:0;z-index:50;height:var(--barra);box-sizing:border-box;
+  background:linear-gradient(180deg,#070a12,#0b1020);border-bottom:1px solid rgba(212,175,106,.35);
+  box-shadow:0 4px 14px rgba(0,0,0,.45);font-family:'Source Sans 3',system-ui,sans-serif;color:#F3EEE2}
+.gn-barra-miolo{max-width:1160px;height:100%;margin:0 auto;padding:0 40px;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:space-between;gap:16px}
+.gn-marca{display:flex;align-items:center;gap:12px;font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600;color:inherit;text-decoration:none}
+.gn-marca img{width:40px;height:40px;display:block}
+.gn-nav{display:flex;gap:4px}
+.gn-nav a{padding:10px 14px;text-decoration:none;font-weight:600;color:#B7BCCB}
+.gn-nav a:hover{color:#F3EEE2}
+.gn-nav a[aria-current="page"]{color:#F3EEE2;box-shadow:inset 0 -2px 0 #D4AF6A}
+.gn-nav a:focus-visible,.gn-marca:focus-visible{outline:2px solid #D4AF6A;outline-offset:2px;border-radius:4px}
+/* a altura das cenas embaixo da barra fica no fim de abas.css, que carrega por último */
+@media (max-width:640px){.gn-barra-miolo{padding:0 16px}.gn-marca{font-size:0;gap:0}.gn-nav a{padding:10px 8px}}

@@ -15,6 +15,14 @@
      e o fundo de cada retrato aparece quadrado. O SVG já tem tamanho zero. -->
 <div id="arte-comum" aria-hidden="true"></div>
 
+<!-- Uma barra só, no mesmo lugar nas três telas; as cenas ficam inteiras embaixo dela. -->
+<header class="gn-barra">
+<div class="gn-barra-miolo">
+<a class="gn-marca" href="#painel"><img src="/estatico/arte/emblema.svg" alt="" width="40" height="40">Guarnição</a>
+<nav class="gn-nav" aria-label="Seções"><a href="#painel" aria-current="page">Painel</a><a href="#historico">Histórico</a><a href="#quarentena">Quarentena</a></nav>
+</div>
+</header>
+
 <div class="mu-raiz" id="muralha">
 <div class="mu-ceu" aria-hidden="true"></div>
 <div class="mu-horizonte" id="horizonte" aria-hidden="true"></div>
@@ -44,12 +52,6 @@
 
 <div class="mu-rolagem">
 <div class="mu-miolo">
-<header class="mu-topo">
-<div class="mu-marca"><img src="/estatico/arte/emblema.svg" alt="">Guarnição</div>
-<nav class="mu-nav" aria-label="Seções">
-<a href="#painel" aria-current="page">Painel</a><a href="#historico">Histórico</a><a href="#quarentena">Quarentena</a>
-</nav>
-</header>
 <section class="mu-estado" aria-labelledby="titulo" aria-live="polite">
 <h1 id="titulo" class="mu-titulo">Guarnição</h1>
 <dl class="mu-resumo" id="resumo"></dl>
@@ -89,10 +91,6 @@
 <div class="hp-fundo" aria-hidden="true"></div>
 <div class="hp-rolagem" tabindex="0" aria-label="Registro de varreduras">
 <div class="hp-conteudo">
-<header class="hp-topo">
-<div class="hp-marca"><img src="/estatico/arte/emblema.svg" alt="" width="42" height="42">Guarnição</div>
-<nav class="hp-nav" aria-label="Seções"><a href="#painel">Painel</a><a href="#historico" aria-current="page">Histórico</a><a href="#quarentena">Quarentena</a></nav>
-</header>
 <svg class="hp-filete" viewBox="0 0 420 22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M10 11 H168 M252 11 H410"></path><path d="M168 11 C180 2 192 3 194 11 C196 18 187 19 186 13"></path><path d="M252 11 C240 2 228 3 226 11 C224 18 233 19 234 13"></path></g><path d="M210 3 L218 11 L210 19 L202 11 Z" fill="#8a1e10"></path></svg>
 <h1 class="hp-titulo"><span class="hp-capitular">H</span>istórico de varreduras</h1>
 <p class="hp-sub">Tudo o que a Guarnição vigiou, anotado dia a dia.</p>
@@ -111,10 +109,6 @@
 <div class="cq-cela" id="cela" hidden>
 <div id="cela-cena" style="display: contents"></div>
 <div class="cq-miolo">
-<header class="cq-topo">
-<div class="cq-marca"><img src="/estatico/arte/emblema.svg" alt="" width="44" height="44">Guarnição</div>
-<nav class="cq-nav" aria-label="Seções"><a href="#painel">Painel</a><a href="#historico">Histórico</a><a href="#quarentena" aria-current="page">Quarentena</a></nav>
-</header>
 <h1 class="cq-titulo">Quarentena</h1>
 <p class="cq-sub">Os arquivos trancados ficam aqui, presos. Daqui eles não abrem nem rodam.</p>
 <dl class="cq-giz" id="cq-giz"></dl>
