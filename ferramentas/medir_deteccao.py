@@ -1,4 +1,4 @@
-"""Mede a taxa de detecção do Guarnição com amostras recentes do MalwareBazaar.
+"""Mede a taxa de detecção da Guarnição com amostras recentes do MalwareBazaar.
 
     .venv/bin/pip install -r ferramentas/requirements.txt
     .venv/bin/python -I ferramentas/medir_deteccao.py --desde 2026-11-05
@@ -10,7 +10,7 @@ pasta 0700, com permissão 0400, e o conteúdo é conferido pelo SHA-256.
 
 A medição é feita *sem* a base de hashes do MalwareBazaar: as amostras vêm
 dela, e com ela a taxa seria 100% por construção. O que sobra (ClamAV, YARA
-e heurísticas) é o que o Guarnição reconhece de malware que ninguém reportou.
+e heurísticas) é o que a Guarnição reconhece de malware que ninguém reportou.
 
 Precisa da chave do MalwareBazaar no ~/.config/guarnicao/config.toml.
 """
@@ -49,7 +49,7 @@ def pedir(campos: dict, chave: str) -> bytes:
 
 
 def baixar(pasta: Path, chave: str, desde: date, por_tipo: dict[str, int]) -> list[dict]:
-    import pyzipper   # só a medição precisa dele: o Guarnição em si, não
+    import pyzipper   # só a medição precisa dele: a Guarnição em si, não
 
     amostras = []
     for tipo, quantos in por_tipo.items():

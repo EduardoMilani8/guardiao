@@ -1,0 +1,23 @@
+# Serviço de usuário do systemd: inicia o monitor junto com a sessão.
+#
+# Instalar:
+#   mkdir -p ~/.config/systemd/user
+#   cp contrib/guarnicao-monitor.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now guarnicao-monitor
+#
+# Ver o que ele está fazendo:  journalctl --user -u guarnicao-monitor -f
+# Desinstalar:                 systemctl --user disable --now guarnicao-monitor
+
+[Unit]
+Description=Guarnição: monitor de downloads e comportamento
+After=graphical-session.target
+
+[Service]
+WorkingDirectory=%h/guarnicao
+ExecStart=%h/guarnicao/.venv/bin/python -m guarnicao monitorar --isolar
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

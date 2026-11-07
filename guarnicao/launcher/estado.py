@@ -9,12 +9,12 @@ import time
 
 from .. import bases
 
-PROTETOR = "guardiao-protetor.service"      # serviço do sistema (root)
-MONITOR = "guardiao-monitor.service"         # serviços do usuário
-TIMERS = {"rapida": "guardiao-varrer-rapida.timer", "completa": "guardiao-varrer-completa.timer",
-          "atualizar": "guardiao-atualizar.timer"}
-LIGAR_PROTETOR = "sudo systemctl enable --now guardiao-protetor"
-LIGAR_MONITOR = "systemctl --user enable --now guardiao-monitor"
+PROTETOR = "guarnicao-protetor.service"      # serviço do sistema (root)
+MONITOR = "guarnicao-monitor.service"         # serviços do usuário
+TIMERS = {"rapida": "guarnicao-varrer-rapida.timer", "completa": "guarnicao-varrer-completa.timer",
+          "atualizar": "guarnicao-atualizar.timer"}
+LIGAR_PROTETOR = "sudo systemctl enable --now guarnicao-protetor"
+LIGAR_MONITOR = "systemctl --user enable --now guarnicao-monitor"
 
 
 def _systemctl(unidade: str, usuario: bool, campos: list[str]) -> dict[str, str]:

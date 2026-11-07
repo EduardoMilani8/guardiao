@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 
-# Antes de importar o Guarnição: os caminhos dele são calculados no import, e os
+# Antes de importar a Guarnição: os caminhos dela são calculados no import, e os
 # processos da varredura em paralelo herdam estas variáveis. Assim nenhum teste
 # enxerga as bases baixadas, o cache ou a quarentena de verdade desta máquina.
 _TMP = tempfile.mkdtemp(prefix="guarnicao-testes-")

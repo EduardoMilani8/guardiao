@@ -1,7 +1,7 @@
-"""Proteção antes da execução: o kernel pergunta, o Guarnição responde.
+"""Proteção antes da execução: o kernel pergunta, a Guarnição responde.
 
 Com o fanotify e FAN_OPEN_EXEC_PERM, cada execve() de um arquivo fica parado
-até o Guarnição responder "pode" ou "não pode". Uma ameaça conhecida nem chega
+até a Guarnição responder "pode" ou "não pode". Uma ameaça conhecida nem chega
 a rodar: quem tentou recebe "Operação não permitida".
 
 O risco de um vigia assim é travar o computador. Por isso:

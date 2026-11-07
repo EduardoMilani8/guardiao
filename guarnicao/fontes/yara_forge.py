@@ -4,7 +4,7 @@ https://github.com/YARAHQ/yara-forge — publica um pacote novo quase todo dia.
 Usamos o pacote "core", o de menos falsos positivos. Cada regra traz um
 `score` de 0 a 100: a partir de 80 indica malware; abaixo, algo suspeito.
 As regras têm licenças variadas (algumas não comerciais): são baixadas para
-uso local, nunca redistribuídas com o Guarnição.
+uso local, nunca redistribuídas com a Guarnição.
 """
 
 import json

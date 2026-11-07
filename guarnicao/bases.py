@@ -9,7 +9,7 @@ Cada base fica numa pasta própria, com uma subpasta por versão e um link
 
 A versão nova é baixada e validada à parte; só então o link é trocado, num
 passo atômico (os.replace). Se o download cair ou a base vier quebrada, a
-versão anterior continua valendo: uma atualização ruim nunca deixa o
+versão anterior continua valendo: uma atualização ruim nunca deixa a
 Guarnição sem proteção.
 """
 
@@ -148,7 +148,7 @@ def _atualizar_uma(base: Base, forcar: bool, agora: float) -> Relatorio:
             estado.versao, estado.atualizado = versao, agora
             situacao = "atualizada"
         estado.verificado, estado.erro = agora, None
-    except Exception as erro:   # rede, disco, base corrompida: nada disso pode derrubar o Guarnição
+    except Exception as erro:   # rede, disco, base corrompida: nada disso pode derrubar a Guarnição
         estado.erro = str(erro) or erro.__class__.__name__
         situacao = "erro"
     finally:
@@ -187,7 +187,7 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
 
 
 def registradas() -> list[Base]:
-    """Todas as bases que o Guarnição conhece, na ordem em que são atualizadas."""
+    """Todas as bases que a Guarnição conhece, na ordem em que são atualizadas."""
     # Aqui dentro: as fontes importam este módulo.
     from .fontes.malwarebazaar import MalwareBazaar
     from .fontes.yara_forge import YaraForge

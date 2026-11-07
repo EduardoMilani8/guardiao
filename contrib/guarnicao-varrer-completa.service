@@ -1,16 +1,18 @@
-# Varredura rápida agendada. Chamado pelo guardiao-varrer-rapida.timer.
-# A instalação está no guardiao-varrer-rapida.timer.
+# Varredura completa agendada. Chamado pelo guarnicao-varrer-completa.timer.
+# A instalação está no guarnicao-varrer-completa.timer.
 
 [Unit]
-Description=Guardião: varredura rápida agendada
+Description=Guarnição: varredura completa agendada
+# O disco inteiro na bateria gasta carga à toa: espera o carregador.
+ConditionACPower=true
 
 [Service]
 Type=oneshot
-WorkingDirectory=%h/guardiao
+WorkingDirectory=%h/guarnicao
 # Sem --isolar: avisa e quem decide trancar é você, no launcher.
 # 4 processos: cada um carrega as regras (~170 MB); com um por núcleo, a
 # rápida chegou a 2,8 GB. Em segundo plano, a pressa não vale essa memória.
-ExecStart=%h/guardiao/.venv/bin/python -m guardiao varrer --rapida --agendada --processos 4
+ExecStart=%h/guarnicao/.venv/bin/python -m guarnicao varrer --completa --agendada --processos 4
 Environment=PYTHONUNBUFFERED=1
 # Tarefa de fundo: cede CPU e disco a qualquer coisa que você estiver fazendo.
 Nice=19

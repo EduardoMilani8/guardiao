@@ -4,16 +4,16 @@
 #
 # Instalar:
 #   mkdir -p ~/.config/systemd/user
-#   cp contrib/guardiao-atualizar.service contrib/guardiao-atualizar.timer ~/.config/systemd/user/
+#   cp contrib/guarnicao-atualizar.service contrib/guarnicao-atualizar.timer ~/.config/systemd/user/
 #   systemctl --user daemon-reload
-#   systemctl --user enable --now guardiao-atualizar.timer
+#   systemctl --user enable --now guarnicao-atualizar.timer
 #
-# Próxima execução:   systemctl --user list-timers guardiao-atualizar.timer
-# Ver o que fez:      journalctl --user -u guardiao-atualizar
-# Desinstalar:        systemctl --user disable --now guardiao-atualizar.timer
+# Próxima execução:   systemctl --user list-timers guarnicao-atualizar.timer
+# Ver o que fez:      journalctl --user -u guarnicao-atualizar
+# Desinstalar:        systemctl --user disable --now guarnicao-atualizar.timer
 
 [Unit]
-Description=Guardião: atualizar bases de hora em hora
+Description=Guarnição: atualizar bases de hora em hora
 
 [Timer]
 OnCalendar=hourly

@@ -142,7 +142,7 @@ def cmd_varrer(args) -> int:
     terminal = sys.stdout.isatty()
     resumo = varredura.Resumo()
     inicio, achados = datetime.now(), []
-    # Só os suspeitos: o VirusTotal desempata o que o Guarnição não teve certeza.
+    # Só os suspeitos: o VirusTotal desempata o que a Guarnição não teve certeza.
     consultar_vt, promovidos = ConsultaVirusTotal(maximo=MAX_VIRUSTOTAL_POR_VARREDURA), 0
 
     for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
@@ -341,7 +341,7 @@ def cmd_proteger(args) -> int:
     codigo = Path(protetor.__file__).parent
     if any(os.stat(p).st_uid != 0 or os.stat(p).st_mode & 0o022 for p in (codigo, *codigo.glob("*.py"))):
         # Um serviço root rodando código que sua conta pode alterar é um atalho
-        # para root: qualquer malware na sua conta trocaria o Guarnição.
+        # para root: qualquer malware na sua conta trocaria a Guarnição.
         print(f"{AMARELO}Atenção: {codigo} pode ser alterado por um usuário comum. "
               f"Para o serviço, use a cópia de root em /opt/guarnicao.{FIM}")
     avisar_camadas_desligadas()
