@@ -94,3 +94,17 @@ def test_aviso_de_bases_uma_vez_por_dia(tmp_path, monkeypatch):
     assert titulo == "Suas bases estão desatualizadas" and "yara-forge" in corpo
     assert opcoes["dados"] == {"tipo": "bases", "personagem": "cavaleiro"}
     assert "freshclam" in avisos[1][0][1]
+
+
+def test_nome_com_traco_nao_vira_opcao(tmp_path):
+    # Um malware chamado "-fatura.pdf.exe" não pode silenciar o aviso: sem "--",
+    # o notify-send lê o corpo como opção desconhecida e sai sem mostrar nada.
+    import shutil
+    import subprocess
+    cmd = notificacao.comando("-Ameaça", "-fatura.pdf.exe\nEICAR", dados={"arquivo": "-fatura.pdf.exe"})
+    assert cmd[-3:] == ["--", "-Ameaça", "-fatura.pdf.exe\nEICAR"]
+    if shutil.which("notify-send"):
+        # Barramento que não existe: só queremos ver como ele lê os argumentos.
+        env = {"PATH": os.environ["PATH"], "DBUS_SESSION_BUS_ADDRESS": f"unix:path={tmp_path}/nada"}
+        saida = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=10)
+        assert "Unknown option" not in saida.stderr

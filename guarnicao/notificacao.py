@@ -76,7 +76,8 @@ def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = Fal
     else:
         opcoes = ["--urgency", "critical" if urgente else "normal",
                   "--icon", "security-low" if urgente else "dialog-warning"]
-    return ["notify-send", "--app-name=Guarnição", *opcoes, *_hints(dados), titulo, corpo]
+    # "--": um arquivo chamado "-x.pdf" seria lido como opção e o aviso sumiria.
+    return ["notify-send", "--app-name=Guarnição", *opcoes, *_hints(dados), "--", titulo, corpo]
 
 
 def texto_resumo_limpo(nome: str, total: int, quando: datetime) -> tuple[str, str]:
