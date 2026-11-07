@@ -580,11 +580,14 @@ def cmd_quarentena(args) -> int:
         from . import trancar
         nome = Path(args.caminho).name
         try:
-            id_ = trancar.trancar(args.caminho, args.sha256, **trancar.do_historico(args.caminho, args.sha256))
+            id_ = trancar.trancar(args.caminho, args.sha256, **trancar.conferir(args.caminho, args.sha256))
         except trancar.Recusa as recusa:
             print(f"{VERMELHO}Não deu para trancar: {recusa.motivo}{FIM}")
-            notificacao.notificar("Não deu para trancar", f"{nome}\n{recusa.motivo}",
-                                  dados={"tipo": "suspeito", "personagem": "carcereiro", "arquivo": nome})
+            # Do aviso no canto, "use sudo" não ajuda: no painel a pessoa vê o achado e decide.
+            motivo = ("é um arquivo do sistema: abra o painel para ver o que fazer"
+                      if recusa.status == 403 else recusa.motivo)
+            # Sem tipo: a extensão mostra o balão comum (não há cartão de falha no avisos-v3).
+            notificacao.notificar("Não deu para trancar", f"{nome}\n{motivo}")
             return 2
         print(f"Trancado na quarentena (id {id_}): {args.caminho}")
         notificacao.notificar("Trancado na quarentena", f"{nome}\nPara devolver: Desfazer",

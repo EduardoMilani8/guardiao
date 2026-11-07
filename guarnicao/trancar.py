@@ -42,3 +42,28 @@ def do_historico(caminho: str, sha256: str) -> dict:
                 return {"ameaca": a.get("ameaca"), "camada": a.get("camada"),
                         "veredito": a.get("veredito") or "ameaca"}
     return {}
+
+
+def conferir(caminho: str, sha256: str) -> dict:
+    """O que a Guarnição sabe deste arquivo, ou Recusa se ela não o acusa.
+
+    O botão Trancar chega por um aviso, e qualquer programa da sessão consegue
+    mandar um aviso com o nome da Guarnição. Então quem decide é ela: um achado
+    do histórico, ou o arquivo analisado de novo agora (o que também guarda o
+    nome da ameaça quando o aviso veio do monitor ou do protetor).
+    """
+    if dados := do_historico(caminho, sha256):
+        return dados
+    arquivo = Path(caminho)
+    if not arquivo.is_file() or arquivo.is_symlink():
+        raise Recusa(410, "o arquivo não está mais lá")
+    from . import assinaturas, clamav, regras_yara
+    try:
+        r = scanner.analisar(arquivo, assinaturas.carregar(), regras_yara.carregar(), clamav.conectar())
+    except OSError as erro:
+        raise Recusa(500, erro.strerror or str(erro))
+    if r.sha256 != sha256:
+        raise Recusa(409, "o arquivo mudou desde a varredura: varra de novo")
+    if not (r.infectado or r.suspeito):
+        raise Recusa(422, "a Guarnição não acha nada neste arquivo agora: abra o painel")
+    return {"ameaca": r.ameaca, "camada": r.camada, "veredito": "ameaca" if r.infectado else "suspeito"}

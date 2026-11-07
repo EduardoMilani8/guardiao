@@ -58,3 +58,44 @@ def test_cli_recusa_avisa(tmp_path, monkeypatch):
                                       "--sha256", "0" * 64])
     assert cli.main() == 2
     assert avisos[0][0][0] == "Não deu para trancar"
+
+
+def test_cli_so_tranca_o_que_a_guarnicao_acusa(tmp_path, monkeypatch):
+    # Qualquer programa da sessão pode mandar um aviso "da Guarnição" com um botão
+    # Trancar apontando para um arquivo seu. O comando confere antes de mexer.
+    arq = tmp_path / "anotacoes.txt"
+    arq.write_text("lista de compras\n")
+    antes = len(quarentena.listar())
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    monkeypatch.setattr(sys, "argv", ["guarnicao", "quarentena", "trancar", str(arq),
+                                      "--sha256", scanner.calcular_sha256(arq)])
+    assert cli.main() == 2
+    assert arq.exists() and len(quarentena.listar()) == antes
+    [((titulo, corpo), opcoes)] = avisos
+    assert titulo == "Não deu para trancar" and "abra o painel" in corpo
+
+
+def test_cli_recusa_nao_usa_a_frase_do_vidente(tmp_path, monkeypatch):
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    monkeypatch.setattr(sys, "argv", ["guarnicao", "quarentena", "trancar", str(tmp_path / "x"),
+                                      "--sha256", "0" * 64])
+    assert cli.main() == 2
+    # Sem tipo: a extensão mostra o balão comum, não um cartão de "algo estranho".
+    assert (avisos[0][1].get("dados") or {}).get("tipo") is None
+
+
+def test_recusa_sem_permissao_manda_abrir_o_painel(tmp_path, monkeypatch):
+    arq = tmp_path / "ruim.com"
+    arq.write_bytes(EICAR)
+
+    def sem_permissao(*a, **k):
+        raise PermissionError(13, "Permission denied")
+    monkeypatch.setattr(quarentena, "isolar", sem_permissao)
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    monkeypatch.setattr(sys, "argv", ["guarnicao", "quarentena", "trancar", str(arq),
+                                      "--sha256", scanner.calcular_sha256(arq)])
+    assert cli.main() == 2
+    assert "abra o painel" in avisos[0][0][1] and "sudo" not in avisos[0][0][1]
