@@ -99,7 +99,9 @@ function resultado(r) {
   if (r.ameacas) partes.push(plural(r.ameacas, 'ameaça', 'ameaças'));
   if (r.suspeitos) partes.push(plural(r.suspeitos, 'suspeito', 'suspeitos'));
   const trancados = r.achados.length > 0 && r.achados.every((a) => a.trancado);
-  if (trancados) return { texto: `${partes.join(' · ')} · ${r.achados.length > 1 ? 'trancados' : 'trancado'}`, cor: '' };
+  // "ameaça" pede o feminino; com suspeito no meio, fica o masculino.
+  const fem = !r.suspeitos;
+  if (trancados) return { texto: `${partes.join(' · ')} · ${fem ? 'trancada' : 'trancado'}${r.achados.length > 1 ? 's' : ''}`, cor: '' };
   return { texto: partes.join(' · '), cor: r.ameacas ? 'perigo' : 'aviso' };
 }
 
@@ -123,6 +125,7 @@ async function carregar() {
     recado('Não consegui falar com a Guarnição. O launcher ainda está aberto?', true);
   }
   desenhar();
+  if (!$('#pergaminho').hidden) desenharHistorico();
 }
 
 let recadoTempo;
@@ -466,7 +469,7 @@ function desenhar() {
   const h1 = $('#titulo');
   h1.textContent = t.texto;
   h1.className = `mu-titulo ${t.cor}`;
-  document.title = v === 'repouso' ? 'Guarnição' : `${t.texto} · Guarnição`;
+  if (!$('#muralha').hidden) document.title = v === 'repouso' ? 'Guarnição' : `${t.texto} · Guarnição`;
   $('#resumo').innerHTML = resumo(v).map((r) => `<div><dt>${esc(r.rot)}</dt><dd class="${r.cor}">${esc(r.val)}</dd></div>`).join('');
   const prog = $('#progresso');
   prog.hidden = v !== 'varrendo';
@@ -593,6 +596,13 @@ document.addEventListener('click', (evento) => {
   else if (acao === 'cacar') cacar();
   else if (acao === 'fechar-cacada') { est.cacadaFechada = est.servidor.cacada.quando; desenhar(); }
   else if (acao === 'atualizar') atualizar();
+  else if (acao === 'filtro') { abas.filtro = botao.dataset.filtro; abas.escrever = true; desenharHistorico(); }
+  else if (acao === 'primeira') { location.hash = '#painel'; varrer('rapida'); }
+  else if (acao === 'devolver') {
+    mexerNaCela('/api/devolver', botao.dataset.id, (r) => `Devolvido para ${pastaCurta(r.caminho)}.`);
+  } else if (acao === 'apagar') perguntarApagar(botao.dataset.id);
+  else if (acao === 'fechar-modal') fecharModal();
+  else if (acao === 'apagar-de-vez') mexerNaCela('/api/apagar', botao.dataset.id, () => 'Apagado de vez.');
   else if (acao === 'copiar') {
     navigator.clipboard.writeText(botao.dataset.texto)
       .then(() => recado('Comando copiado. Cole no terminal.'))
@@ -600,8 +610,213 @@ document.addEventListener('click', (evento) => {
   }
 });
 
+// ---- abas: Histórico (pergaminho) e Quarentena (cela) ----
+const TINTA = { ok: '#2f6b45', perigo: '#9b2a1e', aviso: '#a1500b', '': '#9b2a1e', tinta: '#2e2012' };
+const FILTROS = [
+  ['todas', 'Todas', () => true],
+  ['rapidas', 'Rápidas', (r) => r.tipo === 'rápida'],
+  ['completas', 'Completas', (r) => r.tipo === 'completa'],
+  ['pastas', 'Pastas', (r) => r.tipo !== 'rápida' && r.tipo !== 'completa'],
+  ['achados', 'Com achados', (r) => r.ameacas || r.suspeitos],
+];
+const SELO_CERA = '<svg viewBox="0 0 74 74"><path d="M37 3 C46 2 50 7 57 9 C65 12 70 18 70 27 C72 35 68 40 70 47 C70 56 64 63 56 66 C49 70 44 72 37 71 C29 72 23 69 17 66 C9 62 4 55 4 46 C2 39 5 33 4 26 C5 17 11 11 19 8 C25 5 30 3 37 3 Z" fill="url(#hpCera)" stroke="#4a0a06" stroke-width="1"></path><circle cx="37" cy="37" r="24" fill="none" stroke="#5a0e08" stroke-width="2" opacity=".6"></circle><circle cx="37" cy="37" r="22" fill="none" stroke="#e07a5a" stroke-width=".8" opacity=".45"></circle><path d="M20 18 C24 14 30 12 36 12" fill="none" stroke="#ffb8a0" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"></path></svg>';
+const CORRENTE = (lado) => `<svg class="cq-corrente" style="${lado}: 16%" viewBox="0 0 12 42" aria-hidden="true"><g fill="none" stroke="#6b707c" stroke-width="2"><ellipse cx="6" cy="6" rx="4" ry="6"></ellipse><path d="M6 12 V24" stroke-width="3"></path><ellipse cx="6" cy="30" rx="4" ry="6"></ellipse><path d="M6 36 V42" stroke-width="3"></path></g></svg>`;
+const CADEADO = '<svg class="cq-cadeado" viewBox="0 0 58 70" aria-hidden="true"><path class="cq-arco" d="M15 34 V22 a14 14 0 0 1 28 0 V34" fill="none" stroke="#8a909c" stroke-width="6" stroke-linecap="round"></path><path class="cq-arco" d="M15 34 V22 a14 14 0 0 1 28 0 V34" fill="none" stroke="#2a2c33" stroke-width="1.5" stroke-linecap="round"></path><rect x="6" y="32" width="46" height="34" rx="5" fill="#6b5a3a" stroke="#0b0c10" stroke-width="2"></rect><rect x="9" y="35" width="40" height="5" rx="2" fill="#a88a52" opacity=".7"></rect><path d="M29 44 a4 4 0 1 1 0.01 0 Z M27 47 H31 L32 57 H26 Z" fill="#0b0c10"></path></svg>';
+const CHAVE = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="5" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M8.6 9 H17 M14 9 V12 M16.4 9 V11.4" stroke="currentColor" stroke-width="1.8"></path></svg>';
+
+const abas = { filtro: 'todas', escrever: true, quarentena: null, artePronta: {} };
+
+function numeroCurto(n) {
+  if (n < 1e6) return numero(n);
+  const m = n / 1e6;
+  return `${m.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} ${m < 2 ? 'milhão' : 'milhões'}`;
+}
+
+function duracao(s) {
+  if (s == null) return '';
+  if (s < 60) return `${s.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s`;
+  const min = Math.floor(s / 60);
+  return min < 60 ? `${min} min ${Math.round(s % 60)} s` : `${Math.floor(min / 60)} h ${min % 60} min`;
+}
+
+function tamanho(bytes) {
+  const unidades = ['B', 'KB', 'MB', 'GB'];
+  let v = bytes || 0; let i = 0;
+  while (v >= 1024 && i < unidades.length - 1) { v /= 1024; i += 1; }
+  return `${v.toLocaleString('pt-BR', { maximumFractionDigits: i ? 1 : 0 })} ${unidades[i]}`;
+}
+
+function nomeDoDia(d) {
+  const dias = Math.round((meiaNoite(new Date()) - meiaNoite(d)) / 864e5);
+  if (dias === 0) return 'Hoje';
+  if (dias === 1) return 'Ontem';
+  const texto = dias < 7 ? d.toLocaleDateString('pt-BR', { weekday: 'long' })
+    : d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+// "achada pelo Cavaleiro", "percebido pela Arqueira"...
+function porQuem(camada, veredito) {
+  if (!camada) return '';
+  const p = PERSONAGENS.find((x) => x.quem === (DONO[camada] || 'vidente'));
+  const [artigo, ...resto] = p.nome.split(' ');
+  return `${veredito === 'ameaca' ? 'achada' : 'percebido'} ${artigo === 'A' ? 'pela' : 'pelo'} ${resto.join(' ')}`;
+}
+const maiuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const pastaCurta = (caminho) => (caminho || '').split('/').slice(0, -1).join('/').replace(/^\/home\/[^/]+/, '~') || '/';
+
+async function arte(nome, onde) {
+  if (abas.artePronta[nome]) return;
+  abas.artePronta[nome] = true;
+  try { $(onde).innerHTML = await fetch(`/estatico/arte/${nome}.html`).then((r) => r.text()); } catch { abas.artePronta[nome] = false; }
+}
+
+function desenharHistorico() {
+  const h = est.historico;
+  if (!h) return;
+  const regs = h.registros;
+  const escrever = abas.escrever; abas.escrever = false;
+  let n = 0;
+  const pena = () => (escrever && n <= 10 ? ` hp-escreve" style="animation-name: hpE${n++}` : '');
+  const item = (rot, val, cor) => `<div><dt>${esc(rot)}</dt><dd style="color: ${TINTA[cor]}">${esc(val)}</dd></div>`;
+
+  if (!regs.length) {
+    $('#hp-resumo').innerHTML = item('Primeira varredura', 'ainda não', 'tinta');
+    $('#hp-registro').innerHTML = `<div class="hp-branco"><p>Ainda não há nada anotado aqui.</p>
+      <p>Cada varredura que a Guarnição fizer vira uma linha deste registro, com a hora, o tipo e o que foi encontrado.</p>
+      <div class="hp-linhas" aria-hidden="true"></div>
+      <button type="button" data-acao="primeira">Fazer a primeira varredura</button></div>`;
+    return;
+  }
+  const limite = Date.now() - 30 * 864e5;
+  const mes = regs.filter((r) => paraData(r.inicio).getTime() >= limite);
+  const ameacas = mes.reduce((s, r) => s + (r.ameacas || 0), 0);
+  const soltas = h.pendentes.filter((a) => a.veredito === 'ameaca').length;
+  $('#hp-resumo').innerHTML = item('Varreduras em 30 dias', numero(mes.length), 'tinta')
+    + item('Arquivos verificados', numeroCurto(mes.reduce((s, r) => s + (r.total || 0), 0)), 'tinta')
+    + item('Ameaças encontradas', numero(ameacas), ameacas ? 'perigo' : 'tinta')
+    + (soltas ? item('Ainda soltas', numero(soltas), 'perigo') : item('Todas trancadas', '✓ Sim', 'ok'));
+
+  const filtro = FILTROS.find((f) => f[0] === abas.filtro);
+  const lista = regs.filter(filtro[2]);
+  let html = `<div class="hp-filtros" role="group" aria-label="Filtrar">${FILTROS.map(([id, rot]) =>
+    `<button type="button" data-acao="filtro" data-filtro="${id}" aria-pressed="${id === abas.filtro}">${rot}</button>`).join('')}</div>
+    <section class="hp-razao" aria-label="Varreduras">`;
+  let diaAntes = '';
+  for (const r of lista) {
+    const d = paraData(r.inicio);
+    const dia = nomeDoDia(d);
+    if (dia !== diaAntes) { html += `<div class="hp-dia${pena()}">${esc(dia)}</div>`; diaAntes = dia; }
+    const res = resultado(r);
+    const tipo = r.tipo === 'rápida' ? 'Varredura rápida' : r.tipo === 'completa' ? 'Varredura completa' : nomeDoTipo(r.tipo).replace('Pasta · ', 'Pasta ');
+    const primeiro = r.achados.find((a) => a.veredito === 'ameaca') || r.achados[0];
+    html += `<div class="hp-linha${pena()}">
+      <span class="hp-hora">${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+      <div><div class="hp-tipo">${esc(tipo)}</div><div class="hp-meta">${esc([plural(r.total, 'arquivo', 'arquivos'), duracao(r.segundos)].filter(Boolean).join(' · '))}</div></div>
+      <div><span class="hp-res" style="color: ${TINTA[res.cor]}">${esc(res.texto)}</span><span class="hp-quem">${esc(primeiro ? maiuscula(porQuem(primeiro.camada, primeiro.veredito)) : '')}</span></div>
+    </div>`;
+  }
+  if (!lista.length) html += '<div class="hp-branco"><p>Nenhuma varredura deste tipo ainda.</p></div>';
+  html += `</section><div class="hp-pe"><div class="hp-assina">Registrado pela Guarnição
+    <div class="hp-selo" aria-hidden="true">${SELO_CERA}<div class="hp-selo-emb"><img src="/estatico/arte/emblema.svg" alt="" width="100%"></div></div></div></div>`;
+  $('#hp-registro').innerHTML = html;
+}
+
+async function carregarQuarentena() {
+  try {
+    abas.quarentena = (await fetch('/api/quarentena').then((r) => r.json())).itens;
+  } catch {
+    recado('Não consegui ler a quarentena.', true);
+  }
+  desenharQuarentena();
+}
+
+function tracos(n) {
+  // Riscos de giz na parede: grupos de cinco, o quinto cortando os outros.
+  let svg = ''; const k = Math.min(n, 5);
+  for (let i = 0; i < Math.min(k, 4); i += 1) svg += `M${6 + i * 6} 3 L${5 + i * 6} 27 `;
+  if (k === 5) svg += 'M2 22 L30 8';
+  return n ? `<svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="${svg}" stroke="#e6e2d6" stroke-width="2.6" stroke-linecap="round" opacity=".85" fill="none"></path></svg>` : '';
+}
+
+function desenharQuarentena() {
+  const itens = abas.quarentena;
+  if (!itens) return;
+  const giz = (rot, val, cor = '#e6e2d6', extra = '') => `<div><dt>${esc(rot)}</dt><dd style="color: ${cor}">${esc(val)}${extra}</dd></div>`;
+  if (!itens.length) {
+    $('#cq-giz').innerHTML = giz('Arquivos trancados', '0') + giz('Último trancado', 'nenhum') + giz('Podem rodar?', '✓ Nada aqui', '#9fdcb8');
+    $('#cq-lista').innerHTML = `<section class="cq-vazia"><h2>A cela está vazia</h2>
+      <p>Nada está trancado agora. Quando uma varredura achar algo perigoso, você escolhe se quer trancar aqui — e pode devolver depois, se for engano.</p></section>`;
+    return;
+  }
+  const antigo = itens.map((i) => i.data).filter(Boolean).sort()[0];
+  $('#cq-giz').innerHTML = giz('Arquivos trancados', numero(itens.length), '#e6e2d6', tracos(itens.length))
+    + giz('Espaço ocupado', tamanho(itens.reduce((s, i) => s + (i.tamanho || 0), 0)))
+    + giz('Mais antigo', antigo ? quando(antigo) : '—') + giz('Podem rodar?', '✓ Não', '#9fdcb8');
+  $('#cq-lista').innerHTML = `<section aria-label="Arquivos trancados"><div class="cq-trave" aria-hidden="true"></div><div class="cq-placas">
+    ${itens.map((i) => {
+      const ameaca = i.veredito !== 'suspeito';
+      const quem = porQuem(i.camada, i.veredito);
+      return `<div class="cq-pendura">${CORRENTE('left')}${CORRENTE('right')}<article class="cq-placa">${CADEADO}
+        <div class="cq-info"><span class="cq-carimbo" style="color: ${ameaca ? '#FF8A7A' : '#F0B65A'}">${ameaca ? 'Ameaça' : 'Suspeito'}</span>
+        <span class="cq-etiqueta">${esc(i.nome)}</span>
+        <span class="cq-dado">${esc([i.motivo, quem].filter(Boolean).join(' · '))}</span>
+        <span class="cq-dado">Veio de <code>${esc(pastaCurta(i.original))}</code>${i.data ? ` · trancado ${esc(quando(i.data))}` : ''}</span></div>
+        <div class="cq-acoes"><button type="button" class="cq-devolver" data-acao="devolver" data-id="${esc(i.id)}">${CHAVE}Devolver</button>
+        <button type="button" class="cq-apagar" data-acao="apagar" data-id="${esc(i.id)}">Apagar</button></div></article></div>`;
+    }).join('')}</div><p class="cq-aviso">Apagar remove o arquivo de vez. Não dá para desfazer.</p></section>`;
+}
+
+function perguntarApagar(id) {
+  const item = (abas.quarentena || []).find((i) => i.id === id);
+  if (!item) return;
+  $('#cq-modal').innerHTML = `<div class="cq-modal"><div class="cq-dialogo" role="alertdialog" aria-modal="true" aria-labelledby="cq-pergunta">
+    <h2 id="cq-pergunta">Apagar ${esc(item.nome)} de vez?</h2>
+    <p>O arquivo sai da cela e é removido do computador. Não dá para desfazer.</p>
+    <p>Se ele foi trancado por engano, use <strong>Devolver</strong> em vez de apagar.</p>
+    <div class="cq-acoes"><button type="button" class="cq-devolver" data-acao="fechar-modal">Cancelar</button>
+    <button type="button" class="cq-apagar-de-vez" data-acao="apagar-de-vez" data-id="${esc(id)}">Apagar de vez</button></div></div></div>`;
+  $('#cq-modal [data-acao="fechar-modal"]').focus();
+}
+const fecharModal = () => { $('#cq-modal').innerHTML = ''; };
+
+async function mexerNaCela(rota, id, feito) {
+  try {
+    const r = await pedir(rota, { id });
+    recado(feito(r));
+  } catch (e) {
+    recado(`Não deu: ${e.message}`, true);
+  }
+  fecharModal();
+  carregarQuarentena();
+  carregar();
+}
+
+function rota() {
+  const aba = { '#historico': 'historico', '#quarentena': 'quarentena' }[location.hash] || 'painel';
+  $('#muralha').hidden = aba !== 'painel';
+  $('#pergaminho').hidden = aba !== 'historico';
+  $('#cela').hidden = aba !== 'quarentena';
+  fecharModal();
+  if (aba === 'historico') {
+    arte('pergaminho', '#arte-pergaminho');
+    abas.escrever = true;
+    desenharHistorico();
+    document.title = 'Histórico · Guarnição';
+  } else if (aba === 'quarentena') {
+    arte('cela', '#cela-cena');
+    carregarQuarentena();
+    document.title = 'Quarentena · Guarnição';
+  } else {
+    desenhar();
+  }
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', rota);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#cq-modal').innerHTML) fecharModal(); });
+
 // ---- início ----
 desenharEstrelas();
-montarGuardioes().then(carregar);
+montarGuardioes().then(carregar).then(rota);
 // O estado muda sozinho (serviços, varreduras agendadas): confere a cada minuto.
 setInterval(() => { if (!est.varredura && !est.cacando && !est.ocupado) carregar(); }, 60000);

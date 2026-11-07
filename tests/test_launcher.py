@@ -86,6 +86,8 @@ def test_recusa_host_de_fora(url):
 def test_pagina_e_estaticos(url):
     with urllib.request.urlopen(f"{url}/", timeout=5) as r:
         assert "Guarnição".encode() in r.read()
+    # as três telas: muralha (painel), pergaminho (histórico) e cela (quarentena)
+    assert {"app.js", "abas.css", "arte/pergaminho.html", "arte/cela.html"} <= set(servidor.ESTATICOS)
     for nome in servidor.ESTATICOS:
         with urllib.request.urlopen(f"{url}/estatico/{nome}", timeout=5) as r:
             assert r.status == 200
