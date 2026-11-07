@@ -22,7 +22,8 @@ def test_texto_nunca_vira_comando():
 
 def test_discreto_e_passageiro():
     cmd = notificacao.comando("Varredura rápida concluída ✓", "305 arquivos", discreto=True)
-    assert cmd[cmd.index("--urgency") + 1] == "low"
+    # "low" não: o GNOME não mostra balão de urgência baixa, e passageiro não fica na lista.
+    assert cmd[cmd.index("--urgency") + 1] == "normal"
     assert "--transient" in cmd          # não fica guardado na lista do GNOME
     assert cmd[cmd.index("--expire-time") + 1] == "6000"
 

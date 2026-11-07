@@ -32,8 +32,11 @@ def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = Fal
     # Lista de argumentos, sem shell: um nome de arquivo malicioso como
     # "$(rm -rf ~).pdf" vira texto na notificação, nunca um comando.
     if discreto:
-        # Tudo bem: urgência baixa, some em 6 s e não fica guardado na lista do GNOME.
-        opcoes = ["--urgency", "low", "--icon", "security-high", "--transient", "--expire-time", "6000"]
+        # Tudo bem: some sozinho em poucos segundos e não fica guardado na lista.
+        # Urgência normal, não baixa: o GNOME nunca mostra balão de urgência baixa
+        # (messageTray.js, _onNotificationRequestBanner), e com --transient o aviso
+        # nem iria para a lista: não apareceria em lugar nenhum.
+        opcoes = ["--urgency", "normal", "--icon", "security-high", "--transient", "--expire-time", "6000"]
     else:
         opcoes = ["--urgency", "critical" if urgente else "normal",
                   "--icon", "security-low" if urgente else "dialog-warning"]
