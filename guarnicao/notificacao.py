@@ -83,7 +83,7 @@ def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = Fal
 def texto_resumo_limpo(nome: str, total: int, quando: datetime) -> tuple[str, str]:
     """O texto do aviso de varredura limpa, igual ao desenho (avisos-v3-muralha)."""
     arquivos = f"{total:,}".replace(",", ".")
-    return f"Varredura {nome} concluída ✓", f"{arquivos} arquivos, tudo limpo · hoje, {quando:%H:%M}"
+    return f"Varredura {nome} concluída", f"✓ {arquivos} arquivos, tudo limpo · hoje, {quando:%H:%M}"
 
 
 MARCA_BASES = MARCA_RESUMO.with_name("ultimo-aviso-bases")

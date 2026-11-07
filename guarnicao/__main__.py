@@ -216,7 +216,10 @@ def _varrer(args) -> int:
                     dados = {"tipo": tipo, "personagem": "carcereiro",
                              "arquivo": nome_arquivo, "quarentena": a["quarentena"]}
             else:
-                corpo = "Abra o launcher para ver e trancar: python -m guarnicao launcher"
+                n = len(achados)
+                titulo = f"{n} arquivos perigosos"
+                corpo = (f"{contar_achados(resumo.ameacas, resumo.suspeitos)} · "
+                         f"varredura {nome} de hoje, {datetime.now():%H:%M}")
                 dados = {"tipo": "varias"}
             notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas) and dados["tipo"] != "trancado",
                                   dados=dados)
@@ -330,6 +333,12 @@ def cmd_atualizar(args) -> int:
     return 1 if falhou else 0
 
 
+def contar_achados(ameacas: int, suspeitos: int) -> str:
+    """ "1 ameaça · 1 suspeito", como no avisos-v3 (sem as partes zeradas)."""
+    partes = [f"{n} {nome}{'s' if n > 1 else ''}" for n, nome in ((ameacas, "ameaça"), (suspeitos, "suspeito")) if n]
+    return " · ".join(partes)
+
+
 def avisar_do_monitor(item: scanner.Resultado, id_: str | None) -> bool:
     """O aviso de um download achado pelo monitor. False se estava limpo."""
     if item.infectado:
@@ -342,7 +351,7 @@ def avisar_do_monitor(item: scanner.Resultado, id_: str | None) -> bool:
                                   urgente=True, dados=notificacao.dados_de(item, "ameaca"))
     elif item.suspeito:
         notificacao.notificar(
-            f"Arquivo suspeito ({item.pontuacao}/100)",
+            "Algo suspeito",
             f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
             dados=notificacao.dados_de(item, "suspeito"),
         )

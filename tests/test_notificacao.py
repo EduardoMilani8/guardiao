@@ -31,8 +31,9 @@ def test_discreto_e_passageiro():
 def test_texto_do_resumo_limpo():
     from datetime import datetime
     titulo, corpo = notificacao.texto_resumo_limpo("rápida", 4210, datetime(2026, 11, 8, 12, 51))
-    assert titulo == "Varredura rápida concluída ✓"
-    assert corpo == "4.210 arquivos, tudo limpo · hoje, 12:51"
+    # Igual ao avisos-v3: o ✓ vai na linha verde de baixo.
+    assert titulo == "Varredura rápida concluída"
+    assert corpo == "✓ 4.210 arquivos, tudo limpo · hoje, 12:51"
 
 
 def test_resumo_limpo_no_maximo_um_por_dia(tmp_path, monkeypatch):
