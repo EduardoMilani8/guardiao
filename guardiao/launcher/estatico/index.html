@@ -10,8 +10,10 @@
 <link rel="stylesheet" href="/estatico/abas.css">
 </head>
 <body>
-<!-- Definições que os quatro retratos usam (moldura e arco); o app.js põe aqui. -->
-<div id="arte-comum" hidden></div>
+<!-- Definições que os quatro retratos usam (moldura e arco); o app.js põe aqui.
+     Sem "hidden": dentro de display:none o navegador ignora o recorte em arco
+     e o fundo de cada retrato aparece quadrado. O SVG já tem tamanho zero. -->
+<div id="arte-comum" aria-hidden="true"></div>
 
 <div class="mu-raiz" id="muralha">
 <div class="mu-ceu" aria-hidden="true"></div>
