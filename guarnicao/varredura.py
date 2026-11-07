@@ -25,7 +25,8 @@ from .caminhos import CONFIG, casa_real
 FS_LOCAIS = {"ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "zfs", "jfs", "vfat",
              "exfat", "ntfs", "ntfs3", "fuseblk", "tmpfs"}
 EXTERNOS = ("/media", "/run/media", "/mnt")
-INTERVALO_PROGRESSO = 0.25   # segundos
+INTERVALO_PROGRESSO = 0.25   # segundos (painel)
+INTERVALO_ANDAMENTO = 1.0    # segundos (escudo da barra)
 
 
 @dataclass
@@ -217,9 +218,13 @@ def executar(
 ) -> Iterator[Progresso | scanner.Resultado | tuple[Path, OSError] | Resumo]:
     """Varre as raízes. Com `rotulo` (ex.: "rápida"), grava o andamento para o
     escudo da barra e apaga no fim, inclusive se a varredura for interrompida."""
+    gravado = None
     try:
         for item in _executar(raizes, exclusoes, usar_cache, processos, cache):
-            if rotulo and isinstance(item, Progresso):
+            # No máximo uma vez por segundo: cada gravação acorda o escudo da barra.
+            if rotulo and isinstance(item, Progresso) and (
+                    gravado is None or time.monotonic() - gravado >= INTERVALO_ANDAMENTO):
+                gravado = time.monotonic()
                 andamento.gravar(rotulo, item.vistos, item.total)
             yield item
     finally:

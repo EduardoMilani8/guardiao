@@ -59,3 +59,15 @@ def test_pid_reaproveitado_por_outro_programa_e_ignorado(tmp_path):
         assert andamento.ler(arq) is None      # não é a Guarnição: a varredura de verdade morreu
     finally:
         outro.kill()
+
+
+def test_executar_grava_no_maximo_uma_vez_por_segundo(monkeypatch):
+    # Cada gravação acorda o escudo da barra; o painel ainda recebe todos.
+    gravacoes = []
+    monkeypatch.setattr(andamento, "gravar", lambda *a, **k: gravacoes.append(a))
+    monkeypatch.setattr(andamento, "apagar", lambda *a, **k: None)
+    monkeypatch.setattr(varredura, "_executar", lambda *a, **k: (
+        varredura.Progresso("analisando", i, 50, "") for i in range(50)))
+    itens = list(varredura.executar([], rotulo="rápida"))
+    assert len(itens) == 50
+    assert len(gravacoes) == 1

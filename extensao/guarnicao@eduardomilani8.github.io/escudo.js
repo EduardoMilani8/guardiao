@@ -5,6 +5,7 @@ import St from 'gi://St';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
+import {Fila} from './fila.js';
 import {ROTULOS_MENU, COMANDOS_MENU} from './regras.js';
 
 // O escudo da barra (barra-v2): o estado se lê pela forma, a cor só aparece no menu.
@@ -17,6 +18,19 @@ class Escudo extends PanelMenu.Button {
         this._icone = new St.Icon({style_class: 'system-status-icon'});
         this.add_child(this._icone);
         this._mostrar({estado: 'certo', titulo: 'Guarnição', linhas: ['Conferindo…'], acoes: []});
+        // Junta os pedidos (o andamento muda a cada segundo numa varredura) e
+        // nunca perde o último, que é o fim da varredura.
+        this._fila = new Fila(() => this._ler(), {
+            espera: 1500,
+            agendar: (ms, fn) => {
+                this._agendado = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+                    this._agendado = 0;
+                    fn();
+                    return GLib.SOURCE_REMOVE;
+                });
+            },
+            aoErrar: e => logError(e, 'Guarnição: não deu para ler o estado'),
+        });
 
         this._relogio = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
             this.atualizar();
@@ -29,17 +43,14 @@ class Escudo extends PanelMenu.Button {
         this.atualizar();
     }
 
-    async atualizar() {
-        if (this._ocupado)
-            return;
-        this._ocupado = true;
-        try {
-            this._mostrar(await this._comandos.json(['estado', '--json']));
-        } catch (e) {
-            logError(e, 'Guarnição: não deu para ler o estado');
-        } finally {
-            this._ocupado = false;
-        }
+    atualizar() {
+        this._fila.pedir();
+    }
+
+    async _ler() {
+        const estado = await this._comandos.json(['estado', '--json']);
+        if (!this._destruido)
+            this._mostrar(estado);
     }
 
     _mostrar(e) {
@@ -69,7 +80,10 @@ class Escudo extends PanelMenu.Button {
     }
 
     destroy() {
+        this._destruido = true;
         GLib.source_remove(this._relogio);
+        if (this._agendado)
+            GLib.source_remove(this._agendado);
         this._vigia.cancel();
         super.destroy();
     }
