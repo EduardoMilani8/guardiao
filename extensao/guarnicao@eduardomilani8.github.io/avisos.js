@@ -3,9 +3,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {cartao} from './cartao.js';
 import {lerDados} from './regras.js';
+import {Vinculos} from './vinculo.js';
 
 const APP = 'Guarnição';
-const chave = (titulo, corpo) => `${titulo}\n${corpo}`;
 
 // Os avisos chegam pelo notify-send como sempre. Aqui guardamos os dados
 // escondidos (hints x-guarnicao-*) e, quando o GNOME monta o balão, trocamos o
@@ -15,20 +15,21 @@ export class Avisos {
         this._pastaArte = pastaArte;
         this._comandos = comandos;
         this._aoChegar = aoChegar;
-        this._dados = new Map();
     }
 
     ligar() {
         const daemon = Main.notificationDaemon?._fdoNotificationDaemon;
         const tray = Main.messageTray;
         // Plano B: se o GNOME mudou por dentro, não mexemos nos avisos (ficam os comuns).
-        if (typeof daemon?.NotifyAsync !== 'function' || typeof tray?._showNotification !== 'function') {
+        if (typeof daemon?.NotifyAsync !== 'function' || typeof tray?._showNotification !== 'function' ||
+            !Vinculos.serve(daemon)) {
             console.warn('Guarnição: esta versão do GNOME não deixa trocar o desenho dos avisos');
             return false;
         }
         const avisos = this;
         this._daemon = daemon;
         this._tray = tray;
+        this._vinculos = new Vinculos(daemon);
         this._notifyOriginal = daemon.NotifyAsync;
         this._mostrarOriginal = tray._showNotification;
         daemon.NotifyAsync = function (params, invocation) {
@@ -56,12 +57,12 @@ export class Avisos {
         this._daemon.NotifyAsync = this._notifyOriginal;
         this._tray._showNotification = this._mostrarOriginal;
         this._tray.bannerAlignment = Clutter.ActorAlign.CENTER;
-        this._daemon = this._tray = null;
-        this._dados.clear();
+        this._vinculos.limpar();
+        this._daemon = this._tray = this._vinculos = null;
     }
 
     _guardar(params) {
-        const [app, , , titulo, corpo, , hints] = params;
+        const [app, replacesId, , , , , hints] = params;
         if (app !== APP)
             return;
         const simples = {};
@@ -71,20 +72,16 @@ export class Avisos {
         const dados = lerDados(simples);
         if (!dados)
             return;
-        this._dados.set(chave(titulo, corpo), dados);
-        if (this._dados.size > 20)
-            this._dados.delete(this._dados.keys().next().value);
+        this._vinculos.guardar(replacesId, dados);
     }
 
     _vestir(tray) {
         const n = tray._notification;
-        const k = n ? chave(n.title, n.body ?? '') : null;
-        const dados = k ? this._dados.get(k) : null;
+        const dados = n ? this._vinculos.tirar(n) : null;
         // Os da Guarnição aparecem no canto superior direito (avisos-v3); os outros, no meio.
         tray.bannerAlignment = dados ? Clutter.ActorAlign.END : Clutter.ActorAlign.CENTER;
         if (!dados)
             return;
-        this._dados.delete(k);
         const banner = tray._banner;
         banner.set_child(cartao({
             dados, titulo: n.title, corpo: n.body ?? '', pastaArte: this._pastaArte,
