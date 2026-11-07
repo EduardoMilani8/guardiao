@@ -217,6 +217,22 @@ def _varrer(args) -> int:
     return 1 if resumo.ameacas else 0
 
 
+def cmd_estado(args) -> int:
+    import json
+    from datetime import datetime
+
+    from . import andamento, escudo, historico
+    from .launcher import estado
+    dados = escudo.montar(estado.montar(), historico.listar(50), andamento.ler(), datetime.now())
+    if args.json:
+        print(json.dumps(dados, ensure_ascii=False))
+    else:
+        print(dados["titulo"])
+        for linha in dados["linhas"]:
+            print(f"  {linha}")
+    return 0
+
+
 def cmd_historico(args) -> int:
     from . import historico
 
@@ -592,6 +608,10 @@ def main() -> int:
     p_varrer.add_argument("--parar", action="store_true",
                           help="para a varredura do terminal ou do timer que está rodando")
     p_varrer.set_defaults(func=cmd_varrer)
+
+    p_e = sub.add_parser("estado", help="o estado em poucas linhas (o escudo da barra usa --json)")
+    p_e.add_argument("--json", action="store_true")
+    p_e.set_defaults(func=cmd_estado)
 
     p_h = sub.add_parser("historico", help="as últimas varreduras e o que acharam")
     p_h.add_argument("--achados", action="store_true", help="lista também o que cada uma achou")
