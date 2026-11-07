@@ -182,6 +182,8 @@ def cmd_varrer(args) -> int:
                 f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)",
                 "Abra o launcher para ver e trancar: python -m guarnicao launcher",
                 urgente=bool(resumo.ameacas))
+        else:
+            notificacao.resumo_limpo(nome, total, datetime.now())
         return 0   # "falhou" no systemd fica para quando a varredura quebrar
     return 1 if resumo.ameacas else 0
 

@@ -95,3 +95,24 @@ def test_arquivo_e_json_por_linha(tmp_path):
     arquivo = tmp_path / "h.jsonl"
     historico.registrar(registro(), arquivo)
     assert json.loads(arquivo.read_text())["origem"] == "agendada"
+
+
+def test_agendada_limpa_manda_resumo_discreto(tmp_path, monkeypatch):
+    pasta = tmp_path / "baixados"
+    pasta.mkdir()
+    (pasta / "notas.txt").write_text("nada aqui")
+    resumos = []
+    monkeypatch.setattr(notificacao, "resumo_limpo", lambda *a: resumos.append(a))
+    assert rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--processos", "1") == 0
+    [(nome, total, _quando)] = resumos
+    assert total == 1
+
+
+def test_manual_limpa_nao_manda_resumo(tmp_path, monkeypatch):
+    pasta = tmp_path / "baixados"
+    pasta.mkdir()
+    (pasta / "notas.txt").write_text("nada aqui")
+    resumos = []
+    monkeypatch.setattr(notificacao, "resumo_limpo", lambda *a: resumos.append(a))
+    assert rodar(monkeypatch, "varrer", str(pasta), "--processos", "1") == 0
+    assert resumos == []
