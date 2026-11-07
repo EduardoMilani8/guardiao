@@ -102,6 +102,7 @@ sudo .venv/bin/python -m guardiao varrer --completa      # inclui arquivos do si
 .venv/bin/python -m guardiao virustotal arquivo.exe        # só o hash é enviado
 .venv/bin/python -m guardiao quarentena listar
 .venv/bin/python -m guardiao quarentena restaurar <id>
+.venv/bin/python -m guardiao quarentena apagar <id>       # de vez, pede confirmação
 ```
 
 Duas ferramentas para usar quando quiser:

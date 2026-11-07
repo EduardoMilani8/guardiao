@@ -1,4 +1,6 @@
-"""Quarentena: isola arquivos perigosos sem apagá-los."""
+"""Quarentena: isola arquivos perigosos sem apagá-los.
+
+Apagar de vez só quando a pessoa pede (apagar()); devolver é restaurar()."""
 
 import json
 import os
@@ -19,7 +21,8 @@ class NaoEncontrado(LookupError):
 PASTA_PADRAO = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "guardiao" / "quarentena"
 
 
-def isolar(caminho: Path, sha256: str, motivo: str, pasta: Path = PASTA_PADRAO) -> str:
+def isolar(caminho: Path, sha256: str, motivo: str, pasta: Path = PASTA_PADRAO,
+           camada: str | None = None, veredito: str = "ameaca") -> str:
     """Move o arquivo para a quarentena, sem permissão de execução.
 
     Retorna o id da entrada, usado para restaurar depois.
@@ -36,6 +39,8 @@ def isolar(caminho: Path, sha256: str, motivo: str, pasta: Path = PASTA_PADRAO) 
         "sha256": sha256,
         "motivo": motivo,
         "data": datetime.now().isoformat(timespec="seconds"),
+        "camada": camada,       # quem achou: hash, clamav, yara, heuristica...
+        "veredito": veredito,   # "ameaca" ou "suspeito"
     }, ensure_ascii=False, indent=2))
     return id_
 
@@ -50,15 +55,24 @@ def listar(pasta: Path = PASTA_PADRAO) -> list[dict]:
         except (OSError, ValueError):
             continue   # uma entrada estragada não esconde as outras
         dados["id"] = meta.stem
+        try:
+            dados["tamanho"] = (pasta / f"{meta.stem}.bloqueado").stat().st_size
+        except OSError:
+            dados["tamanho"] = 0
         entradas.append(dados)
     return entradas
 
 
-def restaurar(id_: str, pasta: Path = PASTA_PADRAO) -> Path:
+def _meta(id_: str, pasta: Path) -> Path:
     # O id vira nome de arquivo: só o formato que o isolar() gera, nada de "../".
     meta = pasta / f"{id_}.json"
     if not ID.match(id_) or not meta.is_file():
         raise NaoEncontrado(id_)
+    return meta
+
+
+def restaurar(id_: str, pasta: Path = PASTA_PADRAO) -> Path:
+    meta = _meta(id_, pasta)
     dados = json.loads(meta.read_text())
     original = Path(dados["original"])
     if original.exists():
@@ -70,3 +84,15 @@ def restaurar(id_: str, pasta: Path = PASTA_PADRAO) -> Path:
     shutil.move(bloqueado, original)
     meta.unlink()
     return original
+
+
+def apagar(id_: str, pasta: Path = PASTA_PADRAO) -> dict:
+    """Remove de vez o arquivo trancado. Não dá para desfazer. Retorna o que ele era."""
+    meta = _meta(id_, pasta)
+    try:
+        dados = json.loads(meta.read_text())
+    except ValueError:
+        dados = {}
+    (pasta / f"{id_}.bloqueado").unlink(missing_ok=True)
+    meta.unlink()
+    return dados

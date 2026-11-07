@@ -42,7 +42,7 @@ def relatar(item: scanner.Resultado, isolar: bool) -> str | None:
     if item.infectado:
         print(f"{VERMELHO}[AMEAÇA]   {item.caminho}  →  {item.ameaca}{FIM}")
         if isolar:
-            id_ = quarentena.isolar(item.caminho, item.sha256, item.ameaca)
+            id_ = quarentena.isolar(item.caminho, item.sha256, item.ameaca, camada=item.camada)
             print(f"           isolado na quarentena (id {id_})")
             return id_
     elif item.suspeito:
@@ -473,6 +473,21 @@ def cmd_quarentena(args) -> int:
             print("Quarentena vazia.")
         for e in entradas:
             print(f"{e['id']}  {e['data']}  {e['motivo']}\n              {e['original']}")
+    elif args.acao == "apagar":
+        if not args.sim:
+            resposta = input(f"Apagar de vez o arquivo {args.id}? Não dá para desfazer. [s/N] ")
+            if resposta.strip().lower() not in ("s", "sim"):
+                print("Nada foi apagado.")
+                return 1
+        try:
+            dados = quarentena.apagar(args.id)
+        except quarentena.NaoEncontrado:
+            print(f"{VERMELHO}Nada com o id {args.id} na quarentena (veja: guardiao quarentena listar).{FIM}")
+            return 2
+        except PermissionError as erro:
+            print(f"{VERMELHO}Não deu para apagar: {erro}{FIM}")
+            return 2
+        print(f"Apagado de vez: {dados.get('original', args.id)}")
     else:
         try:
             destino = quarentena.restaurar(args.id)
@@ -551,7 +566,10 @@ def main() -> int:
     p_q = sub.add_parser("quarentena", help="gerencia arquivos isolados")
     q_sub = p_q.add_subparsers(dest="acao", required=True)
     q_sub.add_parser("listar")
-    q_sub.add_parser("restaurar").add_argument("id")
+    q_sub.add_parser("restaurar", help="devolve o arquivo para onde estava").add_argument("id")
+    q_apagar = q_sub.add_parser("apagar", help="remove de vez (não dá para desfazer)")
+    q_apagar.add_argument("id")
+    q_apagar.add_argument("--sim", action="store_true", help="não pergunta antes de apagar")
     p_q.set_defaults(func=cmd_quarentena)
 
     args = parser.parse_args()

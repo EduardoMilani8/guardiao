@@ -37,3 +37,42 @@ def test_comando_explica_em_vez_de_quebrar(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "restaurar", "naoexiste"])
     assert cli.main() == 2
     assert "Nada com o id naoexiste" in capsys.readouterr().out
+
+
+def test_apagar_remove_de_vez(tmp_path):
+    arquivo, pasta, id_ = isolar_um(tmp_path)
+    dados = quarentena.apagar(id_, pasta)
+    assert dados["original"] == str(arquivo.resolve())
+    assert list(pasta.iterdir()) == []
+    with pytest.raises(quarentena.NaoEncontrado):
+        quarentena.restaurar(id_, pasta)
+
+
+@pytest.mark.parametrize("id_", ["0123456789ab", "../../etc/x"])
+def test_apagar_id_desconhecido_ou_invalido(tmp_path, id_):
+    _, pasta, _ = isolar_um(tmp_path)
+    with pytest.raises(quarentena.NaoEncontrado):
+        quarentena.apagar(id_, pasta)
+    assert len(list(pasta.iterdir())) == 2   # nada foi tocado
+
+
+def test_listar_mostra_tamanho_e_quem_achou(tmp_path):
+    arquivo = tmp_path / "ruim.bin"
+    arquivo.write_bytes(b"12345")
+    pasta = tmp_path / "quarentena"
+    quarentena.isolar(arquivo, "0" * 64, "teste", pasta, camada="yara", veredito="suspeito")
+    [entrada] = quarentena.listar(pasta)
+    assert (entrada["tamanho"], entrada["camada"], entrada["veredito"]) == (5, "yara", "suspeito")
+
+
+def test_comando_apagar_pergunta_antes(monkeypatch, capsys, tmp_path):
+    _, pasta, id_ = isolar_um(tmp_path)
+    monkeypatch.setattr(quarentena, "PASTA_PADRAO", pasta)
+    monkeypatch.setattr(quarentena.apagar, "__defaults__", (pasta,))
+    monkeypatch.setattr("builtins.input", lambda _: "n")
+    monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "apagar", id_])
+    assert cli.main() == 1
+    assert len(list(pasta.iterdir())) == 2
+    monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "apagar", id_, "--sim"])
+    assert cli.main() == 0
+    assert list(pasta.iterdir()) == []
