@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Quarentena na cela</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@500;800&amp;family=Alegreya+Sans+SC:wght@500&amp;family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&amp;family=Source+Code+Pro:wght@400;500&amp;family=Source+Sans+3:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+<style>
+/* ---- a cela: parede de pedra suja ---- */
+.cq-cela{position:relative;overflow:hidden;min-height:100%;box-sizing:border-box;color:#ECE7DA;
+  font-family:'Source Sans 3',system-ui,sans-serif;font-size:16px;line-height:1.5;
+  min-height:100vh;background-color:#24262d;
+  background-image:
+    radial-gradient(ellipse 22% 14% at 18% 30%,rgba(0,0,0,.35),transparent 70%),
+    radial-gradient(ellipse 18% 22% at 62% 78%,rgba(0,0,0,.4),transparent 70%),
+    radial-gradient(ellipse 30% 10% at 40% 8%,rgba(0,0,0,.3),transparent 70%),
+    linear-gradient(0deg,rgba(38,52,28,.55),transparent 22%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Crect width='240' height='120' fill='%23111216'/%3E%3Crect x='1.5' y='1.5' width='115' height='57' rx='5' fill='%232b2d34'/%3E%3Crect x='121.5' y='1.5' width='115' height='57' rx='5' fill='%2326282f'/%3E%3Crect x='-58.5' y='61.5' width='115' height='57' rx='5' fill='%232f3139'/%3E%3Crect x='61.5' y='61.5' width='115' height='57' rx='5' fill='%2324262c'/%3E%3Crect x='181.5' y='61.5' width='115' height='57' rx='5' fill='%232a2c32'/%3E%3Crect x='238.5' y='61.5' width='3' height='57' fill='%23111216'/%3E%3C/svg%3E");
+  background-size:100% 100%,100% 100%,100% 100%,100% 100%,240px 120px}
+/* escorridos de umidade */
+.cq-umidade{position:absolute;inset:0;pointer-events:none;opacity:.7;
+  background:repeating-linear-gradient(90deg,transparent 0 210px,rgba(0,0,0,.22) 210px 216px,transparent 222px 330px,rgba(20,30,15,.18) 330px 334px,transparent 338px 470px);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 55%);mask-image:linear-gradient(180deg,#000,transparent 55%)}
+.cq-teia{position:absolute;top:0;left:0;width:190px;height:190px;pointer-events:none;opacity:.5}
+.cq-teia-dir{left:auto;right:250px;transform:scaleX(-1);width:130px;height:130px}
+
+/* tocha na parede, com luz tremendo */
+.cq-tocha{position:absolute;left:34px;top:230px;width:46px;height:120px;pointer-events:none}
+.cq-luz{position:absolute;left:-250px;top:-20px;width:620px;height:620px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,180,90,.24),rgba(255,180,90,.07) 40%,transparent 68%);animation:cqTreme 2.1s ease-in-out infinite}
+.cq-chama{transform-origin:23px 34px;transform-box:view-box;animation:cqChama .6s ease-in-out infinite alternate}
+@keyframes cqTreme{0%,100%{opacity:.75}30%{opacity:1}55%{opacity:.62}80%{opacity:.95}}
+@keyframes cqChama{from{transform:scale(1,1) skewX(-3deg)}to{transform:scale(.9,1.12) skewX(4deg)}}
+
+/* algemas penduradas na parede */
+.cq-algema{position:absolute;left:30px;top:520px;width:60px;height:170px;pointer-events:none;transform-origin:30px 6px;animation:cqBalanca 9s ease-in-out infinite}
+
+/* o escuro que vai fechando (o mesmo que você aprovou) */
+.cq-sombra{position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse 62% 58% at 40% 42%,rgba(0,0,0,0) 30%,rgba(2,4,9,.82) 100%);animation:cqEscurece 9s ease-out infinite}
+@keyframes cqEscurece{0%,10%{opacity:0}24%,100%{opacity:1}}
+
+/* o Carcereiro do lado de fora, olhando por entre as grades */
+.cq-espia{position:absolute;right:-70px;top:250px;width:330px;z-index:3;pointer-events:none;
+  -webkit-mask-image:linear-gradient(180deg,#000 62%,transparent 92%);mask-image:linear-gradient(180deg,#000 62%,transparent 92%);
+  filter:brightness(.82) drop-shadow(0 0 30px rgba(0,0,0,.8));animation:cqEspia 9s cubic-bezier(.3,.6,.3,1) infinite}
+@keyframes cqEspia{0%,16%{transform:translateX(120px);opacity:0}30%,100%{transform:translateX(0);opacity:1}}
+.cq-lampiao{position:absolute;right:150px;top:470px;width:300px;height:300px;border-radius:50%;z-index:3;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,190,100,.20),transparent 65%);animation:cqTreme 2.6s ease-in-out infinite}
+
+/* a porta da cela: grades grossas que fecham com estrondo */
+.cq-porta{position:absolute;top:0;bottom:0;right:0;width:250px;z-index:4;pointer-events:none;animation:cqFecha 9s infinite}
+@keyframes cqFecha{0%{transform:translateX(105%);animation-timing-function:cubic-bezier(.6,0,1,.6)}9%{transform:translateX(0);animation-timing-function:ease-out}10.5%{transform:translateX(16px);animation-timing-function:ease-in}12%,100%{transform:translateX(0)}}
+
+/* ---- conteúdo ---- */
+.cq-miolo{position:relative;z-index:5;padding:36px 290px 48px 116px;display:flex;flex-direction:column;gap:26px;max-width:none;box-sizing:border-box}
+.cq-topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px}
+.cq-marca{display:flex;align-items:center;gap:12px;font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600}
+.cq-nav{display:flex;flex-wrap:wrap;gap:4px}
+.cq-nav a{padding:10px 14px;text-decoration:none;font-weight:600;color:#B7BCCB}
+.cq-nav a[aria-current="page"]{color:#F3EEE2;box-shadow:inset 0 -2px 0 #D4AF6A}
+
+.cq-titulo{margin:0;font-family:'Fraunces',Georgia,serif;font-size:clamp(40px,5vw,58px);font-weight:600;line-height:1.05;color:#d6cfbe;
+  text-shadow:0 2px 0 #000,0 -1px 0 rgba(255,255,255,.07),0 0 24px rgba(0,0,0,.8)}
+.cq-sub{margin:-14px 0 0;font-size:17px;color:#aaa595;max-width:52ch}
+
+/* resumo riscado a giz na parede */
+.cq-giz{margin:0;display:flex;flex-wrap:wrap;gap:14px 44px;font-family:'Alegreya Sans',system-ui,sans-serif;color:#e6e2d6}
+.cq-giz div{display:flex;flex-direction:column}
+.cq-giz dt{font-family:'Alegreya Sans SC',system-ui,sans-serif;font-size:16px;letter-spacing:.04em;color:#b9b4a6;line-height:1.2}
+.cq-giz dd{margin:0;font-size:28px;font-weight:800;line-height:1.2;display:flex;align-items:center;gap:8px;text-shadow:0 1px 0 #000}
+
+/* a trave de ferro de onde as placas ficam penduradas */
+.cq-trave{height:18px;border-radius:3px;border:2px solid #0b0c10;margin-top:8px;
+  background:linear-gradient(180deg,#5d626e,#3a3e48 45%,#262931);
+  box-shadow:0 6px 12px rgba(0,0,0,.6);
+  background-image:radial-gradient(circle,#9aa0ab 0 2.5px,#15161a 3px,transparent 3.6px),linear-gradient(180deg,#5d626e,#3a3e48 45%,#262931);
+  background-size:60px 100%,100% 100%;background-position:12px center,0 0;background-repeat:repeat-x,no-repeat}
+.cq-placas{display:flex;flex-direction:column;gap:22px;margin-top:-4px}
+.cq-pendura{position:relative;padding-top:40px}
+.cq-pendura .cq-placa{animation:cqPendulo 9s infinite}
+.cq-pendura .cq-corrente{transform-origin:6px 0;animation:cqCorrente 9s infinite}
+.cq-pendura:nth-child(2) .cq-placa,.cq-pendura:nth-child(2) .cq-corrente{animation-delay:.12s}
+/* balanço amortecido: cada ida e volta menor que a anterior, com ease-in-out em cada trecho */
+@keyframes cqPendulo{0%,22%{transform:translateX(0) rotate(0)}25.5%{transform:translateX(7px) rotate(.5deg)}29.5%{transform:translateX(-5px) rotate(-.35deg)}33.5%{transform:translateX(3.4px) rotate(.22deg)}37.5%{transform:translateX(-2px) rotate(-.12deg)}41.5%{transform:translateX(1px) rotate(0)}45%,100%{transform:translateX(0) rotate(0)}}
+@keyframes cqCorrente{0%,22%{transform:rotate(0)}25.5%{transform:rotate(-9.5deg)}29.5%{transform:rotate(6.8deg)}33.5%{transform:rotate(-4.6deg)}37.5%{transform:rotate(2.7deg)}41.5%{transform:rotate(-1.4deg)}45%,100%{transform:rotate(0)}}
+.cq-placa,.cq-corrente{animation-timing-function:ease-in-out}
+.cq-corrente{position:absolute;top:0;width:12px;height:42px;overflow:visible}
+.cq-placa{position:relative;display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;padding:18px 22px 18px 18px;border-radius:6px;
+  border:3px solid #0b0c10;
+  background-color:#2c2f37;
+  background-image:
+    radial-gradient(circle at 12px 12px,#a3a8b2 0 3px,#121317 3.6px,transparent 4.4px),
+    radial-gradient(circle at calc(100% - 12px) 12px,#a3a8b2 0 3px,#121317 3.6px,transparent 4.4px),
+    radial-gradient(circle at 12px calc(100% - 12px),#a3a8b2 0 3px,#121317 3.6px,transparent 4.4px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),#a3a8b2 0 3px,#121317 3.6px,transparent 4.4px),
+    repeating-linear-gradient(100deg,rgba(255,255,255,.018) 0 2px,transparent 2px 7px),
+    linear-gradient(180deg,#3d414b,#2a2d35 55%,#202228);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px #4a4e59,inset 0 -10px 24px rgba(0,0,0,.35),0 14px 26px rgba(0,0,0,.65)}
+.cq-cadeado{flex:none;width:58px;height:70px;overflow:visible}
+.cq-arco{animation:cqTranca 9s infinite}
+@keyframes cqTranca{0%,29%{transform:translateY(-11px)}31.5%{transform:translateY(1.5px);animation-timing-function:ease-out}33%{transform:translateY(-1px)}34.5%,100%{transform:translateY(0)}}
+.cq-placa{animation-fill-mode:both}
+.cq-info{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cq-carimbo{align-self:flex-start;padding:1px 10px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border:3px double currentColor;border-radius:4px;transform:rotate(-3deg)}
+.cq-etiqueta{align-self:flex-start;padding:3px 10px 4px;background:#e6d9bb;color:#2b2118;font-family:'Source Code Pro',monospace;font-size:15px;font-weight:500;
+  border-radius:2px;box-shadow:0 2px 0 rgba(0,0,0,.4);transform:rotate(-.6deg);overflow-wrap:anywhere;
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,6px 50%)}
+.cq-dado{font-size:14px;color:#b9bccb}
+.cq-dado code{font-family:'Source Code Pro',monospace;color:#ECE7DA}
+.cq-acoes{display:flex;gap:8px}
+.cq-acoes button{min-height:44px;padding:0 16px;border-radius:6px;font:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;
+  background:linear-gradient(180deg,#3a3e48,#23252c);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 0 #000}
+.cq-devolver{border:1px solid #6b7182;color:#F3EEE2}
+.cq-apagar{border:1px solid #FF8A7A;color:#FF8A7A}
+.cq-vazia{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:30px 34px;border:2px dashed rgba(230,226,214,.28);border-radius:10px;background:rgba(10,12,18,.45);max-width:640px;font-family:'Alegreya Sans',system-ui,sans-serif;color:#e6e2d6}
+.cq-vazia h2{margin:0;font-size:30px;font-weight:800;text-shadow:0 1px 0 #000}
+.cq-vazia p{margin:0;font-size:17px;line-height:1.5;color:#c9c4b6}
+.cq-modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(4,5,9,.72);animation:cqVela .35s ease-out both}
+.cq-dialogo{width:520px;max-width:calc(100% - 48px);box-sizing:border-box;padding:28px 30px 24px;border-radius:8px;background:linear-gradient(#3a3f4b,#2b2f39);border:3px solid #1a1c22;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 24px 60px rgba(0,0,0,.7);color:#F3EEE2;font-family:'Alegreya Sans',system-ui,sans-serif;animation:cqSobe .35s ease-out both}
+.cq-dialogo h2{margin:0 0 10px;font-size:26px;line-height:1.25}
+.cq-dialogo p{margin:0 0 8px;font-size:17px;line-height:1.5;color:#d3d0c6}
+.cq-dialogo .cq-acoes{justify-content:flex-end;margin-top:18px}
+.cq-apagar-de-vez{background:#7d1f16;border:1px solid #FF8A7A;color:#fff}
+@keyframes cqVela{from{opacity:0}to{opacity:1}}
+@keyframes cqSobe{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.cq-modal,.cq-dialogo{animation:none}}
+.cq-aviso{margin:4px 0 0;font-size:14px;color:#aaa595}
+
+@keyframes cqBalanca{0%,22%{transform:rotate(0)}26%{transform:rotate(2.4deg)}31%{transform:rotate(-1.6deg)}36%{transform:rotate(.9deg)}41%{transform:rotate(-.4deg)}46%,100%{transform:rotate(0)}}
+.cq-algema{animation-timing-function:ease-in-out !important}
+@media (prefers-reduced-motion: reduce){.cq-luz,.cq-chama,.cq-algema,.cq-sombra,.cq-espia,.cq-lampiao,.cq-porta,.cq-placa,.cq-corrente,.cq-arco{animation:none !important}}
+</style>
+</helmet>
+<div class="cq-cela">
+<div class="cq-umidade" aria-hidden="true"></div>
+<svg class="cq-teia" viewBox="0 0 190 190" aria-hidden="true"><g fill="none" stroke="#d8d8d8" stroke-width="0.8"><path d="M0 0 L190 70 M0 0 L160 120 M0 0 L120 160 M0 0 L70 190"></path><path d="M30 11 C28 18 24 24 18 28 C14 31 9 32 4 32"></path><path d="M60 22 C56 38 48 52 36 58 C26 64 16 64 8 64"></path><path d="M95 35 C88 60 74 78 56 88 C42 96 26 98 12 98"></path><path d="M130 48 C120 82 100 106 76 120 C58 130 38 134 20 132"></path></g></svg>
+<svg class="cq-teia cq-teia-dir" viewBox="0 0 190 190" aria-hidden="true"><g fill="none" stroke="#d8d8d8" stroke-width="0.8"><path d="M0 0 L190 70 M0 0 L160 120 M0 0 L120 160 M0 0 L70 190"></path><path d="M30 11 C28 18 24 24 18 28 C14 31 9 32 4 32"></path><path d="M60 22 C56 38 48 52 36 58 C26 64 16 64 8 64"></path><path d="M95 35 C88 60 74 78 56 88"></path></g></svg>
+
+<div class="cq-luz" aria-hidden="true"></div>
+<svg class="cq-tocha" viewBox="0 0 46 120" aria-hidden="true">
+<path class="cq-chama" d="M23 2 C30 14 34 22 31 32 C29 38 17 38 15 32 C12 22 17 14 23 2 Z" fill="#ffb347" stroke="#7a3a10" stroke-width="0.8"></path>
+<path class="cq-chama" d="M23 14 C27 20 28 26 26 31 C24 34 22 34 20 31 C18 26 19 20 23 14 Z" fill="#fff0b0"></path>
+<path d="M14 36 H32 L28 70 H18 Z" fill="#5a381a" stroke="#16121a" stroke-width="1.2"></path>
+<path d="M13 36 H33 V42 H13 Z" fill="#3a3540" stroke="#16121a" stroke-width="1"></path>
+<path d="M18 70 H28 L26 100 H20 Z" fill="#3a2410" stroke="#16121a" stroke-width="1"></path>
+<path d="M8 84 H38 V90 H8 Z M4 76 H10 V100 H4 Z" fill="#3a3540" stroke="#16121a" stroke-width="1"></path>
+</svg>
+
+<svg class="cq-algema" viewBox="0 0 60 170" aria-hidden="true"><g fill="none" stroke="#5f6470" stroke-width="3"><circle cx="30" cy="6" r="5" fill="#2a2c33"></circle>
+<sc-for list="{{elos}}" as="e" hint-placeholder-count="10"><ellipse cx="30" cy="{{e.y}}" rx="{{e.rx}}" ry="6"></ellipse></sc-for>
+<path d="M14 132 C14 118 46 118 46 132 C46 150 14 150 14 132 Z" stroke-width="5" stroke="#4a4e58"></path><path d="M14 132 C14 118 46 118 46 132" stroke="#8a909c" stroke-width="1.5"></path></g></svg>
+
+<div class="cq-sombra" aria-hidden="true"></div>
+<div class="cq-lampiao" aria-hidden="true"></div>
+<div class="cq-espia" aria-hidden="true">%%CARCEREIRO%%</div>
+
+<svg class="cq-porta" viewBox="0 0 250 1000" preserveAspectRatio="none" aria-hidden="true">
+<defs><linearGradient id="cqFerro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#15161a"></stop><stop offset="0.35" stop-color="#7a808c"></stop><stop offset="0.6" stop-color="#4a4f5a"></stop><stop offset="1" stop-color="#121317"></stop></linearGradient>
+<linearGradient id="cqFerroH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15161a"></stop><stop offset="0.35" stop-color="#6e7480"></stop><stop offset="1" stop-color="#16171c"></stop></linearGradient></defs>
+<g stroke="#08090b" stroke-width="2">
+<rect x="0" y="0" width="22" height="1000" fill="url(#cqFerro)"></rect>
+<sc-for list="{{grades}}" as="g" hint-placeholder-count="5"><rect x="{{g.x}}" y="0" width="16" height="1000" fill="url(#cqFerro)"></rect></sc-for>
+<rect x="0" y="170" width="250" height="26" fill="url(#cqFerroH)"></rect>
+<rect x="0" y="760" width="250" height="26" fill="url(#cqFerroH)"></rect>
+</g>
+<g fill="#a3a8b2" stroke="#08090b" stroke-width="1"><sc-for list="{{rebites}}" as="r" hint-placeholder-count="10"><circle cx="{{r.x}}" cy="{{r.y}}" r="4"></circle></sc-for></g>
+</svg>
+
+<div class="cq-miolo">
+<header class="cq-topo">
+<div class="cq-marca"><div style="width: 44px" aria-hidden="true"><dc-import name="Emblema" tom="ouro" hint-size="44px,44px"></dc-import></div>Guarnição</div>
+<nav class="cq-nav" aria-label="Seções"><sc-for list="{{nav}}" as="n" hint-placeholder-count="3"><a href="#" aria-current="{{n.cur}}">{{n.nome}}</a></sc-for></nav>
+</header>
+
+<h1 class="cq-titulo">Quarentena</h1>
+<p class="cq-sub">Os arquivos trancados ficam aqui, presos. Daqui eles não abrem nem rodam.</p>
+
+<dl class="cq-giz">
+<sc-for list="{{resumo}}" as="r" hint-placeholder-count="4"><div><dt>{{r.rot}}</dt><dd style="color: {{r.cor}}">{{r.val}}<sc-if value="{{r.risco}}" hint-placeholder-val="{{ false }}"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M8 3 L7 27 M16 2 L15 28" stroke="#e6e2d6" stroke-width="2.6" stroke-linecap="round" opacity=".85"></path></svg></sc-if></dd></div></sc-for>
+</dl>
+
+<sc-if value="{{temItens}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Arquivos trancados">
+<div class="cq-trave" aria-hidden="true"></div>
+<div class="cq-placas">
+<sc-for list="{{cela}}" as="q" hint-placeholder-count="2">
+<div class="cq-pendura">
+<svg class="cq-corrente" style="left: 16%" viewBox="0 0 12 42" aria-hidden="true"><g fill="none" stroke="#6b707c" stroke-width="2"><ellipse cx="6" cy="6" rx="4" ry="6"></ellipse><path d="M6 12 V24" stroke-width="3"></path><ellipse cx="6" cy="30" rx="4" ry="6"></ellipse><path d="M6 36 V42" stroke-width="3"></path></g></svg>
+<svg class="cq-corrente" style="right: 16%" viewBox="0 0 12 42" aria-hidden="true"><g fill="none" stroke="#6b707c" stroke-width="2"><ellipse cx="6" cy="6" rx="4" ry="6"></ellipse><path d="M6 12 V24" stroke-width="3"></path><ellipse cx="6" cy="30" rx="4" ry="6"></ellipse><path d="M6 36 V42" stroke-width="3"></path></g></svg>
+<article class="cq-placa">
+<svg class="cq-cadeado" viewBox="0 0 58 70" aria-hidden="true">
+<path class="cq-arco" d="M15 34 V22 a14 14 0 0 1 28 0 V34" fill="none" stroke="#8a909c" stroke-width="6" stroke-linecap="round"></path>
+<path class="cq-arco" d="M15 34 V22 a14 14 0 0 1 28 0 V34" fill="none" stroke="#2a2c33" stroke-width="1.5" stroke-linecap="round" transform="translate(0 0)"></path>
+<rect x="6" y="32" width="46" height="34" rx="5" fill="#6b5a3a" stroke="#0b0c10" stroke-width="2"></rect>
+<rect x="9" y="35" width="40" height="5" rx="2" fill="#a88a52" opacity=".7"></rect>
+<path d="M29 44 a4 4 0 1 1 0.01 0 Z M27 47 H31 L32 57 H26 Z" fill="#0b0c10"></path>
+</svg>
+<div class="cq-info">
+<span class="cq-carimbo" style="color: {{q.cor}}">{{q.tipo}}</span>
+<span class="cq-etiqueta">{{q.arquivo}}</span>
+<span class="cq-dado">{{q.detalhe}}</span>
+<span class="cq-dado">Veio de <code>{{q.origem}}</code> · trancado {{q.quando}}</span>
+</div>
+<div class="cq-acoes">
+<button type="button" class="cq-devolver"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="5" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M8.6 9 H17 M14 9 V12 M16.4 9 V11.4" stroke="currentColor" stroke-width="1.8"></path></svg>Devolver</button>
+<button type="button" class="cq-apagar">Apagar</button>
+</div>
+</article>
+</div>
+</sc-for>
+</div>
+<p class="cq-aviso">Apagar remove o arquivo de vez. Não dá para desfazer.</p>
+</section>
+</sc-if>
+<sc-if value="{{isVazia}}" hint-placeholder-val="{{ false }}">
+<section class="cq-vazia" aria-labelledby="vazia">
+<h2 id="vazia">A cela está vazia</h2>
+<p>Nada está trancado agora. Quando uma varredura achar algo perigoso, você escolhe se quer trancar aqui — e pode devolver depois, se for engano.</p>
+</section>
+</sc-if>
+</div>
+<sc-if value="{{isConfirmar}}" hint-placeholder-val="{{ false }}">
+<div class="cq-modal">
+<div class="cq-dialogo" role="alertdialog" aria-modal="true" aria-labelledby="confTit" aria-describedby="confTxt">
+<h2 id="confTit">Apagar fatura-novembro.pdf.exe de vez?</h2>
+<p id="confTxt">O arquivo sai da cela e é removido do computador. Não dá para desfazer.</p>
+<p>Se ele foi trancado por engano, use <strong>Devolver</strong> em vez de apagar.</p>
+<div class="cq-acoes"><button type="button" class="cq-devolver" autofocus>Cancelar</button><button type="button" class="cq-apagar-de-vez">Apagar de vez</button></div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"estado":"%%ESTADO%%","$preview":{"width":1280,"height":1000},"$props":{"estado":{"type":"enum","options":["cheia","vazia","confirmar"]}}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const nav = [['painel', 'Painel'], ['historico', 'Histórico'], ['quarentena', 'Quarentena']].map(([k, nome]) => ({ nome, cur: k === 'quarentena' ? 'page' : 'false' }));
+    const giz = '#e6e2d6', gizVerde = '#9fdcb8';
+    const estado = this.props.estado ?? 'cheia';
+    const vazia = estado === 'vazia';
+    const resumo = vazia ? [
+      { rot: 'Arquivos trancados', val: '0', cor: giz, risco: false },
+      { rot: 'Espaço ocupado', val: '0 KB', cor: giz, risco: false },
+      { rot: 'Último trancado', val: 'nenhum', cor: giz, risco: false },
+      { rot: 'Podem rodar?', val: '✓ Nada aqui', cor: gizVerde, risco: false }
+    ] : [
+      { rot: 'Arquivos trancados', val: '2', cor: giz, risco: true },
+      { rot: 'Espaço ocupado', val: '1,4 MB', cor: giz, risco: false },
+      { rot: 'Mais antigo', val: 'ontem, 18:04', cor: giz, risco: false },
+      { rot: 'Podem rodar?', val: '✓ Não', cor: gizVerde, risco: false }
+    ];
+    const cela = [
+      { tipo: 'Ameaça', cor: '#FF8A7A', arquivo: 'fatura-novembro.pdf.exe', detalhe: 'EICAR-Test-File · achada pelo Cavaleiro', origem: '~/Downloads', quando: 'ontem, 18:04' },
+      { tipo: 'Suspeito', cor: '#F0B65A', arquivo: 'atualizador-sistema.sh', detalhe: 'Age como minerador de criptomoeda · percebido pelo Vidente', origem: '~/.local/bin', quando: 'segunda, 12:31' }
+    ];
+    // corrente das algemas: elos alternando de frente e de lado
+    const elos = Array.from({ length: 9 }, (_, k) => ({ y: 18 + k * 11, rx: k % 2 ? 1.6 : 4.2 }));
+    const grades = [62, 110, 158, 206].map(x => ({ x }));
+    const rebites = [];
+    [183, 773].forEach(y => [11, 70, 118, 166, 214].forEach(x => rebites.push({ x, y })));
+    return { nav, resumo, cela, temItens: !vazia, isVazia: vazia, isConfirmar: estado === 'confirmar', elos, grades, rebites };
+  }
+}
+</script>
+</body>
+</html>
