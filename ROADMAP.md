@@ -70,6 +70,18 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
       04/11/2026: protetor e monitor somam cerca de 400 MB de memória e menos de 1% de
       um núcleo; as regras YARA são carregadas duas vezes (no monitor e no protetor)
 
+## Para depois
+
+Já dá para fazer, mas fica de fora por enquanto. Entra se alguém pedir ou se fizer
+falta no uso.
+
+- [ ] **Modo claro**: as telas no tema claro já estão desenhadas (painel nos quatro
+      estados, histórico, quarentena, avisos e escudo da barra), mas o painel novo vai
+      ser lançado só no escuro.
+- [ ] **Celular**: por enquanto a Guarnição é só para o PC. Primeiro ela precisa estar
+      funcionando bem e bem testada no computador. Antes de qualquer coisa no celular,
+      falta decidir como as pessoas iriam instalar (APK, loja ou outro jeito).
+
 ## Fora do escopo
 
 VPN, backup na nuvem, monitoramento da dark web, controle de dispositivos e
