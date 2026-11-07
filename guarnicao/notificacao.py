@@ -28,7 +28,43 @@ def _sessoes(raiz: Path = RUN_USER) -> list[tuple[int, int, Path]]:
     return sessoes
 
 
-def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = False) -> list[str]:
+CHAVES = ("tipo", "personagem", "arquivo", "caminho", "sha256", "quarentena")
+PERSONAGEM_DA_CAMADA = {"hash": "cavaleiro", "clamav": "cavaleiro", "virustotal": "cavaleiro",
+                        "yara": "arqueira", "heuristica": "vidente"}
+
+
+def personagem(camada: str | None) -> str:
+    """Quem aparece no aviso: quem reconheceu a ameaça (assinaturas = Cavaleiro)."""
+    return PERSONAGEM_DA_CAMADA.get(camada or "", "cavaleiro")
+
+
+def dados_de(resultado, tipo: str, quarentena: str | None = None) -> dict[str, str]:
+    """Os dados escondidos de um aviso sobre um arquivo (scanner.Resultado)."""
+    return {
+        "tipo": tipo,
+        "personagem": "carcereiro" if tipo == "trancado" else personagem(resultado.camada),
+        "arquivo": resultado.caminho.name,
+        "caminho": str(resultado.caminho),
+        "sha256": resultado.sha256 or "",
+        "quarentena": quarentena or "",
+    }
+
+
+def _hints(dados: dict[str, str] | None) -> list[str]:
+    # A extensão do GNOME lê estes hints para desenhar o cartão da muralha. Cada um
+    # é um argumento só (sem shell); o notify-send separa TIPO:NOME:VALOR nos dois
+    # primeiros ":" e o resto do valor fica intacto.
+    saida = []
+    for chave, valor in (dados or {}).items():
+        if chave not in CHAVES:
+            raise ValueError(f"dado de aviso desconhecido: {chave}")
+        if valor:
+            saida.append(f"--hint=string:x-guarnicao-{chave}:{valor}")
+    return saida
+
+
+def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = False,
+            dados: dict[str, str] | None = None) -> list[str]:
     # Lista de argumentos, sem shell: um nome de arquivo malicioso como
     # "$(rm -rf ~).pdf" vira texto na notificação, nunca um comando.
     if discreto:
@@ -40,7 +76,7 @@ def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = Fal
     else:
         opcoes = ["--urgency", "critical" if urgente else "normal",
                   "--icon", "security-low" if urgente else "dialog-warning"]
-    return ["notify-send", "--app-name=Guarnição", *opcoes, titulo, corpo]
+    return ["notify-send", "--app-name=Guarnição", *opcoes, *_hints(dados), titulo, corpo]
 
 
 def texto_resumo_limpo(nome: str, total: int, quando: datetime) -> tuple[str, str]:
@@ -62,7 +98,7 @@ def resumo_limpo(nome: str, total: int, quando: datetime, marca: Path | None = N
             return False
     except OSError:
         pass
-    notificar(*texto_resumo_limpo(nome, total, quando), discreto=True)
+    notificar(*texto_resumo_limpo(nome, total, quando), discreto=True, dados={"tipo": "limpa"})
     try:
         marca.parent.mkdir(parents=True, exist_ok=True)
         marca.write_text(hoje)
@@ -71,7 +107,8 @@ def resumo_limpo(nome: str, total: int, quando: datetime, marca: Path | None = N
     return True
 
 
-def notificar(titulo: str, corpo: str, urgente: bool = False, discreto: bool = False) -> None:
+def notificar(titulo: str, corpo: str, urgente: bool = False, discreto: bool = False,
+              dados: dict[str, str] | None = None) -> None:
     """Mostra uma notificação; não faz nada se notify-send não existir.
 
     Como root (o protetor é um serviço do sistema), não há área de trabalho
@@ -81,13 +118,13 @@ def notificar(titulo: str, corpo: str, urgente: bool = False, discreto: bool = F
     if shutil.which("notify-send") is None:
         return
     if os.geteuid() != 0:
-        subprocess.run(comando(titulo, corpo, urgente, discreto), check=False)
+        subprocess.run(comando(titulo, corpo, urgente, discreto, dados), check=False)
         return
     for uid, gid, barramento in _sessoes():
         try:
             subprocess.run(
                 ["setpriv", f"--reuid={uid}", f"--regid={gid}", "--clear-groups",
-                 "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path={barramento}", *comando(titulo, corpo, urgente, discreto)],
+                 "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path={barramento}", *comando(titulo, corpo, urgente, discreto, dados)],
                 check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10,
             )
         except subprocess.TimeoutExpired:

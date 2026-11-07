@@ -44,3 +44,37 @@ def test_resumo_limpo_no_maximo_um_por_dia(tmp_path, monkeypatch):
     assert not notificacao.resumo_limpo("completa", 411932, datetime(2026, 11, 8, 13, 30), marca)
     assert notificacao.resumo_limpo("rápida", 305, datetime(2026, 11, 9, 12, 51), marca)
     assert len(avisos) == 2 and all(k["discreto"] for _, k in avisos)
+
+
+def test_dados_viram_hints_de_texto():
+    cmd = notificacao.comando("Ameaça encontrada", "x.exe\nEICAR", urgente=True,
+                              dados={"tipo": "ameaca", "arquivo": "$(rm -rf ~).pdf", "sha256": ""})
+    assert "--hint=string:x-guarnicao-tipo:ameaca" in cmd
+    assert "--hint=string:x-guarnicao-arquivo:$(rm -rf ~).pdf" in cmd   # um argumento só, sem shell
+    assert not any("x-guarnicao-sha256" in a for a in cmd)              # vazio não vai
+    assert cmd[-2:] == ["Ameaça encontrada", "x.exe\nEICAR"]
+
+
+def test_chave_desconhecida_e_recusada():
+    import pytest
+    with pytest.raises(ValueError):
+        notificacao.comando("t", "c", dados={"comando": "rm"})
+
+
+def test_personagem_pela_camada():
+    assert notificacao.personagem("hash") == "cavaleiro"
+    assert notificacao.personagem("clamav") == "cavaleiro"
+    assert notificacao.personagem("yara") == "arqueira"
+    assert notificacao.personagem("heuristica") == "vidente"
+    assert notificacao.personagem(None) == "cavaleiro"
+
+
+def test_dados_de_um_resultado():
+    from pathlib import Path
+    from guarnicao.scanner import Resultado
+    r = Resultado(caminho=Path("/home/x/Downloads/fatura.pdf.exe"), sha256="ab" * 32,
+                  ameaca="EICAR", camada="yara")   # infectado é propriedade: vem de `ameaca`
+    d = notificacao.dados_de(r, "ameaca")
+    assert d == {"tipo": "ameaca", "personagem": "arqueira", "arquivo": "fatura.pdf.exe",
+                 "caminho": "/home/x/Downloads/fatura.pdf.exe", "sha256": "ab" * 32, "quarentena": ""}
+    assert notificacao.dados_de(r, "trancado", "id1")["personagem"] == "carcereiro"
