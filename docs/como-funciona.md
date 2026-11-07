@@ -181,6 +181,10 @@ Quem está trabalhando acende a tocha; quem achou algo brilha em vermelho (amea�
 ou âmbar (suspeito). O céu e o braseiro da torre mudam com o estado: calmo, varrendo,
 ameaça encontrada, bases desatualizadas, Protetor ou Monitor desligados.
 
+Uma barra fixa no alto leva às três telas (Painel, Histórico e Quarentena) e fica
+no mesmo lugar em todas; o emblema da Guarnição também volta ao Painel. A página
+é uma só: trocar de tela só muda o endereço depois do `#`, sem recarregar.
+
 **Painel.** Dispara a varredura rápida, a completa ou a de uma pasta, e para no
 meio. **Caçar invasores escondidos** roda o caçador (abaixo) e só mostra o que
 achou. "Em segundo plano" lê o estado dos serviços e dos timers pelo `systemctl`;

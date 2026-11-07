@@ -8,7 +8,7 @@ Antivírus para Linux. Bloqueia ameaças antes de elas executarem, vigia os down
 e os processos e varre o sistema com ClamAV, regras YARA e os hashes do
 MalwareBazaar, atualizados de hora em hora.
 
-![O painel: os quatro guardiões no alto da muralha, cada um cuidando de uma parte](docs/imagens/painel.jpg)
+![Uma varredura no painel: os guardiões acendem as tochas, o Cavaleiro acha um arquivo perigoso e o Carcereiro tranca](docs/imagens/guarnicao.gif)
 
 ## Como funciona
 
@@ -36,12 +36,55 @@ você decide no painel.
 .venv/bin/python -m guardiao launcher
 ```
 
-Uma página local, a Guarnição, com três telas: o **Painel**, de onde se disparam as
-varreduras e a caçada de invasores escondidos; o **Histórico**, anotado num
-pergaminho; e a **Quarentena**, a cela onde ficam os arquivos trancados, com
-Devolver e Apagar. Nada sai do computador, nem as fontes.
+Abre uma página local, a Guarnição, desenhada como um livro de fantasia. Uma
+barra no alto leva às três telas, sempre no mesmo lugar; clicar no emblema volta
+ao Painel. Tudo roda no próprio computador, sem nada vindo da internet, nem as
+fontes. O painel nunca roda como root e só liga serviços mostrando o comando para
+você rodar.
 
-![O histórico de varreduras, anotado dia a dia](docs/imagens/historico.jpg)
+### Os quatro guardiões
+
+Cada camada de detecção é um personagem no alto da muralha:
+
+| Guardião | Cuida de | O que faz |
+|---|---|---|
+| **O Cavaleiro** | Assinaturas | Reconhece ameaças já conhecidas: os hashes do MalwareBazaar e a base do ClamAV |
+| **A Arqueira** | Regras | Mira nos padrões das regras YARA que denunciam famílias de malware |
+| **O Vidente** | Sinais suspeitos | Percebe o que parece perigoso mesmo sem assinatura, e conduz a caçada de invasores escondidos |
+| **O Carcereiro** | Quarentena | Tranca só o que você mandar, e devolve quando você pedir |
+
+Durante uma varredura, quem está trabalhando acende a tocha. Quando um deles acha
+algo, o retrato dele brilha e o nome da ameaça aparece embaixo.
+
+### Painel: a muralha
+
+![O painel: a muralha com os quatro guardiões, as ações e o que roda em segundo plano](docs/imagens/painel.jpg)
+
+O céu conta como está o computador: noite calma com lua quando está tudo limpo, e
+fogo no horizonte quando há algo perigoso esperando decisão; fumaça no braseiro
+da torre quando as bases estão velhas ou um serviço está desligado. No alto ficam a última
+varredura, quantos arquivos foram conferidos e a idade das bases. Embaixo, os
+botões (varredura rápida, completa, de uma pasta, e a caçada de invasores), o
+estado dos serviços em segundo plano e as últimas varreduras.
+
+### Histórico: o pergaminho
+
+![O histórico: as varreduras anotadas dia a dia num pergaminho](docs/imagens/historico.jpg)
+
+Cada varredura vira uma linha no pergaminho, agrupada por dia, com o tipo, a
+duração, quantos arquivos e o resultado; quando algo foi achado, aparece também
+qual guardião achou. Os filtros separam as rápidas, as completas, as de uma pasta e
+as que tiveram achados. No pé, a Guarnição assina com um selo de cera.
+
+### Quarentena: a cela
+
+![A quarentena: os arquivos trancados presos na cela do Carcereiro](docs/imagens/quarentena.jpg)
+
+Os arquivos trancados ficam acorrentados atrás das grades, cada um com o motivo,
+o guardião que achou, a pasta de onde veio e quando foi trancado. Daqui eles não
+abrem nem rodam.
+**Devolver** põe o arquivo de volta no lugar original; **Apagar** pede uma
+confirmação e remove de vez.
 
 ## Detecção
 
