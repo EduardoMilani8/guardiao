@@ -543,6 +543,20 @@ def cmd_quarentena(args) -> int:
             print(f"{VERMELHO}Não deu para apagar: {erro}{FIM}")
             return 2
         print(f"Apagado de vez: {dados.get('original', args.id)}")
+    elif args.acao == "trancar":
+        from . import trancar
+        nome = Path(args.caminho).name
+        try:
+            id_ = trancar.trancar(args.caminho, args.sha256, **trancar.do_historico(args.caminho, args.sha256))
+        except trancar.Recusa as recusa:
+            print(f"{VERMELHO}Não deu para trancar: {recusa.motivo}{FIM}")
+            notificacao.notificar("Não deu para trancar", f"{nome}\n{recusa.motivo}",
+                                  dados={"tipo": "suspeito", "personagem": "carcereiro", "arquivo": nome})
+            return 2
+        print(f"Trancado na quarentena (id {id_}): {args.caminho}")
+        notificacao.notificar("Trancado na quarentena", f"{nome}\nPara devolver: Desfazer",
+                              dados={"tipo": "trancado", "personagem": "carcereiro",
+                                     "arquivo": nome, "quarentena": id_})
     else:
         try:
             destino = quarentena.restaurar(args.id)
@@ -629,6 +643,9 @@ def main() -> int:
     q_apagar = q_sub.add_parser("apagar", help="remove de vez (não dá para desfazer)")
     q_apagar.add_argument("id")
     q_apagar.add_argument("--sim", action="store_true", help="não pergunta antes de apagar")
+    q_trancar = q_sub.add_parser("trancar", help="tranca um arquivo achado (usado pelo aviso no canto)")
+    q_trancar.add_argument("caminho")
+    q_trancar.add_argument("--sha256", required=True, help="só tranca se o arquivo ainda tem este hash")
     p_q.set_defaults(func=cmd_quarentena)
 
     args = parser.parse_args()

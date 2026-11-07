@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from .. import bases, eventos, historico, quarentena, regras_yara, scanner, varredura
+from .. import bases, eventos, historico, quarentena, regras_yara, scanner, trancar, varredura
 from . import estado
 
 PASTA_ESTATICA = Path(__file__).parent / "estatico"
@@ -74,22 +74,11 @@ def isolar(id_: str) -> dict:
         dados = ACHADOS.get(id_)
     if dados is None:
         raise Recusado(404, "achado desconhecido")
-    caminho = Path(dados["caminho"])
-    if not caminho.is_file() or caminho.is_symlink():
-        raise Recusado(410, "o arquivo não está mais lá")
     try:
-        # Mesmo conteúdo da varredura: se ele mudou, a decisão precisa ser de novo.
-        if scanner.calcular_sha256(caminho) != dados["sha256"]:
-            raise Recusado(409, "o arquivo mudou desde a varredura: varra de novo")
-        motivo = dados["ameaca"] or ("suspeito" if dados["veredito"] == "suspeito" else "ameaça")
-        id_cela = quarentena.isolar(caminho, dados["sha256"], motivo,
-                                    camada=dados["camada"], veredito=dados["veredito"])
-    except PermissionError:
-        raise Recusado(403, "sem permissão: é um arquivo do sistema, use "
-                            "sudo .venv/bin/python -m guarnicao varrer --isolar")
-    except OSError as erro:
-        raise Recusado(500, erro.strerror or str(erro))
-    historico.marcar_isolado(dados["caminho"], dados["sha256"], id_cela)
+        id_cela = trancar.trancar(dados["caminho"], dados["sha256"], dados["ameaca"],
+                                  dados["camada"], dados["veredito"])
+    except trancar.Recusa as recusa:
+        raise Recusado(recusa.status, recusa.motivo)
     with _trava:
         ACHADOS.pop(id_, None)
     return {"quarentena": id_cela, "caminho": dados["caminho"]}
