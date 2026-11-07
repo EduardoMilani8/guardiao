@@ -1,4 +1,4 @@
-"""Amostras inofensivas para demonstrar cada guardião em ação."""
+"""Amostras inofensivas, uma para cada camada, para os testes do painel."""
 
 import shutil
 from pathlib import Path
