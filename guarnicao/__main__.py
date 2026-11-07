@@ -115,6 +115,26 @@ def cmd_virustotal(args) -> int:
 
 
 def cmd_varrer(args) -> int:
+    if args.parar:
+        from . import andamento
+        if andamento.parar():
+            print("Pedi para a varredura parar.")
+            return 0
+        print("Nenhuma varredura do terminal ou do timer está rodando.")
+        return 1
+
+    def ao_sigterm(*_):
+        raise KeyboardInterrupt   # "Parar varredura" no escudo: encerra limpo, apagando o andamento
+
+    signal.signal(signal.SIGTERM, ao_sigterm)
+    try:
+        return _varrer(args)
+    except KeyboardInterrupt:
+        print("\nVarredura interrompida.")
+        return 130
+
+
+def _varrer(args) -> int:
     from . import varredura
 
     if args.completa:
@@ -145,7 +165,8 @@ def cmd_varrer(args) -> int:
     # Só os suspeitos: o VirusTotal desempata o que a Guarnição não teve certeza.
     consultar_vt, promovidos = ConsultaVirusTotal(maximo=MAX_VIRUSTOTAL_POR_VARREDURA), 0
 
-    for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
+    for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos,
+                                   rotulo=nome):
         if isinstance(item, varredura.Progresso):
             if terminal:
                 contagem = f"{item.vistos}/{item.total}" if item.total else f"{item.vistos}"
@@ -554,6 +575,8 @@ def main() -> int:
     p_varrer.add_argument("--incluir-externos", action="store_true", help="inclui /media e /mnt na completa")
     p_varrer.add_argument("--agendada", action="store_true",
                           help="feita pelo timer: notifica o que achar e não falha por achar ameaça")
+    p_varrer.add_argument("--parar", action="store_true",
+                          help="para a varredura do terminal ou do timer que está rodando")
     p_varrer.set_defaults(func=cmd_varrer)
 
     p_h = sub.add_parser("historico", help="as últimas varreduras e o que acharam")

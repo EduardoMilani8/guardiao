@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
-from . import assinaturas, bases, clamav, quarentena, regras_yara, scanner
+from . import andamento, assinaturas, bases, clamav, quarentena, regras_yara, scanner
 from .cache import Cache
 from .caminhos import CONFIG, casa_real
 
@@ -208,6 +208,26 @@ def _analisar(caminho: str):
 
 
 def executar(
+    raizes: list[Path],
+    exclusoes: Exclusoes | None = None,
+    usar_cache: bool = True,
+    processos: int | None = None,
+    cache: Cache | None = None,
+    rotulo: str | None = None,
+) -> Iterator[Progresso | scanner.Resultado | tuple[Path, OSError] | Resumo]:
+    """Varre as raízes. Com `rotulo` (ex.: "rápida"), grava o andamento para o
+    escudo da barra e apaga no fim, inclusive se a varredura for interrompida."""
+    try:
+        for item in _executar(raizes, exclusoes, usar_cache, processos, cache):
+            if rotulo and isinstance(item, Progresso):
+                andamento.gravar(rotulo, item.vistos, item.total)
+            yield item
+    finally:
+        if rotulo:
+            andamento.apagar()
+
+
+def _executar(
     raizes: list[Path],
     exclusoes: Exclusoes | None = None,
     usar_cache: bool = True,

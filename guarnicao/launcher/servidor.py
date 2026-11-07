@@ -316,7 +316,7 @@ class Manipulador(BaseHTTPRequestHandler):
                       "avisos": bases.avisos()})
         # closing(): se a página sumir, o erro de escrita sai do laço e o gerador
         # é fechado na hora, o que encerra os processos de análise.
-        with closing(varredura.executar(raizes)) as itens:
+        with closing(varredura.executar(raizes, rotulo=rotulo)) as itens:
             for item in itens:
                 if isinstance(item, varredura.Progresso):
                     self._evento({"tipo": "progresso", "fase": item.fase, "vistos": item.vistos,
