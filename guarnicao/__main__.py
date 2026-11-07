@@ -15,6 +15,7 @@
 """
 
 import argparse
+import errno
 import os
 import signal
 import sys
@@ -509,6 +510,15 @@ def cmd_cacar(args) -> int:
     return imprimir_achados(cacador.cacar(julgar, conferir_pacotes=not args.sem_pacotes), args.todos)
 
 
+def _launcher_responde(url: str) -> bool:
+    import urllib.request
+    try:
+        with urllib.request.urlopen(url + "api/estado", timeout=2) as resposta:
+            return resposta.status == 200
+    except OSError:
+        return False
+
+
 def cmd_launcher(args) -> int:
     import webbrowser
 
@@ -522,6 +532,13 @@ def cmd_launcher(args) -> int:
     try:
         srv = servidor.criar_servidor(args.porta)
     except OSError as erro:
+        url = f"http://127.0.0.1:{args.porta}/"
+        if erro.errno == errno.EADDRINUSE and _launcher_responde(url):
+            # O botão do aviso ou do escudo chama "launcher" de novo: reaproveita o painel aberto.
+            print(f"{VERDE}O painel já está aberto em {url}{FIM}")
+            if not args.sem_navegador:
+                webbrowser.open(url)
+            return 0
         print(f"{VERMELHO}Não consegui abrir a porta {args.porta}: {erro.strerror}{FIM}")
         return 2
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
