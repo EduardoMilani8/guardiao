@@ -178,10 +178,18 @@ def cmd_varrer(args) -> int:
         # Agendada: ninguém está olhando o terminal. Avisa, e quem decide trancar é
         # você, no launcher: um alarme falso no disco inteiro não some sem você ver.
         if resumo.ameacas or resumo.suspeitos:
-            notificacao.notificar(
-                f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)",
-                "Abra o launcher para ver e trancar: python -m guarnicao launcher",
-                urgente=bool(resumo.ameacas))
+            titulo = f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)"
+            if len(achados) == 1:
+                a = achados[0]
+                tipo = "ameaca" if a["veredito"] == "ameaca" else "suspeito"
+                nome_arquivo = Path(a["caminho"]).name
+                corpo = f"{nome_arquivo}\n{a['ameaca'] or 'suspeito'} · abra o painel para trancar"
+                dados = {"tipo": tipo, "personagem": notificacao.personagem(a.get("camada")),
+                         "arquivo": nome_arquivo, "caminho": a["caminho"], "sha256": a.get("sha256") or ""}
+            else:
+                corpo = "Abra o launcher para ver e trancar: python -m guarnicao launcher"
+                dados = {"tipo": "varias"}
+            notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas), dados=dados)
         else:
             notificacao.resumo_limpo(nome, total, datetime.now())
         return 0   # "falhou" no systemd fica para quando a varredura quebrar
@@ -294,12 +302,17 @@ def cmd_monitorar(args) -> int:
         item = consultar_vt(item)
         id_ = relatar(item, args.isolar)
         if item.infectado:
-            acao = "Movido para a quarentena." if id_ else "Não foi isolado (rode com --isolar)."
-            notificacao.notificar("Ameaça detectada", f"{item.caminho.name}: {item.ameaca}\n{acao}", urgente=True)
+            if id_:
+                notificacao.notificar("Trancado na quarentena", f"{item.caminho.name}\n{item.ameaca}",
+                                      urgente=True, dados=notificacao.dados_de(item, "trancado", id_))
+            else:
+                notificacao.notificar("Ameaça encontrada", f"{item.caminho.name}\n{item.ameaca}",
+                                      urgente=True, dados=notificacao.dados_de(item, "ameaca"))
         elif item.suspeito:
             notificacao.notificar(
                 f"Arquivo suspeito ({item.pontuacao}/100)",
                 f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
+                dados=notificacao.dados_de(item, "suspeito"),
             )
         else:
             print(f"{CINZA}[limpo]    {item.caminho}{FIM}")
@@ -313,8 +326,11 @@ def cmd_monitorar(args) -> int:
     def ao_alertar(alerta) -> None:
         cor = VERMELHO if alerta.gravidade == "alta" else AMARELO
         print(f"{cor}[{alerta.tipo.upper()}] {alerta.processo.exe}  →  {alerta.mensagem}{FIM}")
-        notificacao.notificar(f"Comportamento perigoso: {alerta.tipo}", alerta.mensagem,
-                              urgente=alerta.gravidade == "alta")
+        exe = Path(alerta.processo.exe)
+        notificacao.notificar(f"Comportamento perigoso: {alerta.tipo}", f"{exe.name}\n{alerta.mensagem}",
+                              urgente=alerta.gravidade == "alta",
+                              dados={"tipo": "suspeito", "personagem": "vidente",
+                                     "arquivo": exe.name, "caminho": str(exe)})
 
     signal.signal(signal.SIGTERM, ao_sigterm)
     print(f"{VERDE}Vigiando {', '.join(map(str, pastas))}  (Ctrl+C para sair){FIM}")
@@ -350,20 +366,28 @@ def cmd_proteger(args) -> int:
 
     def ao_decidir(d: protetor.Decisao) -> None:
         nome = d.resultado.ameaca if d.resultado and d.resultado.ameaca else ""
+        caminho = Path(d.caminho)
+        base = {"personagem": notificacao.personagem(d.resultado.camada if d.resultado else None),
+                "arquivo": caminho.name, "caminho": str(caminho),
+                "sha256": (d.resultado.sha256 if d.resultado else None) or ""}
         if d.motivo == "ameaça" and not d.permitido:
             print(f"{VERMELHO}[BLOQUEADO] {d.caminho}  →  {nome}  (pedido por {d.quem}, pid {d.pid}){FIM}")
-            notificacao.notificar("Guarnição bloqueou uma ameaça", f"{d.caminho}\n{nome}", urgente=True)
+            notificacao.notificar("Guarnição bloqueou uma ameaça", f"{caminho.name}\n{nome}", urgente=True,
+                                  dados=base | {"tipo": "bloqueado"})
         elif d.motivo == "ameaça":
             print(f"{VERMELHO}[AMEAÇA]    {d.caminho}  →  {nome}  (só avisando; pid {d.pid}){FIM}")
-            notificacao.notificar("Ameaça executada (modo só avisar)", f"{d.caminho}\n{nome}", urgente=True)
+            notificacao.notificar("Ameaça executada (modo só avisar)", f"{caminho.name}\n{nome}", urgente=True,
+                                  dados=base | {"tipo": "ameaca"})
         elif d.motivo == "prazo":
             print(f"{VERMELHO}[RODOU]     {d.caminho}  →  {nome}  (a análise passou do prazo; pid {d.pid}){FIM}")
             notificacao.notificar("Ameaça rodou antes do veredito",
-                                  f"{d.caminho}\n{nome}\nPara encerrar: sudo kill {d.pid}", urgente=True)
+                                  f"{caminho.name}\n{nome}\nPara encerrar: sudo kill {d.pid}", urgente=True,
+                                  dados=base | {"tipo": "ameaca"})
         elif d.motivo == "suspeito" and d.resultado:
             print(f"{AMARELO}[suspeito]  {d.caminho}  ({d.resultado.pontuacao}/100, executado){FIM}")
             notificacao.notificar(f"Executado um arquivo suspeito ({d.resultado.pontuacao}/100)",
-                                  f"{d.caminho}\n{d.resultado.motivos[0] if d.resultado.motivos else ''}")
+                                  f"{caminho.name}\n{d.resultado.motivos[0] if d.resultado.motivos else ''}",
+                                  dados=base | {"tipo": "suspeito"})
         else:
             print(f"{CINZA}[erro]      {d.caminho}: liberado sem análise{FIM}")
 

@@ -81,7 +81,9 @@ def test_agendada_avisa_e_nao_falha(tmp_path, monkeypatch):
     monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
     assert rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--processos", "1") == 0
     [((titulo, corpo), opcoes)] = avisos
-    assert "1 ameaça(s)" in titulo and "launcher" in corpo and opcoes["urgente"]
+    assert "1 ameaça(s)" in titulo and opcoes["urgente"]
+    assert opcoes["dados"]["tipo"] == "ameaca" and opcoes["dados"]["arquivo"] == "teste.com"
+    assert corpo.splitlines()[0] == "teste.com"
     assert historico.listar()[0].origem == "agendada"
     assert (pasta / "teste.com").exists()        # agendada não isola sozinha
 
@@ -116,3 +118,15 @@ def test_manual_limpa_nao_manda_resumo(tmp_path, monkeypatch):
     monkeypatch.setattr(notificacao, "resumo_limpo", lambda *a: resumos.append(a))
     assert rodar(monkeypatch, "varrer", str(pasta), "--processos", "1") == 0
     assert resumos == []
+
+
+def test_agendada_com_varios_achados_e_um_aviso_so(tmp_path, monkeypatch):
+    pasta = tmp_path / "baixados"
+    pasta.mkdir()
+    (pasta / "a.com").write_bytes(EICAR)
+    (pasta / "b.com").write_bytes(EICAR)
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--processos", "1")
+    [((titulo, corpo), opcoes)] = avisos
+    assert opcoes["dados"] == {"tipo": "varias"} and "launcher" in corpo
