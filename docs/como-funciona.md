@@ -167,26 +167,41 @@ e a rede não cabe nesse prazo.
 
 ## Painel
 
-Uma página local (`guardiao launcher`, em `127.0.0.1`) em que cada personagem
-representa uma camada do motor:
+Uma página local (`guardiao launcher`, em `127.0.0.1`) chamada Guarnição: quatro
+personagens no alto de uma muralha, cada um responsável por uma parte do trabalho.
 
-| Personagem | Camada |
+| Personagem | O que faz |
 |---|---|
-| O Guardião | Assinaturas: hashes e ClamAV |
+| O Cavaleiro | Assinaturas: hashes e ClamAV |
 | A Arqueira | Regras YARA |
-| O Vidente | Heurísticas |
-| O Carcereiro | Quarentena |
+| O Vidente | Heurísticas, suspeitos e a caçada de invasores escondidos |
+| O Carcereiro | Quarentena, só quando você manda |
 
-Dá para disparar a varredura rápida, a completa ou a de uma pasta, e parar no meio.
-**Simular ataque** cria amostras inofensivas numa pasta temporária para mostrar
-cada camada em ação. Ao abrir, o painel mostra quando foram as últimas varreduras
-e as ameaças que elas acharam e que continuam no lugar.
+Quem está trabalhando acende a tocha; quem achou algo brilha em vermelho (ameaça)
+ou âmbar (suspeito). O céu e o braseiro da torre mudam com o estado: calmo, varrendo,
+ameaça encontrada, bases desatualizadas, Protetor ou Monitor desligados.
+
+**Painel.** Dispara a varredura rápida, a completa ou a de uma pasta, e para no
+meio. **Caçar invasores escondidos** roda o caçador (abaixo) e só mostra o que
+achou. "Em segundo plano" lê o estado dos serviços e dos timers pelo `systemctl`;
+quando algo está parado, o painel mostra o comando para religar, mas não liga nada
+sozinho.
+
+**Histórico.** O registro das varreduras escrito num pergaminho, agrupado por dia,
+com o resumo dos últimos 30 dias, filtros por tipo e quem achou cada ameaça.
+
+**Quarentena.** A cela do Carcereiro: cada arquivo trancado mostra de onde veio,
+quem achou e quando foi trancado. **Devolver** põe de volta no lugar original;
+**Apagar** pede confirmação e remove de vez.
 
 Cada ameaça tem um botão **Trancar** (e **Trancar todas**, quando há várias). A
 página nunca diz ao servidor *qual caminho* mover: ela manda um código que o próprio
 servidor deu à ameaça, e o arquivo só vai para a quarentena se ainda for exatamente
 o que foi analisado (mesmo SHA-256). Um site aberto no navegador não tem como pedir
 "mova /tal/arquivo". O painel nunca roda como root.
+
+As fontes (Fraunces, Source Sans 3 e Source Code Pro, licença SIL OFL) vêm junto
+com o projeto: a página não busca nada fora do computador.
 
 ## Caçador
 

@@ -8,7 +8,7 @@ Antivírus para Linux. Bloqueia ameaças antes de elas executarem, vigia os down
 e os processos e varre o sistema com ClamAV, regras YARA e os hashes do
 MalwareBazaar, atualizados de hora em hora.
 
-![Painel simulando um ataque: cada camada reage ao que encontra](docs/imagens/demonstracao.gif)
+![O painel: os quatro guardiões no alto da muralha, cada um cuidando de uma parte](docs/imagens/painel.jpg)
 
 ## Como funciona
 
@@ -36,10 +36,12 @@ você decide no painel.
 .venv/bin/python -m guardiao launcher
 ```
 
-Uma página local para disparar varreduras, ver o histórico e mandar ameaças para a
-quarentena com um clique.
+Uma página local, a Guarnição, com três telas: o **Painel**, de onde se disparam as
+varreduras e a caçada de invasores escondidos; o **Histórico**, anotado num
+pergaminho; e a **Quarentena**, a cela onde ficam os arquivos trancados, com
+Devolver e Apagar. Nada sai do computador, nem as fontes.
 
-![Ameaça encontrada, aguardando ser trancada](docs/imagens/carcereiro.png)
+![O histórico de varreduras, anotado dia a dia](docs/imagens/historico.jpg)
 
 ## Detecção
 
