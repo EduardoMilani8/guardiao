@@ -208,10 +208,18 @@ def _varrer(args) -> int:
                 corpo = f"{nome_arquivo}\n{a['ameaca'] or 'suspeito'} · abra o painel para trancar"
                 dados = {"tipo": tipo, "personagem": notificacao.personagem(a.get("camada")),
                          "arquivo": nome_arquivo, "caminho": a["caminho"], "sha256": a.get("sha256") or ""}
+                if a.get("quarentena"):
+                    # Com --isolar já foi trancado: o aviso oferece Desfazer e some sozinho.
+                    tipo = "trancado"
+                    titulo = "Trancado na quarentena"
+                    corpo = f"{nome_arquivo}\n{a['ameaca'] or 'suspeito'} · Para devolver: Desfazer"
+                    dados = {"tipo": tipo, "personagem": "carcereiro",
+                             "arquivo": nome_arquivo, "quarentena": a["quarentena"]}
             else:
                 corpo = "Abra o launcher para ver e trancar: python -m guarnicao launcher"
                 dados = {"tipo": "varias"}
-            notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas), dados=dados)
+            notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas) and dados["tipo"] != "trancado",
+                                  dados=dados)
         else:
             notificacao.resumo_limpo(nome, total, datetime.now())
         return 0   # "falhou" no systemd fica para quando a varredura quebrar
@@ -322,6 +330,27 @@ def cmd_atualizar(args) -> int:
     return 1 if falhou else 0
 
 
+def avisar_do_monitor(item: scanner.Resultado, id_: str | None) -> bool:
+    """O aviso de um download achado pelo monitor. False se estava limpo."""
+    if item.infectado:
+        if id_:
+            # Já resolvido: some sozinho (avisos-v3), com Desfazer enquanto aparece.
+            notificacao.notificar("Trancado na quarentena", f"{item.caminho.name}\n{item.ameaca}",
+                                  dados=notificacao.dados_de(item, "trancado", id_))
+        else:
+            notificacao.notificar("Ameaça encontrada", f"{item.caminho.name}\n{item.ameaca}",
+                                  urgente=True, dados=notificacao.dados_de(item, "ameaca"))
+    elif item.suspeito:
+        notificacao.notificar(
+            f"Arquivo suspeito ({item.pontuacao}/100)",
+            f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
+            dados=notificacao.dados_de(item, "suspeito"),
+        )
+    else:
+        return False
+    return True
+
+
 def cmd_monitorar(args) -> int:
     from . import monitor   # watchdog só é necessário para este comando
 
@@ -339,20 +368,7 @@ def cmd_monitorar(args) -> int:
     def ao_analisar(item: scanner.Resultado) -> None:
         item = consultar_vt(item)
         id_ = relatar(item, args.isolar)
-        if item.infectado:
-            if id_:
-                notificacao.notificar("Trancado na quarentena", f"{item.caminho.name}\n{item.ameaca}",
-                                      urgente=True, dados=notificacao.dados_de(item, "trancado", id_))
-            else:
-                notificacao.notificar("Ameaça encontrada", f"{item.caminho.name}\n{item.ameaca}",
-                                      urgente=True, dados=notificacao.dados_de(item, "ameaca"))
-        elif item.suspeito:
-            notificacao.notificar(
-                f"Arquivo suspeito ({item.pontuacao}/100)",
-                f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
-                dados=notificacao.dados_de(item, "suspeito"),
-            )
-        else:
+        if not avisar_do_monitor(item, id_):
             print(f"{CINZA}[limpo]    {item.caminho}{FIM}")
 
     def ao_erro(caminho: Path, erro: Exception) -> None:
