@@ -43,6 +43,7 @@ guarnicao/            o programa (cada arquivo começa explicando o que faz)
 guarnicao/launcher/   o painel: servidor local e a página
 regras/              regras YARA do projeto
 contrib/             serviços do systemd e os instaladores
+extensao/            a extensão do GNOME (escudo na barra e avisos na muralha)
 ferramentas/         medição da taxa de detecção
 docs/                documentação
 tests/               testes (pytest)
@@ -59,7 +60,11 @@ O [docs/como-funciona.md](docs/como-funciona.md) explica as decisões de cada pa
 4. **Regra YARA nova ou alterada:** rode uma varredura completa no seu computador e
    diga no pull request quantos falsos positivos apareceram. Uma regra que marca
    arquivos legítimos faz as pessoas desligarem o antivírus.
-5. **Um assunto por pull request**, com uma descrição que diga o que mudou e por quê.
+5. **Mexeu na extensão do GNOME:** rode `node --test extensao/testes/*.test.mjs` e
+   teste num GNOME em janela, sem mexer na sua sessão (precisa do pacote
+   `mutter-dev-bin`): `dbus-run-session -- gnome-shell --devkit --wayland`. Se mudou
+   os retratos ou o escudo, gere a arte de novo com `python3 extensao/construir_arte.py`.
+6. **Um assunto por pull request**, com uma descrição que diga o que mudou e por quê.
 
 ### As regras da casa
 

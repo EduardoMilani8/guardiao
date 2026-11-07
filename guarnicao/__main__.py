@@ -15,6 +15,7 @@
 """
 
 import argparse
+import errno
 import os
 import signal
 import sys
@@ -115,6 +116,26 @@ def cmd_virustotal(args) -> int:
 
 
 def cmd_varrer(args) -> int:
+    if args.parar:
+        from . import andamento
+        if andamento.parar():
+            print("Pedi para a varredura parar.")
+            return 0
+        print("Nenhuma varredura do terminal ou do timer está rodando.")
+        return 1
+
+    def ao_sigterm(*_):
+        raise KeyboardInterrupt   # "Parar varredura" no escudo: encerra limpo, apagando o andamento
+
+    signal.signal(signal.SIGTERM, ao_sigterm)
+    try:
+        return _varrer(args)
+    except KeyboardInterrupt:
+        print("\nVarredura interrompida.")
+        return 130
+
+
+def _varrer(args) -> int:
     from . import varredura
 
     if args.completa:
@@ -145,7 +166,8 @@ def cmd_varrer(args) -> int:
     # Só os suspeitos: o VirusTotal desempata o que a Guarnição não teve certeza.
     consultar_vt, promovidos = ConsultaVirusTotal(maximo=MAX_VIRUSTOTAL_POR_VARREDURA), 0
 
-    for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos):
+    for item in varredura.executar(raizes, usar_cache=not args.sem_cache, processos=processos,
+                                   rotulo=nome):
         if isinstance(item, varredura.Progresso):
             if terminal:
                 contagem = f"{item.vistos}/{item.total}" if item.total else f"{item.vistos}"
@@ -178,14 +200,49 @@ def cmd_varrer(args) -> int:
         # Agendada: ninguém está olhando o terminal. Avisa, e quem decide trancar é
         # você, no launcher: um alarme falso no disco inteiro não some sem você ver.
         if resumo.ameacas or resumo.suspeitos:
-            notificacao.notificar(
-                f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)",
-                "Abra o launcher para ver e trancar: python -m guarnicao launcher",
-                urgente=bool(resumo.ameacas))
+            titulo = f"Varredura {nome}: {resumo.ameacas} ameaça(s), {resumo.suspeitos} suspeito(s)"
+            if len(achados) == 1:
+                a = achados[0]
+                tipo = "ameaca" if a["veredito"] == "ameaca" else "suspeito"
+                nome_arquivo = Path(a["caminho"]).name
+                corpo = f"{nome_arquivo}\n{a['ameaca'] or 'suspeito'} · abra o painel para trancar"
+                dados = {"tipo": tipo, "personagem": notificacao.personagem(a.get("camada")),
+                         "arquivo": nome_arquivo, "caminho": a["caminho"], "sha256": a.get("sha256") or ""}
+                if a.get("quarentena"):
+                    # Com --isolar já foi trancado: o aviso oferece Desfazer e some sozinho.
+                    tipo = "trancado"
+                    titulo = "Trancado na quarentena"
+                    corpo = f"{nome_arquivo}\n{a['ameaca'] or 'suspeito'} · Para devolver: Desfazer"
+                    dados = {"tipo": tipo, "personagem": "carcereiro",
+                             "arquivo": nome_arquivo, "quarentena": a["quarentena"]}
+            else:
+                n = len(achados)
+                titulo = f"{n} arquivos perigosos"
+                corpo = (f"{notificacao.contar_achados(resumo.ameacas, resumo.suspeitos)} · "
+                         f"varredura {nome} de hoje, {datetime.now():%H:%M}")
+                dados = {"tipo": "varias"}
+            notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas) and dados["tipo"] != "trancado",
+                                  dados=dados)
         else:
             notificacao.resumo_limpo(nome, total, datetime.now())
         return 0   # "falhou" no systemd fica para quando a varredura quebrar
     return 1 if resumo.ameacas else 0
+
+
+def cmd_estado(args) -> int:
+    import json
+    from datetime import datetime
+
+    from . import andamento, escudo, historico
+    from .launcher import estado
+    dados = escudo.montar(estado.montar(), historico.listar(50), andamento.ler(), datetime.now())
+    if args.json:
+        print(json.dumps(dados, ensure_ascii=False))
+    else:
+        print(dados["titulo"])
+        for linha in dados["linhas"]:
+            print(f"  {linha}")
+    return 0
 
 
 def cmd_historico(args) -> int:
@@ -276,6 +333,27 @@ def cmd_atualizar(args) -> int:
     return 1 if falhou else 0
 
 
+def avisar_do_monitor(item: scanner.Resultado, id_: str | None) -> bool:
+    """O aviso de um download achado pelo monitor. False se estava limpo."""
+    if item.infectado:
+        if id_:
+            # Já resolvido: some sozinho (avisos-v3), com Desfazer enquanto aparece.
+            notificacao.notificar("Trancado na quarentena", f"{item.caminho.name}\n{item.ameaca}",
+                                  dados=notificacao.dados_de(item, "trancado", id_))
+        else:
+            notificacao.notificar("Ameaça encontrada", f"{item.caminho.name}\n{item.ameaca}",
+                                  urgente=True, dados=notificacao.dados_de(item, "ameaca"))
+    elif item.suspeito:
+        notificacao.notificar(
+            "Algo suspeito",
+            f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
+            dados=notificacao.dados_de(item, "suspeito"),
+        )
+    else:
+        return False
+    return True
+
+
 def cmd_monitorar(args) -> int:
     from . import monitor   # watchdog só é necessário para este comando
 
@@ -293,15 +371,7 @@ def cmd_monitorar(args) -> int:
     def ao_analisar(item: scanner.Resultado) -> None:
         item = consultar_vt(item)
         id_ = relatar(item, args.isolar)
-        if item.infectado:
-            acao = "Movido para a quarentena." if id_ else "Não foi isolado (rode com --isolar)."
-            notificacao.notificar("Ameaça detectada", f"{item.caminho.name}: {item.ameaca}\n{acao}", urgente=True)
-        elif item.suspeito:
-            notificacao.notificar(
-                f"Arquivo suspeito ({item.pontuacao}/100)",
-                f"{item.caminho.name}\n{item.motivos[0] if item.motivos else ''}",
-            )
-        else:
+        if not avisar_do_monitor(item, id_):
             print(f"{CINZA}[limpo]    {item.caminho}{FIM}")
 
     def ao_erro(caminho: Path, erro: Exception) -> None:
@@ -313,8 +383,11 @@ def cmd_monitorar(args) -> int:
     def ao_alertar(alerta) -> None:
         cor = VERMELHO if alerta.gravidade == "alta" else AMARELO
         print(f"{cor}[{alerta.tipo.upper()}] {alerta.processo.exe}  →  {alerta.mensagem}{FIM}")
-        notificacao.notificar(f"Comportamento perigoso: {alerta.tipo}", alerta.mensagem,
-                              urgente=alerta.gravidade == "alta")
+        exe = Path(alerta.processo.exe)
+        notificacao.notificar(f"Comportamento perigoso: {alerta.tipo}", f"{exe.name}\n{alerta.mensagem}",
+                              urgente=alerta.gravidade == "alta",
+                              dados={"tipo": "suspeito", "personagem": "vidente",
+                                     "arquivo": exe.name, "caminho": str(exe)})
 
     signal.signal(signal.SIGTERM, ao_sigterm)
     print(f"{VERDE}Vigiando {', '.join(map(str, pastas))}  (Ctrl+C para sair){FIM}")
@@ -326,8 +399,16 @@ def cmd_monitorar(args) -> int:
         print(f"{VERDE}Vigiando também o comportamento dos processos (shells reversos, mineradores){FIM}")
     with monitor.Monitor(pastas, banco, ao_analisar, ao_erro), vigia:
         try:
+            conferido = 0.0
             while True:
                 time.sleep(1)
+                # O monitor está sempre ligado; o timer das bases pode ter parado.
+                if time.monotonic() - conferido > 3600:
+                    conferido = time.monotonic()
+                    from datetime import datetime
+
+                    from . import bases
+                    notificacao.aviso_bases(bases.avisos(), bases.freshclam_parado(), datetime.now())
         except KeyboardInterrupt:
             print("\nMonitor encerrado.")
     return 0
@@ -350,20 +431,28 @@ def cmd_proteger(args) -> int:
 
     def ao_decidir(d: protetor.Decisao) -> None:
         nome = d.resultado.ameaca if d.resultado and d.resultado.ameaca else ""
+        caminho = Path(d.caminho)
+        base = {"personagem": notificacao.personagem(d.resultado.camada if d.resultado else None),
+                "arquivo": caminho.name, "caminho": str(caminho),
+                "sha256": (d.resultado.sha256 if d.resultado else None) or ""}
         if d.motivo == "ameaça" and not d.permitido:
             print(f"{VERMELHO}[BLOQUEADO] {d.caminho}  →  {nome}  (pedido por {d.quem}, pid {d.pid}){FIM}")
-            notificacao.notificar("Guarnição bloqueou uma ameaça", f"{d.caminho}\n{nome}", urgente=True)
+            notificacao.notificar("Guarnição bloqueou uma ameaça", f"{caminho.name}\n{nome}", urgente=True,
+                                  dados=base | {"tipo": "bloqueado"})
         elif d.motivo == "ameaça":
             print(f"{VERMELHO}[AMEAÇA]    {d.caminho}  →  {nome}  (só avisando; pid {d.pid}){FIM}")
-            notificacao.notificar("Ameaça executada (modo só avisar)", f"{d.caminho}\n{nome}", urgente=True)
+            notificacao.notificar("Ameaça executada (modo só avisar)", f"{caminho.name}\n{nome}", urgente=True,
+                                  dados=base | {"tipo": "ameaca"})
         elif d.motivo == "prazo":
             print(f"{VERMELHO}[RODOU]     {d.caminho}  →  {nome}  (a análise passou do prazo; pid {d.pid}){FIM}")
             notificacao.notificar("Ameaça rodou antes do veredito",
-                                  f"{d.caminho}\n{nome}\nPara encerrar: sudo kill {d.pid}", urgente=True)
+                                  f"{caminho.name}\n{nome}\nPara encerrar: sudo kill {d.pid}", urgente=True,
+                                  dados=base | {"tipo": "ameaca"})
         elif d.motivo == "suspeito" and d.resultado:
             print(f"{AMARELO}[suspeito]  {d.caminho}  ({d.resultado.pontuacao}/100, executado){FIM}")
             notificacao.notificar(f"Executado um arquivo suspeito ({d.resultado.pontuacao}/100)",
-                                  f"{d.caminho}\n{d.resultado.motivos[0] if d.resultado.motivos else ''}")
+                                  f"{caminho.name}\n{d.resultado.motivos[0] if d.resultado.motivos else ''}",
+                                  dados=base | {"tipo": "suspeito"})
         else:
             print(f"{CINZA}[erro]      {d.caminho}: liberado sem análise{FIM}")
 
@@ -440,6 +529,15 @@ def cmd_cacar(args) -> int:
     return imprimir_achados(cacador.cacar(julgar, conferir_pacotes=not args.sem_pacotes), args.todos)
 
 
+def _launcher_responde(url: str) -> bool:
+    import urllib.request
+    try:
+        with urllib.request.urlopen(url + "api/estado", timeout=2) as resposta:
+            return resposta.status == 200
+    except OSError:
+        return False
+
+
 def cmd_launcher(args) -> int:
     import webbrowser
 
@@ -453,6 +551,13 @@ def cmd_launcher(args) -> int:
     try:
         srv = servidor.criar_servidor(args.porta)
     except OSError as erro:
+        url = f"http://127.0.0.1:{args.porta}/"
+        if erro.errno == errno.EADDRINUSE and _launcher_responde(url):
+            # O botão do aviso ou do escudo chama "launcher" de novo: reaproveita o painel aberto.
+            print(f"{VERDE}O painel já está aberto em {url}{FIM}")
+            if not args.sem_navegador:
+                webbrowser.open(url)
+            return 0
         print(f"{VERMELHO}Não consegui abrir a porta {args.porta}: {erro.strerror}{FIM}")
         return 2
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
@@ -490,6 +595,23 @@ def cmd_quarentena(args) -> int:
             print(f"{VERMELHO}Não deu para apagar: {erro}{FIM}")
             return 2
         print(f"Apagado de vez: {dados.get('original', args.id)}")
+    elif args.acao == "trancar":
+        from . import trancar
+        nome = Path(args.caminho).name
+        try:
+            id_ = trancar.trancar(args.caminho, args.sha256, **trancar.conferir(args.caminho, args.sha256))
+        except trancar.Recusa as recusa:
+            print(f"{VERMELHO}Não deu para trancar: {recusa.motivo}{FIM}")
+            # Do aviso no canto, "use sudo" não ajuda: no painel a pessoa vê o achado e decide.
+            motivo = ("é um arquivo do sistema: abra o painel para ver o que fazer"
+                      if recusa.status == 403 else recusa.motivo)
+            # Sem tipo: a extensão mostra o balão comum (não há cartão de falha no avisos-v3).
+            notificacao.notificar("Não deu para trancar", f"{nome}\n{motivo}")
+            return 2
+        print(f"Trancado na quarentena (id {id_}): {args.caminho}")
+        notificacao.notificar("Trancado na quarentena", f"{nome}\nPara devolver: Desfazer",
+                              dados={"tipo": "trancado", "personagem": "carcereiro",
+                                     "arquivo": nome, "quarentena": id_})
     else:
         try:
             destino = quarentena.restaurar(args.id)
@@ -522,7 +644,13 @@ def main() -> int:
     p_varrer.add_argument("--incluir-externos", action="store_true", help="inclui /media e /mnt na completa")
     p_varrer.add_argument("--agendada", action="store_true",
                           help="feita pelo timer: notifica o que achar e não falha por achar ameaça")
+    p_varrer.add_argument("--parar", action="store_true",
+                          help="para a varredura do terminal ou do timer que está rodando")
     p_varrer.set_defaults(func=cmd_varrer)
+
+    p_e = sub.add_parser("estado", help="o estado em poucas linhas (o escudo da barra usa --json)")
+    p_e.add_argument("--json", action="store_true")
+    p_e.set_defaults(func=cmd_estado)
 
     p_h = sub.add_parser("historico", help="as últimas varreduras e o que acharam")
     p_h.add_argument("--achados", action="store_true", help="lista também o que cada uma achou")
@@ -574,6 +702,9 @@ def main() -> int:
     q_apagar = q_sub.add_parser("apagar", help="remove de vez (não dá para desfazer)")
     q_apagar.add_argument("id")
     q_apagar.add_argument("--sim", action="store_true", help="não pergunta antes de apagar")
+    q_trancar = q_sub.add_parser("trancar", help="tranca um arquivo achado (usado pelo aviso no canto)")
+    q_trancar.add_argument("caminho")
+    q_trancar.add_argument("--sha256", required=True, help="só tranca se o arquivo ainda tem este hash")
     p_q.set_defaults(func=cmd_quarentena)
 
     args = parser.parse_args()

@@ -290,3 +290,22 @@ def test_suspeito_pendente_so_da_ultima_varredura(url, tmp_path):
     historico.registrar(historico.novo("rápida", "agendada", datetime(2026, 11, 6, 12, 30),
                                        varredura.Resumo(analisados=1), []))
     assert ler_json(url, "/api/historico")["pendentes"] == []
+
+
+def test_launcher_ja_aberto_so_abre_o_navegador(monkeypatch):
+    import sys
+    import threading
+
+    from guarnicao import __main__ as cli
+    from guarnicao.launcher import servidor
+    srv = servidor.criar_servidor(0)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    abertos = []
+    monkeypatch.setattr("webbrowser.open", abertos.append)
+    try:
+        monkeypatch.setattr(sys, "argv", ["guarnicao", "launcher", "--porta", str(srv.server_address[1])])
+        assert cli.main() == 0
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert abertos == [f"http://127.0.0.1:{srv.server_address[1]}/"]

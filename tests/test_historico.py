@@ -81,7 +81,9 @@ def test_agendada_avisa_e_nao_falha(tmp_path, monkeypatch):
     monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
     assert rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--processos", "1") == 0
     [((titulo, corpo), opcoes)] = avisos
-    assert "1 ameaça(s)" in titulo and "launcher" in corpo and opcoes["urgente"]
+    assert "1 ameaça(s)" in titulo and opcoes["urgente"]
+    assert opcoes["dados"]["tipo"] == "ameaca" and opcoes["dados"]["arquivo"] == "teste.com"
+    assert corpo.splitlines()[0] == "teste.com"
     assert historico.listar()[0].origem == "agendada"
     assert (pasta / "teste.com").exists()        # agendada não isola sozinha
 
@@ -116,3 +118,60 @@ def test_manual_limpa_nao_manda_resumo(tmp_path, monkeypatch):
     monkeypatch.setattr(notificacao, "resumo_limpo", lambda *a: resumos.append(a))
     assert rodar(monkeypatch, "varrer", str(pasta), "--processos", "1") == 0
     assert resumos == []
+
+
+def test_agendada_com_varios_achados_e_um_aviso_so(tmp_path, monkeypatch):
+    pasta = tmp_path / "baixados"
+    pasta.mkdir()
+    (pasta / "a.com").write_bytes(EICAR)
+    (pasta / "b.com").write_bytes(EICAR)
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--processos", "1")
+    [((titulo, corpo), opcoes)] = avisos
+    assert opcoes["dados"] == {"tipo": "varias"}
+    # Igual ao avisos-v3: "2 arquivos perigosos" / "1 ameaça · 1 suspeito · varredura ... de hoje, HH:MM"
+    assert titulo == "2 arquivos perigosos"
+    assert corpo.startswith("2 ameaças · varredura ") and " de hoje, " in corpo
+
+
+def test_agendada_com_isolar_avisa_trancado_e_nao_oferece_trancar(tmp_path, monkeypatch):
+    pasta = tmp_path / "baixados"
+    pasta.mkdir()
+    (pasta / "teste.com").write_bytes(EICAR)
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    assert rodar(monkeypatch, "varrer", str(pasta), "--agendada", "--isolar", "--processos", "1") == 0
+    [((titulo, corpo), opcoes)] = avisos
+    dados = opcoes["dados"]
+    assert dados["tipo"] == "trancado" and dados["quarentena"]
+    assert not dados.get("sha256")              # já está trancado: botão é Desfazer
+    assert not opcoes["urgente"]                # trancado some sozinho (spec)
+
+
+def test_monitor_trancado_some_sozinho(tmp_path, monkeypatch):
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    item = Resultado(caminho=tmp_path / "x.exe", sha256="ab" * 32, ameaca="EICAR", camada="hash")
+    cli.avisar_do_monitor(item, "id-da-cela")
+    [((titulo, _), opcoes)] = avisos
+    assert titulo == "Trancado na quarentena" and not opcoes.get("urgente")
+    assert opcoes["dados"]["quarentena"] == "id-da-cela"
+    avisos.clear()
+    cli.avisar_do_monitor(item, None)
+    assert avisos[0][0][0] == "Ameaça encontrada" and avisos[0][1]["urgente"]
+
+
+def test_monitor_suspeito_diz_algo_suspeito(tmp_path, monkeypatch):
+    avisos = []
+    monkeypatch.setattr(notificacao, "notificar", lambda *a, **k: avisos.append((a, k)))
+    item = Resultado(caminho=tmp_path / "x.sh", sha256="ab" * 32, pontuacao=60, motivos=["baixa script"])
+    assert item.suspeito
+    cli.avisar_do_monitor(item, None)
+    assert avisos[0][0] == ("Algo suspeito", "x.sh\nbaixa script")
+
+
+def test_contagem_dos_achados():
+    assert notificacao.contar_achados(2, 0) == "2 ameaças"
+    assert notificacao.contar_achados(1, 1) == "1 ameaça · 1 suspeito"
+    assert notificacao.contar_achados(0, 3) == "3 suspeitos"

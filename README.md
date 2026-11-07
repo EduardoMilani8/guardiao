@@ -140,6 +140,21 @@ Para o VirusTotal (opcional), a chave grátis vai no mesmo arquivo, na seção
 `[virustotal]`. Sem o ClamAV ou sem uma das chaves, aquela camada fica desligada e o resto funciona
 normalmente.
 
+### Extensão do GNOME
+
+Um escudo na barra de cima mostra o estado da Guarnição (tudo certo, procurando,
+precisa de atenção ou ameaça), com um menu para varrer, atualizar ou abrir o painel.
+Os avisos ganham a arte da muralha, no canto superior direito, com botões como
+Trancar e Desfazer. Feita para o GNOME 50; instale para o seu usuário, sem sudo:
+
+```bash
+contrib/instalar-extensao.sh
+```
+
+No Wayland, saia e entre de novo na sessão para o GNOME carregar a extensão. Sem ela
+(ou numa versão do GNOME que mudou por dentro), os avisos continuam os comuns do
+GNOME, com o mesmo texto.
+
 ### Vindo do Guardião
 
 Depois do `git pull`, rode os dois instaladores de novo:
@@ -209,6 +224,7 @@ pelo [aviso privado](SECURITY.md), nunca por issue pública.
 
 ```bash
 .venv/bin/python -m pytest -q
+node --test extensao/testes/*.test.mjs      # regras da extensão do GNOME
 ```
 
 Os testes usam apenas amostras inofensivas: o arquivo de teste EICAR e trechos

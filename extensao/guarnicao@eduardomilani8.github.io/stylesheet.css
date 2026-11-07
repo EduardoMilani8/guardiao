@@ -1,0 +1,65 @@
+/* Menu do escudo (barra-v2). A cor do estado só aparece aqui, junto do texto. */
+.guarnicao-menu-cabeca { spacing: 8px; padding-top: 6px; padding-bottom: 4px; }
+.guarnicao-menu-nome { font-family: Fraunces, serif; font-weight: 600; font-size: 14px; color: #E3C384; }
+.guarnicao-menu-estado { spacing: 8px; padding-top: 6px; padding-bottom: 2px; }
+.guarnicao-menu-titulo { font-family: "Source Sans 3", sans-serif; font-weight: 700; font-size: 15px; color: #F3EEE2; }
+.guarnicao-menu-titulo.ameaca { color: #FF8A7A; }
+.guarnicao-menu-titulo.atencao { color: #F0B65A; }
+.guarnicao-menu-linha { font-size: 13px; color: #B7BCCB; padding-top: 1px; padding-bottom: 1px; min-height: 0; }
+.guarnicao-menu-trilho { height: 5px; border-radius: 3px; background-color: rgba(255, 255, 255, 0.12); margin: 4px 0; }
+.guarnicao-menu-cheio { height: 5px; border-radius: 3px; background-color: #D4AF6A; }
+.guarnicao-acao-principal { background-color: #D4AF6A; color: #0D1626; font-weight: 700; border-radius: 8px; margin: 2px 6px; }
+.guarnicao-acao-principal:hover, .guarnicao-acao-principal:focus { background-color: #E3C384; color: #0D1626; }
+
+/* Cartão dos avisos (avisos-v3, muralha). */
+.guarnicao-banner { background: none; border: none; box-shadow: none; padding: 0; margin: 0 14px; }
+.guarnicao-cartao {
+  width: 420px; border: 3px solid #4a536b; border-top-width: 0; border-radius: 0 0 8px 8px;
+  background-gradient-direction: vertical; background-gradient-start: #0a1328; background-gradient-end: #14203A;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+/* Tamanho exato: com "cover" o St desenha a imagem maior que o widget e não corta. */
+.guarnicao-ameia { height: 16px; background-image: url("arte/ameia.svg"); background-size: 420px 16px; }
+.guarnicao-corpo { border-top: 3px solid #4a536b; padding: 14px 16px 16px; spacing: 12px; }
+.guarnicao-corpo.perigo { border-top-color: #FF8A7A; }
+.guarnicao-corpo.atencao { border-top-color: #F0B65A; }
+.guarnicao-linha { spacing: 14px; }
+.guarnicao-luz {
+  width: 92px; height: 108px; border-radius: 46px;
+  background-gradient-direction: radial; background-gradient-start: rgba(255, 190, 120, 0.22);
+  background-gradient-end: rgba(0, 0, 0, 0);
+}
+.guarnicao-luz.perigo { background-gradient-start: rgba(255, 120, 80, 0.35); }
+.guarnicao-luz.atencao { background-gradient-start: rgba(255, 190, 100, 0.32); }
+.guarnicao-retrato { width: 64px; height: 80px; background-size: contain; }
+.guarnicao-textos { spacing: 3px; }
+.guarnicao-quem { font-family: "Source Sans 3", sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #E3C384; }
+.guarnicao-titulo { font-family: Fraunces, serif; font-size: 19px; font-weight: 600; color: #F3EEE2; }
+.guarnicao-titulo.perigo { color: #FF8A7A; }
+.guarnicao-titulo.atencao { color: #F0B65A; }
+.guarnicao-arquivo { font-family: "Source Code Pro", monospace; font-size: 14px; color: #F3EEE2; }
+.guarnicao-detalhe { font-family: "Source Sans 3", sans-serif; font-size: 14px; color: #B7BCCB; }
+.guarnicao-frase { font-family: Fraunces, serif; font-style: italic; font-size: 15px; color: #B7BCCB; }
+.guarnicao-botoes { spacing: 8px; }
+.guarnicao-botao {
+  min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #6a7aa0;
+  background-color: rgba(10, 16, 32, 0.75); color: #F3EEE2;
+  font-family: "Source Sans 3", sans-serif; font-size: 15px; font-weight: 600;
+}
+.guarnicao-botao:hover, .guarnicao-botao:focus { background-color: rgba(40, 52, 84, 0.9); }
+.guarnicao-botao.principal { border-width: 0; padding: 0 18px; background-color: #D4AF6A; color: #0D1626; font-weight: 700; }
+.guarnicao-botao.principal:hover, .guarnicao-botao.principal:focus { background-color: #E3C384; }
+
+/* Avisos curtos (limpa e trancado): faixa com o emblema, sem retrato. */
+.guarnicao-cartao.curto { width: 380px; }
+.guarnicao-cartao.curto .guarnicao-ameia { background-size: 380px 16px; }
+.guarnicao-corpo.curto { padding: 12px 16px; spacing: 12px; }
+.guarnicao-emblema { width: 34px; height: 34px; background-size: contain; }
+.guarnicao-titulo.curto { font-family: "Source Sans 3", sans-serif; font-size: 15px; font-weight: 600; }
+.guarnicao-arquivo.curto { font-family: "Source Sans 3", sans-serif; font-size: 14px; color: #B7BCCB; }
+.guarnicao-limpo { font-family: "Source Sans 3", sans-serif; font-size: 14px; color: #8FD3B0; }
+.guarnicao-desfazer {
+  padding: 6px 4px; color: #E3C384; font-family: "Source Sans 3", sans-serif;
+  font-size: 15px; font-weight: 600; text-decoration: underline;
+}
+.guarnicao-desfazer:hover, .guarnicao-desfazer:focus { color: #F3EEE2; }
