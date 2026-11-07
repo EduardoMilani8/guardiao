@@ -58,13 +58,13 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
 - [x] **Painel novo**: um visual mais bonito para o painel, que vai servir de base
       para a arte dos avisos (alto da muralha, histórico em pergaminho e quarentena
       na cela, só no tema escuro)
-- [ ] **Avisos que mostram que a Guarnição está trabalhando, sem cansar.** O objetivo é a
+- [x] **Avisos que mostram que a Guarnição está trabalhando, sem cansar.** O objetivo é a
       pessoa lembrar que está protegida sem ser incomodada:
   - [x] Ameaça: aviso forte, que fica até a pessoa agir
-  - [ ] Varredura automática que terminou limpa: resumo discreto, que some sozinho
+  - [x] Varredura automática que terminou limpa: resumo discreto, que some sozinho
         (no máximo um por dia)
   - [x] Downloads limpos: sem aviso (já é assim)
-  - [ ] Extensão do GNOME com a mesma arte do painel: o aviso no canto da tela e um
+  - [x] Extensão do GNOME com a mesma arte do painel: o aviso no canto da tela e um
         escudo na barra de cima que mostra o estado (no Wayland, um aplicativo comum
         não pode escolher onde a janela aparece)
 - [x] **Desempenho em segundo plano**: as regras YARA agora são compiladas uma vez e
