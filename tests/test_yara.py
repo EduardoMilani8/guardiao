@@ -2,7 +2,7 @@ import pytest
 
 pytest.importorskip("yara_x")
 
-from guardiao import regras_yara, scanner
+from guarnicao import regras_yara, scanner
 
 # Amostras montadas em pedaços para este arquivo de teste não ser, ele mesmo,
 # detectado ao varrer o projeto. Usa join() porque literais adjacentes ("a" "b")

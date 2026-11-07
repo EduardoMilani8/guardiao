@@ -24,7 +24,7 @@ def criar_amostras(pasta: Path) -> Path:
     for nome, conteudo in LIMPOS.items():
         (pasta / nome).write_text(conteudo)
 
-    (pasta / "jogo-gratis-crackeado.com").write_text(EICAR)          # Guardião: hash conhecido
+    (pasta / "jogo-gratis-crackeado.com").write_text(EICAR)          # Guarnição: hash conhecido
     (pasta / "atualizar-drivers.sh").write_text(SHELL_REVERSO)       # Arqueira: regra YARA alta
     (pasta / "instalar-tema.sh").write_text(CURL_SH)                 # Arqueira: regra YARA média
     shutil.copyfile("/bin/true", pasta / "fotos-da-praia.jpg")       # Vidente: executável disfarçado

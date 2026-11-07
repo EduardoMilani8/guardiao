@@ -3,7 +3,7 @@ import urllib.request
 
 import pytest
 
-from guardiao import bases
+from guarnicao import bases
 
 
 class Falsa(bases.Base):
@@ -112,7 +112,7 @@ def test_download_com_limite_de_tamanho(tmp_path, monkeypatch):
 
 def test_avisa_base_nunca_baixada_e_velha():
     base = Falsa()
-    assert bases.avisos([base]) == ["falsa: nunca foi baixada (rode: guardiao atualizar)"]
+    assert bases.avisos([base]) == ["falsa: nunca foi baixada (rode: guarnicao atualizar)"]
     bases.atualizar([base], agora=1000)
     assert bases.avisos([base], agora=1000 + 3600) == []
     base.falhar_download = True

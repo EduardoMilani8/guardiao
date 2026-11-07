@@ -5,9 +5,9 @@ import zipfile
 
 import pytest
 
-from guardiao import assinaturas, compactados, regras_yara, scanner
+from guarnicao import assinaturas, compactados, regras_yara, scanner
 
-from .test_guardiao import EICAR
+from .test_guarnicao import EICAR
 from .test_yara import REVERSE_SHELL
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from guardiao import quarentena, scanner, varredura
+from guarnicao import quarentena, scanner, varredura
 
 EICAR = "".join(["X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-", "ANTIVIRUS-TEST-FILE!$H+H*"])
 
@@ -54,7 +54,7 @@ def test_com_sudo_usa_a_casa_do_usuario(monkeypatch):
     casa = Path(os.path.expanduser("~" + getpass.getuser()))
     assert varredura.casa_real() == casa
     ex = varredura.carregar_exclusoes(Path("/nao/existe.toml"))
-    assert str(casa / ".local/share/guardiao/quarentena") in ex.pastas
+    assert str(casa / ".local/share/guarnicao/quarentena") in ex.pastas
 
 
 # --- exclusões -------------------------------------------------------------------------

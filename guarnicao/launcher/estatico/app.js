@@ -435,7 +435,7 @@ function desenharAcoes(v) {
       ${c.achados.map((a) => `<div class="mu-linha mu-linha-acao">
         <span class="mu-etiqueta ${a.gravidade === 'alta' ? 'perigo' : 'aviso'}">${a.gravidade === 'alta' ? 'Grave' : 'Médio'}</span>
         <div><div style="font-weight: 600">${esc(a.categoria)}</div><span class="mu-nome-arq">${esc(a.arquivo)}</span><small>${esc(a.mensagem)}</small></div></div>`).join('')}
-      <p class="mu-nota">Sem administrador, só os seus processos foram olhados. Para olhar todos: <code>sudo .venv/bin/python -m guardiao cacar</code></p>
+      <p class="mu-nota">Sem administrador, só os seus processos foram olhados. Para olhar todos: <code>sudo .venv/bin/python -m guarnicao cacar</code></p>
     </section>`;
   }
   if (v === 'parcial') {
@@ -443,8 +443,8 @@ function desenharAcoes(v) {
     html += `<section class="mu-painel mu-alerta aviso" aria-labelledby="defora">
       <h2 id="defora">${esc(plural(ultima.sem_permissao, 'item ficou', 'itens ficaram'))} de fora</h2>
       <p>São pastas do sistema que a sua conta não tem permissão de ler. O que deu para ler está limpo. Para incluir esses itens, rode a varredura como administrador:</p>
-      <code class="mu-comando">sudo .venv/bin/python -m guardiao varrer --completa</code>
-      <div class="mu-acoes">${copiar('sudo .venv/bin/python -m guardiao varrer --completa')}</div></section>`;
+      <code class="mu-comando">sudo .venv/bin/python -m guarnicao varrer --completa</code>
+      <div class="mu-acoes">${copiar('sudo .venv/bin/python -m guarnicao varrer --completa')}</div></section>`;
   }
   if (v === 'protetor') {
     const protetorParado = s.protetor.instalado && !s.protetor.ativo;

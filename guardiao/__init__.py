@@ -1,3 +1,2 @@
-"""Guardião: antivírus para Linux."""
-
-__version__ = "0.1.0"
+"""O nome antigo da Guarnição. Fica só para `python -m guardiao` continuar
+funcionando nos serviços e atalhos de quem instalou antes da troca de nome."""

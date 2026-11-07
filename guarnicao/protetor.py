@@ -1,7 +1,7 @@
-"""Proteção antes da execução: o kernel pergunta, o Guardião responde.
+"""Proteção antes da execução: o kernel pergunta, o Guarnição responde.
 
 Com o fanotify e FAN_OPEN_EXEC_PERM, cada execve() de um arquivo fica parado
-até o Guardião responder "pode" ou "não pode". Uma ameaça conhecida nem chega
+até o Guarnição responder "pode" ou "não pode". Uma ameaça conhecida nem chega
 a rodar: quem tentou recebe "Operação não permitida".
 
 O risco de um vigia assim é travar o computador. Por isso:
@@ -182,10 +182,10 @@ class Protetor:
         self._trava_fan = threading.Lock()
         self._cache: dict[tuple[int, int], tuple[tuple, float, Decisao | None]] = {}
         self._parar = threading.Event()
-        self._threads = [threading.Thread(target=self._trabalhar, name=f"guardiao-analise-{i}", daemon=True)
+        self._threads = [threading.Thread(target=self._trabalhar, name=f"guarnicao-analise-{i}", daemon=True)
                          for i in range(trabalhadores)]
-        self._threads += [threading.Thread(target=self._relogio, name="guardiao-prazo", daemon=True),
-                          threading.Thread(target=self._avisar, name="guardiao-avisos", daemon=True)]
+        self._threads += [threading.Thread(target=self._relogio, name="guarnicao-prazo", daemon=True),
+                          threading.Thread(target=self._avisar, name="guarnicao-avisos", daemon=True)]
         self.estatisticas = {"eventos": 0, "confiaveis": 0, "cache": 0, "analisados": 0, "prazo": 0, "bloqueados": 0}
 
     # --- kernel -------------------------------------------------------------

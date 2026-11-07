@@ -4,9 +4,9 @@ import threading
 
 import pytest
 
-from guardiao import assinaturas, clamav, scanner
+from guarnicao import assinaturas, clamav, scanner
 
-from .test_guardiao import EICAR
+from .test_guarnicao import EICAR
 
 
 class ClamdFalso:
@@ -63,7 +63,7 @@ class ClamdFalso:
 @pytest.fixture
 def clamd(tmp_path, monkeypatch):
     falso = ClamdFalso(tmp_path / "clamd.ctl")
-    monkeypatch.setenv("GUARDIAO_CLAMD_SOCKET", str(falso.caminho))
+    monkeypatch.setenv("GUARNICAO_CLAMD_SOCKET", str(falso.caminho))
     yield falso
     falso.fechar()
 
@@ -75,14 +75,14 @@ def test_conecta_e_le_a_versao(clamd):
 
 
 def test_acha_socket_no_clamd_conf(tmp_path, monkeypatch):
-    monkeypatch.delenv("GUARDIAO_CLAMD_SOCKET")
+    monkeypatch.delenv("GUARNICAO_CLAMD_SOCKET")
     conf = tmp_path / "clamd.conf"
     conf.write_text("# comentário\nLocalSocket /run/outro/clamd.sock\nUser clamav\n")
     assert str(clamav.encontrar_socket(conf)) == "/run/outro/clamd.sock"
 
 
 def test_sem_clamd_a_camada_desliga(tmp_path, monkeypatch):
-    monkeypatch.setenv("GUARDIAO_CLAMD_SOCKET", str(tmp_path / "nao-existe.ctl"))
+    monkeypatch.setenv("GUARNICAO_CLAMD_SOCKET", str(tmp_path / "nao-existe.ctl"))
     assert clamav.conectar() is None
 
 
@@ -120,7 +120,7 @@ def test_nao_segue_link_simbolico(tmp_path, clamd):
 def test_avisa_assinaturas_velhas(clamd):
     from datetime import datetime
 
-    from guardiao import bases
+    from guarnicao import bases
     agora = datetime(2026, 11, 10).timestamp()   # a versão falsa é de 3/11
     assert bases._aviso_clamav(agora) == ["clamav: assinaturas de 6 dia(s) atrás (o freshclam está rodando?)"]
     assert bases._aviso_clamav(datetime(2026, 11, 3, 20).timestamp()) == []
@@ -129,7 +129,7 @@ def test_avisa_assinaturas_velhas(clamd):
 def test_avisa_quando_o_freshclam_esta_parado(clamd, monkeypatch):
     from datetime import datetime
 
-    from guardiao import bases
+    from guarnicao import bases
     monkeypatch.setattr(bases, "freshclam_parado", lambda: True)
     # Mesmo com assinaturas de hoje: parado, ele não vai mais atualizar.
     [aviso] = bases._aviso_clamav(datetime(2026, 11, 3, 20).timestamp())

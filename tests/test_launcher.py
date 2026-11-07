@@ -5,8 +5,8 @@ import urllib.request
 
 import pytest
 
-from guardiao import assinaturas, eventos, regras_yara, scanner
-from guardiao.launcher import servidor
+from guarnicao import assinaturas, eventos, regras_yara, scanner
+from guarnicao.launcher import servidor
 
 from . import amostras as demo
 
@@ -134,7 +134,7 @@ def varrer_pasta(url, pasta, monkeypatch):
 
 
 def test_carcereiro_tranca_com_um_clique(url, tmp_path, monkeypatch):
-    from guardiao import historico, quarentena
+    from guarnicao import historico, quarentena
     pasta = demo.criar_amostras(tmp_path)
     evs = varrer_pasta(url, pasta, monkeypatch)
     ameacas = [e for e in evs if e["tipo"] == "arquivo" and e["veredito"] == "ameaca"]
@@ -174,7 +174,7 @@ def test_isolar_recusa(url, id_, tipo, host, esperado):
 def test_historico_oferece_o_que_a_agendada_achou(url, tmp_path):
     from datetime import datetime
 
-    from guardiao import historico, varredura
+    from guarnicao import historico, varredura
     ruim = tmp_path / "ruim.bin"
     ruim.write_bytes(b"conteudo")
     sumiu = tmp_path / "sumiu.bin"
@@ -211,7 +211,7 @@ def ler_json(url, rota):
 
 
 def test_quarentena_pelo_painel_devolve_e_apaga(url, tmp_path):
-    from guardiao import quarentena
+    from guarnicao import quarentena
     um, dois = tmp_path / "um.bin", tmp_path / "dois.bin"
     um.write_bytes(b"1")
     dois.write_bytes(b"22")
@@ -240,7 +240,7 @@ def test_apagar_recusa_id_que_a_quarentena_nao_deu(url, id_):
 
 
 def test_estado_do_painel(url, monkeypatch):
-    from guardiao.launcher import estado
+    from guarnicao.launcher import estado
 
     def falso(unidade, usuario, campos):
         if unidade == estado.PROTETOR:
@@ -259,13 +259,13 @@ def test_estado_do_painel(url, monkeypatch):
 
 
 def test_servico_que_nao_existe():
-    from guardiao.launcher import estado
+    from guarnicao.launcher import estado
     assert estado.servico("x.service", True, lambda *a: {"LoadState": "not-found"})["instalado"] is False
     assert estado.servico("x.service", True, lambda *a: {})["instalado"] is False
 
 
 def test_cacada_fica_guardada_no_estado(url, monkeypatch):
-    from guardiao import cacador
+    from guarnicao import cacador
     from pathlib import Path
     monkeypatch.setattr(cacador, "cacar", lambda julgar: [
         cacador.Achado("alta", "systemd", Path("/tmp/x.service"), "roda /tmp/.x a cada login"),
@@ -279,7 +279,7 @@ def test_cacada_fica_guardada_no_estado(url, monkeypatch):
 def test_suspeito_pendente_so_da_ultima_varredura(url, tmp_path):
     from datetime import datetime
 
-    from guardiao import historico, varredura
+    from guarnicao import historico, varredura
     arq = tmp_path / "estranho.sh"
     arq.write_text("x")
     sha = scanner.calcular_sha256(arq)

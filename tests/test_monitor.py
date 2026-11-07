@@ -4,9 +4,9 @@ import pytest
 
 pytest.importorskip("watchdog")
 
-from guardiao import assinaturas, monitor
+from guarnicao import assinaturas, monitor
 
-from .test_guardiao import EICAR
+from .test_guarnicao import EICAR
 from .test_yara import REVERSE_SHELL
 
 ESPERA = 5  # segundos
@@ -64,7 +64,7 @@ def test_detecta_em_subpasta(tmp_path, vigiar):
 def test_usa_regras_novas_sem_reiniciar(tmp_path, monkeypatch):
     """O timer atualiza as bases com o monitor aberto há dias."""
     pytest.importorskip("yara_x")
-    from guardiao import regras_yara
+    from guarnicao import regras_yara
 
     from .test_yara import REGRAS_DA_BASE, regras_de_base
 

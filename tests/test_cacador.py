@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from guardiao import cacador
+from guarnicao import cacador
 
 
 @pytest.fixture
@@ -229,7 +229,7 @@ def test_processo_sem_permissao_e_pulado(tmp_path, pacotes):
 
 
 def test_executavel_do_processo_passa_pelo_scanner(tmp_path, pacotes):
-    from .test_guardiao import EICAR
+    from .test_guarnicao import EICAR
     binario = tmp_path / "minerador"
     binario.write_bytes(EICAR)
     proc = tmp_path / "proc"
@@ -252,7 +252,7 @@ def test_informativo_nao_e_julgado(tmp_path, pacotes):
 
 @pytest.fixture
 def juiz_com_yara():
-    from guardiao import regras_yara
+    from guarnicao import regras_yara
     if not regras_yara.disponivel():
         pytest.skip("yara-x não instalado")
     return cacador.Juiz({}, regras_yara.carregar(com_bases=False))
@@ -390,7 +390,7 @@ def test_pacotes_alterados():
 
 
 def test_pacote_alterado_passa_pelo_scanner(tmp_path):
-    from .test_guardiao import EICAR
+    from .test_guarnicao import EICAR
     falso = tmp_path / "ps"
     falso.write_bytes(EICAR)
     banco = {__import__("hashlib").sha256(EICAR).hexdigest(): "EICAR-Test-File"}

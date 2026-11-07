@@ -86,7 +86,7 @@ def isolar(id_: str) -> dict:
                                     camada=dados["camada"], veredito=dados["veredito"])
     except PermissionError:
         raise Recusado(403, "sem permissão: é um arquivo do sistema, use "
-                            "sudo .venv/bin/python -m guardiao varrer --isolar")
+                            "sudo .venv/bin/python -m guarnicao varrer --isolar")
     except OSError as erro:
         raise Recusado(500, erro.strerror or str(erro))
     historico.marcar_isolado(dados["caminho"], dados["sha256"], id_cela)

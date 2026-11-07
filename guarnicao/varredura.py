@@ -64,7 +64,7 @@ class Resumo:
 # --- configuração e raízes ---------------------------------------------------------
 
 def carregar_exclusoes(config: Path = CONFIG) -> Exclusoes:
-    """Exclusões padrão + as do ~/.config/guardiao/config.toml, se existir.
+    """Exclusões padrão + as do ~/.config/guarnicao/config.toml, se existir.
 
     Exemplo de config.toml:
         excluir_pastas = ["~/Vídeos", "~/VirtualBox VMs"]
@@ -73,7 +73,7 @@ def carregar_exclusoes(config: Path = CONFIG) -> Exclusoes:
     """
     exclusoes = Exclusoes(pastas=[
         str(quarentena.PASTA_PADRAO),             # senão as ameaças isoladas seriam achadas de novo
-        str(casa_real() / ".local" / "share" / "guardiao" / "quarentena"),   # a do usuário, se via sudo
+        str(casa_real() / ".local" / "share" / "guarnicao" / "quarentena"),   # a do usuário, se via sudo
         str(regras_yara.PASTA_PADRAO.resolve()),  # as regras contêm os padrões que procuram
         str(bases.PASTA),                         # idem para as regras e hashes baixados
         str(Path(__file__).parent.parent / ".venv"),

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from guardiao import comportamento
+from guarnicao import comportamento
 
 TCP_CABECALHO = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
 

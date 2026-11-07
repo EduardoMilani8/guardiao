@@ -10,7 +10,7 @@ Cada base fica numa pasta própria, com uma subpasta por versão e um link
 A versão nova é baixada e validada à parte; só então o link é trocado, num
 passo atômico (os.replace). Se o download cair ou a base vier quebrada, a
 versão anterior continua valendo: uma atualização ruim nunca deixa o
-Guardião sem proteção.
+Guarnição sem proteção.
 """
 
 import fcntl
@@ -29,7 +29,7 @@ from pathlib import Path
 from . import __version__
 from .caminhos import casa_real
 
-PASTA = Path(os.environ.get("XDG_DATA_HOME", casa_real() / ".local" / "share")) / "guardiao" / "bases"
+PASTA = Path(os.environ.get("XDG_DATA_HOME", casa_real() / ".local" / "share")) / "guarnicao" / "bases"
 LIMITE_DOWNLOAD = 512 * 1024 * 1024
 VERSOES_GUARDADAS = 2      # a atual e a anterior, para poder voltar atrás
 VELHA_APOS = 2 * 24 * 3600
@@ -148,7 +148,7 @@ def _atualizar_uma(base: Base, forcar: bool, agora: float) -> Relatorio:
             estado.versao, estado.atualizado = versao, agora
             situacao = "atualizada"
         estado.verificado, estado.erro = agora, None
-    except Exception as erro:   # rede, disco, base corrompida: nada disso pode derrubar o Guardião
+    except Exception as erro:   # rede, disco, base corrompida: nada disso pode derrubar o Guarnição
         estado.erro = str(erro) or erro.__class__.__name__
         situacao = "erro"
     finally:
@@ -174,7 +174,7 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
     rotulo = rotulo or url
     if not url.startswith("https://"):
         raise ErroDeBase(f"só baixo por HTTPS: {rotulo}")
-    pedido = urllib.request.Request(url, headers={"User-Agent": f"guardiao/{__version__}", **(cabecalhos or {})})
+    pedido = urllib.request.Request(url, headers={"User-Agent": f"guarnicao/{__version__}", **(cabecalhos or {})})
     h, recebido = hashlib.sha256(), 0
     with urllib.request.urlopen(pedido, timeout=60) as resposta, open(destino, "wb") as f:
         while bloco := resposta.read(1 << 16):
@@ -187,7 +187,7 @@ def baixar_arquivo(url: str, destino: Path, cabecalhos: dict | None = None,
 
 
 def registradas() -> list[Base]:
-    """Todas as bases que o Guardião conhece, na ordem em que são atualizadas."""
+    """Todas as bases que o Guarnição conhece, na ordem em que são atualizadas."""
     # Aqui dentro: as fontes importam este módulo.
     from .fontes.malwarebazaar import MalwareBazaar
     from .fontes.yara_forge import YaraForge
@@ -205,7 +205,7 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
         estado = ler_estado(base)
         idade = estado.idade(agora)
         if estado.versao is None:
-            saida.append(f"{base.nome}: nunca foi baixada (rode: guardiao atualizar)")
+            saida.append(f"{base.nome}: nunca foi baixada (rode: guarnicao atualizar)")
         elif idade is None or idade > VELHA_APOS:
             dias = int((idade or 0) // 86400)
             motivo = f" ({estado.erro})" if estado.erro else ""

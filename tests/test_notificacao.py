@@ -1,6 +1,6 @@
 import os
 
-from guardiao import notificacao
+from guarnicao import notificacao
 
 
 def test_sessoes_so_de_usuarios_com_barramento(tmp_path):

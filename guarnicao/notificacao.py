@@ -28,7 +28,7 @@ def comando(titulo: str, corpo: str, urgente: bool = False) -> list[str]:
     # "$(rm -rf ~).pdf" vira texto na notificação, nunca um comando.
     return [
         "notify-send",
-        "--app-name=Guardião",
+        "--app-name=Guarnição",
         "--urgency", "critical" if urgente else "normal",
         "--icon", "security-low" if urgente else "dialog-warning",
         titulo,

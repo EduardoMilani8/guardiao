@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from guardiao import __main__ as cli
-from guardiao import quarentena
+from guarnicao import __main__ as cli
+from guarnicao import quarentena
 
 
 def isolar_um(tmp_path):
@@ -34,7 +34,7 @@ def test_entrada_estragada_nao_esconde_as_outras(tmp_path):
 
 
 def test_comando_explica_em_vez_de_quebrar(monkeypatch, capsys):
-    monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "restaurar", "naoexiste"])
+    monkeypatch.setattr("sys.argv", ["guarnicao", "quarentena", "restaurar", "naoexiste"])
     assert cli.main() == 2
     assert "Nada com o id naoexiste" in capsys.readouterr().out
 
@@ -70,9 +70,9 @@ def test_comando_apagar_pergunta_antes(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(quarentena, "PASTA_PADRAO", pasta)
     monkeypatch.setattr(quarentena.apagar, "__defaults__", (pasta,))
     monkeypatch.setattr("builtins.input", lambda _: "n")
-    monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "apagar", id_])
+    monkeypatch.setattr("sys.argv", ["guarnicao", "quarentena", "apagar", id_])
     assert cli.main() == 1
     assert len(list(pasta.iterdir())) == 2
-    monkeypatch.setattr("sys.argv", ["guardiao", "quarentena", "apagar", id_, "--sim"])
+    monkeypatch.setattr("sys.argv", ["guarnicao", "quarentena", "apagar", id_, "--sim"])
     assert cli.main() == 0
     assert list(pasta.iterdir()) == []

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from . import __version__, assinaturas, bases, clamav, compactados, heuristicas, regras_yara, scanner
 
-PADRAO = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "guardiao" / "cache.sqlite"
+PADRAO = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "guarnicao" / "cache.sqlite"
 
 
 def versao_motor() -> str:

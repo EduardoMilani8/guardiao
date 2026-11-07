@@ -1,7 +1,7 @@
 import hashlib
 import threading
 
-from guardiao import assinaturas, cache, varredura
+from guarnicao import assinaturas, cache, varredura
 
 SHA_RUIM = hashlib.sha256(b"programa malicioso de mentira").hexdigest()
 

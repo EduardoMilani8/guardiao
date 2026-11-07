@@ -1,7 +1,7 @@
 """VirusTotal: o que uns 70 antivírus acham de um arquivo, consultado pelo hash.
 
 Opcional e desligado por padrão. Para ligar, crie uma conta grátis em
-https://www.virustotal.com e coloque a chave da API no ~/.config/guardiao/config.toml:
+https://www.virustotal.com e coloque a chave da API no ~/.config/guarnicao/config.toml:
 
     [virustotal]
     chave = "..."
@@ -9,7 +9,7 @@ https://www.virustotal.com e coloque a chave da API no ~/.config/guardiao/config
 Só o SHA-256 sai do computador, nunca o arquivo. Mesmo assim, cada consulta
 conta ao VirusTotal que aquele hash existe aqui: por isso a consulta é feita só
 para downloads novos (monitor), para arquivos que a varredura já achou
-suspeitos e quando você pede (`guardiao virustotal <arquivo>`).
+suspeitos e quando você pede (`guarnicao virustotal <arquivo>`).
 
 A chave grátis permite 4 consultas por minuto e 500 por dia. As respostas ficam
 num cache, e a cota é contada num arquivo com trava: o monitor e uma varredura
@@ -26,10 +26,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__, heuristicas
-from .caminhos import casa_real, ler_config
+from .caminhos import casa_real, ler_config, variavel
 
 API = "https://www.virustotal.com/api/v3/files/{}"
-ARQUIVO = Path(os.environ.get("XDG_CACHE_HOME", casa_real() / ".cache")) / "guardiao" / "virustotal.json"
+ARQUIVO = Path(os.environ.get("XDG_CACHE_HOME", casa_real() / ".cache")) / "guarnicao" / "virustotal.json"
 POR_MINUTO = 4
 POR_DIA = 500
 MINIMO_AMEACA = 5          # antivírus dizendo "malicioso" para virar ameaça
@@ -61,13 +61,13 @@ class Laudo:
 
 
 def chave() -> str | None:
-    return os.environ.get("GUARDIAO_VIRUSTOTAL_CHAVE") or \
+    return variavel("VIRUSTOTAL_CHAVE") or \
         ler_config().get("virustotal", {}).get("chave") or None
 
 
 def _pedir(sha256: str, chave_api: str) -> Laudo:
     pedido = urllib.request.Request(API.format(sha256), headers={
-        "x-apikey": chave_api, "User-Agent": f"guardiao/{__version__}"})
+        "x-apikey": chave_api, "User-Agent": f"guarnicao/{__version__}"})
     try:
         with urllib.request.urlopen(pedido, timeout=TEMPO_LIMITE) as resposta:
             atributos = json.load(resposta)["data"]["attributes"]

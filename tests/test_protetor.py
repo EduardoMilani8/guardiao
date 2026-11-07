@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from guardiao import protetor
-from guardiao.scanner import Resultado
+from guarnicao import protetor
+from guarnicao.scanner import Resultado
 
 # Marcador inofensivo que o analisador falso trata como ameaça.
 MARCA = b"".join([b"ISTO-", b"E-AMEACA"])
@@ -161,7 +161,7 @@ def test_analisador_quebrado_nao_trava_ninguem(cenario):
     assert esperar(lambda: c.avisos) and c.avisos[0].motivo == "erro"
 
 
-def test_execucao_do_proprio_guardiao_passa_sem_analise(cenario):
+def test_execucao_do_proprio_guarnicao_passa_sem_analise(cenario):
     c = cenario()
     assert c.executar(c.arquivo("ruim", MARCA), pid=os.getpid()) is True
     assert c.analises == 0

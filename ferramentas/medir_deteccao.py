@@ -1,4 +1,4 @@
-"""Mede a taxa de detecção do Guardião com amostras recentes do MalwareBazaar.
+"""Mede a taxa de detecção do Guarnição com amostras recentes do MalwareBazaar.
 
     .venv/bin/pip install -r ferramentas/requirements.txt
     .venv/bin/python -I ferramentas/medir_deteccao.py --desde 2026-11-05
@@ -10,9 +10,9 @@ pasta 0700, com permissão 0400, e o conteúdo é conferido pelo SHA-256.
 
 A medição é feita *sem* a base de hashes do MalwareBazaar: as amostras vêm
 dela, e com ela a taxa seria 100% por construção. O que sobra (ClamAV, YARA
-e heurísticas) é o que o Guardião reconhece de malware que ninguém reportou.
+e heurísticas) é o que o Guarnição reconhece de malware que ninguém reportou.
 
-Precisa da chave do MalwareBazaar no ~/.config/guardiao/config.toml.
+Precisa da chave do MalwareBazaar no ~/.config/guarnicao/config.toml.
 """
 
 import argparse
@@ -33,8 +33,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from guardiao import assinaturas, clamav, regras_yara, scanner  # noqa: E402
-from guardiao.caminhos import ler_config  # noqa: E402
+from guarnicao import assinaturas, clamav, regras_yara, scanner  # noqa: E402
+from guarnicao.caminhos import ler_config, variavel  # noqa: E402
 
 API = "https://mb-api.abuse.ch/api/v1/"
 POR_TIPO = {"elf": 100, "exe": 50, "sh": 25, "js": 25}   # a proporção da medição de 2026-11-04
@@ -43,13 +43,13 @@ NOMES = {"elf": "Linux (ELF)", "exe": "Windows (EXE)", "sh": "Shell", "js": "Jav
 
 def pedir(campos: dict, chave: str) -> bytes:
     req = urllib.request.Request(API, data=urllib.parse.urlencode(campos).encode(),
-                                 headers={"Auth-Key": chave, "User-Agent": "guardiao-medicao"})
+                                 headers={"Auth-Key": chave, "User-Agent": "guarnicao-medicao"})
     with urllib.request.urlopen(req, timeout=120) as r:
         return r.read()
 
 
 def baixar(pasta: Path, chave: str, desde: date, por_tipo: dict[str, int]) -> list[dict]:
-    import pyzipper   # só a medição precisa dele: o Guardião em si, não
+    import pyzipper   # só a medição precisa dele: o Guarnição em si, não
 
     amostras = []
     for tipo, quantos in por_tipo.items():
@@ -111,8 +111,8 @@ def relatorio(linhas: list[dict]) -> str:
     medidas = [
         ("ClamAV sozinho", lambda l: l["clamav"]),
         ("Regras YARA sozinhas", lambda l: l["yara_alta"]),
-        ("**Guardião: ameaça**", lambda l: l["veredito"] == "ameaça"),
-        ("**Guardião: ameaça ou suspeito**", lambda l: l["veredito"] != "limpo"),
+        ("**Guarnição: ameaça**", lambda l: l["veredito"] == "ameaça"),
+        ("**Guarnição: ameaça ou suspeito**", lambda l: l["veredito"] != "limpo"),
     ]
     saida = ["| | " + " | ".join(f"{n} ({len(g)})" for n, g in grupos) + " |",
              "|---" * (len(grupos) + 1) + "|"]
@@ -130,13 +130,13 @@ def main() -> int:
     p.add_argument("--saida", type=Path, help="grava o resultado de cada amostra (só metadados) neste JSON")
     args = p.parse_args()
 
-    chave = os.environ.get("GUARDIAO_MALWAREBAZAAR_CHAVE") or ler_config().get("malwarebazaar", {}).get("chave")
+    chave = variavel("MALWAREBAZAAR_CHAVE") or ler_config().get("malwarebazaar", {}).get("chave")
     if not chave:
-        print("Sem a chave do MalwareBazaar no ~/.config/guardiao/config.toml.", file=sys.stderr)
+        print("Sem a chave do MalwareBazaar no ~/.config/guarnicao/config.toml.", file=sys.stderr)
         return 1
     por_tipo = {t: args.limite or n for t, n in POR_TIPO.items()}
 
-    pasta = Path(tempfile.mkdtemp(prefix="guardiao-medicao-"))   # 0700
+    pasta = Path(tempfile.mkdtemp(prefix="guarnicao-medicao-"))   # 0700
     try:
         amostras = baixar(pasta, chave, args.desde, por_tipo)
         if not amostras:

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from guardiao import __main__ as cli
-from guardiao import heuristicas, scanner, virustotal
-from guardiao.virustotal import Laudo, SemCota
+from guarnicao import __main__ as cli
+from guarnicao import heuristicas, scanner, virustotal
+from guarnicao.virustotal import Laudo, SemCota
 
 SHA = "a" * 64
 
@@ -123,7 +123,7 @@ def test_sem_chave_nao_consulta(monkeypatch):
 
 
 def test_varredura_para_no_maximo(monkeypatch, capsys):
-    monkeypatch.setenv("GUARDIAO_VIRUSTOTAL_CHAVE", "k")
+    monkeypatch.setenv("GUARNICAO_VIRUSTOTAL_CHAVE", "k")
     feitas = []
     monkeypatch.setattr(virustotal, "consultar", lambda sha, chave: feitas.append(sha) or Laudo(9, 70))
     consulta = cli.ConsultaVirusTotal(maximo=2)
@@ -134,7 +134,7 @@ def test_varredura_para_no_maximo(monkeypatch, capsys):
 
 
 def test_cota_do_dia_esgotada_avisa_uma_vez(monkeypatch, capsys):
-    monkeypatch.setenv("GUARDIAO_VIRUSTOTAL_CHAVE", "k")
+    monkeypatch.setenv("GUARNICAO_VIRUSTOTAL_CHAVE", "k")
 
     def sem_cota(sha, chave):
         raise SemCota("limite de 500 consultas por dia")
@@ -146,12 +146,12 @@ def test_cota_do_dia_esgotada_avisa_uma_vez(monkeypatch, capsys):
 
 
 def test_varredura_conta_o_suspeito_que_virou_ameaca(monkeypatch, tmp_path):
-    from guardiao import historico, varredura
-    monkeypatch.setenv("GUARDIAO_VIRUSTOTAL_CHAVE", "k")
+    from guarnicao import historico, varredura
+    monkeypatch.setenv("GUARNICAO_VIRUSTOTAL_CHAVE", "k")
     monkeypatch.setattr(virustotal, "consultar", lambda sha, chave: Laudo(30, 70, "trojan.x"))
     suspeito = scanner.Resultado(caminho=tmp_path / "x", sha256=SHA, pontuacao=60, motivos=["algo"])
     monkeypatch.setattr(varredura, "executar", lambda *a, **k: iter([suspeito, varredura.Resumo(analisados=1, suspeitos=1)]))
-    monkeypatch.setattr("sys.argv", ["guardiao", "varrer", str(tmp_path)])
+    monkeypatch.setattr("sys.argv", ["guarnicao", "varrer", str(tmp_path)])
     assert cli.main() == 1
     [registro] = historico.listar()
     assert (registro.ameacas, registro.suspeitos) == (1, 0)

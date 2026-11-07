@@ -5,8 +5,8 @@ import zipfile
 
 import pytest
 
-from guardiao import bases
-from guardiao.fontes import yara_forge
+from guarnicao import bases
+from guarnicao.fontes import yara_forge
 
 pytest.importorskip("yara_x")
 
@@ -71,8 +71,8 @@ def test_pacote_ruim_e_recusado(github, estrago):
 
 # --- MalwareBazaar -------------------------------------------------------------------
 
-from guardiao import assinaturas  # noqa: E402
-from guardiao.fontes import malwarebazaar  # noqa: E402
+from guarnicao import assinaturas  # noqa: E402
+from guarnicao.fontes import malwarebazaar  # noqa: E402
 
 CABECALHO = (
     "################################################################\n"
@@ -99,7 +99,7 @@ def bazaar(monkeypatch):
         return hashlib.sha256(estado["csv"].encode()).hexdigest()
 
     monkeypatch.setattr(malwarebazaar, "baixar_arquivo", baixar)
-    monkeypatch.setenv("GUARDIAO_MALWAREBAZAAR_CHAVE", "chave-secreta-123")
+    monkeypatch.setenv("GUARNICAO_MALWAREBAZAAR_CHAVE", "chave-secreta-123")
     return estado
 
 
@@ -132,14 +132,14 @@ def test_chave_nunca_aparece_no_erro(bazaar):
 
 
 def test_sem_chave_a_fonte_fica_desligada(monkeypatch):
-    monkeypatch.delenv("GUARDIAO_MALWAREBAZAAR_CHAVE", raising=False)
+    monkeypatch.delenv("GUARNICAO_MALWAREBAZAAR_CHAVE", raising=False)
     assert [b.nome for b in bases.registradas()] == ["yara-forge"]
-    monkeypatch.setenv("GUARDIAO_MALWAREBAZAAR_CHAVE", "x")
+    monkeypatch.setenv("GUARNICAO_MALWAREBAZAAR_CHAVE", "x")
     assert [b.nome for b in bases.registradas()] == ["yara-forge", "malwarebazaar"]
 
 
 def test_hashes_novos_nao_zeram_o_cache(bazaar):
-    from guardiao import cache
+    from guarnicao import cache
     antes = cache.versao_motor()
     bases.atualizar([malwarebazaar.MalwareBazaar()], agora=1000)
     assert cache.versao_motor() == antes   # a reconferência do hash guardado cuida disso

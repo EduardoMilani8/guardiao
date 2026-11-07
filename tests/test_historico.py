@@ -2,9 +2,9 @@ import json
 import sys
 from datetime import datetime
 
-from guardiao import __main__ as cli
-from guardiao import historico, notificacao, quarentena, varredura
-from guardiao.scanner import Resultado
+from guarnicao import __main__ as cli
+from guarnicao import historico, notificacao, quarentena, varredura
+from guarnicao.scanner import Resultado
 
 EICAR = rb"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
 
@@ -53,7 +53,7 @@ def test_ameacas_vem_antes_quando_corta(monkeypatch):
 
 
 def rodar(monkeypatch, *argumentos):
-    monkeypatch.setattr(sys, "argv", ["guardiao", *argumentos])
+    monkeypatch.setattr(sys, "argv", ["guarnicao", *argumentos])
     return cli.main()
 
 

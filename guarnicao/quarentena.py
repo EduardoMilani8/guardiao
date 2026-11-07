@@ -18,7 +18,7 @@ class NaoEncontrado(LookupError):
     """Nenhuma entrada com esse id nesta quarentena."""
 
 
-PASTA_PADRAO = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "guardiao" / "quarentena"
+PASTA_PADRAO = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "guarnicao" / "quarentena"
 
 
 def isolar(caminho: Path, sha256: str, motivo: str, pasta: Path = PASTA_PADRAO,

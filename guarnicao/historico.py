@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .caminhos import casa_real
 
-ARQUIVO = Path(os.environ.get("XDG_DATA_HOME", casa_real() / ".local" / "share")) / "guardiao" / "historico.jsonl"
+ARQUIVO = Path(os.environ.get("XDG_DATA_HOME", casa_real() / ".local" / "share")) / "guarnicao" / "historico.jsonl"
 MAX_ACHADOS = 200          # por varredura: um disco cheio de suspeitos não incha o arquivo
 MAX_REGISTROS = 500        # ~1 ano e meio de varreduras diárias; as mais antigas saem
 

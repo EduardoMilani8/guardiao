@@ -184,7 +184,7 @@ class Vigia:
         self.ao_alertar, self.intervalo, self.proc = ao_alertar, intervalo, proc
         self._avisados: set[tuple] = set()
         self._parar = threading.Event()
-        self._thread = threading.Thread(target=self._rodar, name="guardiao-comportamento", daemon=True)
+        self._thread = threading.Thread(target=self._rodar, name="guarnicao-comportamento", daemon=True)
 
     def _rodar(self) -> None:
         antes, quando = fotografar(self.proc), time.monotonic()
