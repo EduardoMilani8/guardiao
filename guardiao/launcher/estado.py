@@ -51,14 +51,13 @@ def proxima(timer: str, ler=_systemctl) -> float | None:
 
 
 def estado_das_bases(agora: float | None = None) -> dict:
-    """Quando as bases foram conferidas pela última vez. Vale a mais velha: é ela
-    que diz até quando a proteção está em dia."""
+    """Quando as bases foram conferidas pela última vez. As que ficaram velhas
+    demais aparecem em `avisos`; aqui vale a conferência mais recente."""
     lista = bases.registradas()
     conferidas = [e.verificado for e in map(bases.ler_estado, lista)]
     datas = [c for c in conferidas if c is not None]
     return {
-        # Uma base nunca conferida conta como "nunca": None.
-        "conferidas": min(datas) if datas and len(datas) == len(conferidas) else None,
+        "conferidas": max(datas) if datas else None,
         "avisos": bases.avisos(agora=agora),
         "freshclam_parado": bases.freshclam_parado(),
         "ligar_freshclam": bases.LIGAR_FRESHCLAM,

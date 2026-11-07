@@ -85,7 +85,7 @@ def test_recusa_host_de_fora(url):
 
 def test_pagina_e_estaticos(url):
     with urllib.request.urlopen(f"{url}/", timeout=5) as r:
-        assert b"Guardi" in r.read()
+        assert "Guarnição".encode() in r.read()
     for nome in servidor.ESTATICOS:
         with urllib.request.urlopen(f"{url}/estatico/{nome}", timeout=5) as r:
             assert r.status == 200

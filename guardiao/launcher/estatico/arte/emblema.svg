@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" role="img" aria-label="Guarnição">
+<defs>
+<radialGradient id="embLuzE" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="#4A5F8E"></stop><stop offset="0.55" stop-color="#22355C"></stop><stop offset="1" stop-color="#14203A"></stop></radialGradient>
+<radialGradient id="embLuzO" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="#F6E3B0"></stop><stop offset="0.55" stop-color="#D9B46C"></stop><stop offset="1" stop-color="#B08640"></stop></radialGradient>
+<radialGradient id="embLuzC" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="#FFF6DE"></stop><stop offset="0.6" stop-color="#F1E6CC"></stop><stop offset="1" stop-color="#E2D3B0"></stop></radialGradient>
+</defs>
+
+<path d="M14 8 H106 V60 C106 88 86 106 60 116 C34 106 14 88 14 60 Z" fill="url(#embLuzO)" stroke="#F3E3B8" stroke-width="3" stroke-linejoin="round"></path>
+<path d="M20 14 H100 V60 C100 84 83 100 60 109 C37 100 20 84 20 60 Z" fill="none" stroke="#F3E3B8" stroke-opacity="0.45" stroke-width="1"></path>
+
+<g fill="#0D1626" stroke="#E9CF92" stroke-width="2" stroke-linejoin="round" paint-order="stroke">
+<g>
+<path d="M10 42 C1 57 1 79 10 94" fill="none" stroke="#0D1626" stroke-width="2.6" stroke-linecap="round"></path>
+<path d="M10 42 V94" fill="none" stroke="#0D1626" stroke-width="0.9"></path>
+<path d="M31 66 L39 47" fill="none" stroke="#0D1626" stroke-width="3" stroke-linecap="round"></path>
+<path d="M37 45 L42 44 L40 49 Z M39 45 L43 47"></path>
+<path d="M12 104 V84 C12 74 18 67 27 67 C36 67 41 73 41 82 V104 Z"></path>
+<path d="M19 59 C19 50 23 45 28 45 C33 45 36 50 36 58 L34.5 63 H20.5 Z M21 50 C17 53 16 57 17.5 61 L20 59 Z"></path>
+</g>
+<g>
+<path d="M107 84 m-4.2 0 a4.2 4.2 0 1 0 8.4 0 a4.2 4.2 0 1 0 -8.4 0" fill="none" stroke="#0D1626" stroke-width="1.6"></path>
+<path d="M104.5 87.5 L102.5 96 M102.8 93.5 H100.4 M108.5 88 L110 96.5 M109.6 94 H112" fill="none" stroke="#0D1626" stroke-width="1.5" stroke-linecap="round"></path>
+<path d="M78 104 V82 C78 72 85 65 93 65 C102 65 108 72 108 82 V104 Z"></path>
+<circle cx="93" cy="57" r="7.5"></circle>
+<path d="M84.5 55 C84.5 47 88.5 43.5 93 43.5 C97.5 43.5 101.5 47 101.5 55 Z"></path>
+</g>
+<g>
+<path d="M85 30 V104" fill="none" stroke="#0D1626" stroke-width="2" stroke-linecap="round"></path>
+<circle cx="85" cy="27" r="3.8"></circle>
+<path d="M58 104 V80 C58 70 64 63 72 63 C80 63 86 70 86 80 V104 Z"></path>
+<circle cx="72" cy="56" r="6.2"></circle>
+<path d="M59 51 Q72 46 85 51 Q72 54.5 59 51 Z"></path>
+<path d="M64.5 50.5 C67 40 70.5 31 77 23 C76.5 32 78 42 80 50.5 Z"></path>
+</g>
+<g>
+<path d="M61 34 V70" fill="none" stroke="#0D1626" stroke-width="2.6"></path>
+<path d="M61 31 L62.6 35 H59.4 Z"></path>
+<path d="M55.5 70 H66.5" fill="none" stroke="#0D1626" stroke-width="2.4" stroke-linecap="round"></path>
+<path d="M32 104 V78 C32 68 38 62 48 62 C58 62 64 68 64 78 V104 Z"></path>
+<path d="M40 53 C40 45 43 40.5 48 40.5 C53 40.5 56 45 56 53 V60.5 H40 Z"></path>
+<path d="M48 41 C50 33.5 56 31 61 33.5 C56.5 34 52.5 37 50.5 41.5 Z"></path>
+</g>
+</g>
+<path d="M44 51.5 H55" stroke="#C9A45E" stroke-width="1.6" stroke-linecap="round"></path>
+
+<path d="M4 97 Q60 104 116 97 V107 Q60 114 4 107 Z" fill="#F3EEE2"></path>
+<path d="M4 97 L0 102 L4 107 M116 97 L120 102 L116 107" fill="#F3EEE2"></path>
+<path d="M8 100.5 Q60 107.5 112 100.5" fill="none" stroke="#B08640" stroke-opacity="0.5" stroke-width="0.8"></path>
+</svg>

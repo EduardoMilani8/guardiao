@@ -1,177 +1,82 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Guardião</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/estatico/estilo.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guarnição</title>
+<link rel="icon" href="/estatico/arte/emblema.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/estatico/estilo.css">
+<link rel="stylesheet" href="/estatico/personagens.css">
 </head>
 <body>
-  <div class="estrelas" aria-hidden="true"></div>
+<!-- Definições que os quatro retratos usam (moldura e arco); o app.js põe aqui. -->
+<div id="arte-comum" hidden></div>
 
-  <main class="salao">
-    <header class="topo">
-      <h1>Guardião</h1>
-      <p class="subtitulo">Sua guarda pessoal contra ameaças</p>
-    </header>
+<div class="mu-raiz" id="muralha">
+<div class="mu-ceu" aria-hidden="true"></div>
+<div class="mu-horizonte" id="horizonte" aria-hidden="true"></div>
+<div class="mu-horizonte mu-ameaca-pulsa" id="horizonte-fogo" aria-hidden="true" hidden
+     style="background: radial-gradient(ellipse 50% 60% at 92% 100%, rgba(255,90,50,.4), transparent 70%)"></div>
+<svg class="mu-estrelas" id="estrelas" viewBox="0 0 1280 470" preserveAspectRatio="none" aria-hidden="true"></svg>
+<div class="mu-lua" id="lua" aria-hidden="true"></div>
+<div class="mu-nuvem" aria-hidden="true"></div><div class="mu-nuvem mu-nuvem2" aria-hidden="true"></div>
+<svg class="mu-morros" viewBox="0 0 1280 170" preserveAspectRatio="none" aria-hidden="true">
+<path d="M0 90 C120 50 220 70 330 40 C450 10 560 60 680 45 C800 30 900 70 1010 50 C1120 32 1200 60 1280 50 V170 H0 Z" fill="#0d1830"></path>
+<path d="M0 120 C140 90 260 110 380 95 C520 78 640 112 780 98 C920 84 1040 110 1160 96 C1220 90 1260 96 1280 100 V170 H0 Z" fill="#09111f"></path>
+</svg>
 
-    <section class="guarda" aria-label="Os guardiões">
+<div class="mu-torre" aria-hidden="true">
+<div class="mu-torre-corpo"></div>
+<div class="mu-janela"></div>
+<div class="mu-mastro"></div>
+<div class="mu-bandeira" id="bandeira">
+<svg viewBox="0 0 92 58" preserveAspectRatio="none"><path d="M0 4 H92 V54 H0 L12 29 Z" fill="#14203A" stroke="#D4AF6A" stroke-width="2.5"></path><path d="M6 8 H88 V50 H6" fill="none" stroke="#D4AF6A" stroke-width="0.8" opacity=".6"></path></svg>
+<div class="mu-bandeira-emb"><img src="/estatico/arte/emblema.svg" alt=""></div>
+</div>
+<div class="mu-braseiro">
+<div id="braseiro"></div>
+<svg viewBox="0 0 52 30" style="position: absolute; inset: 0"><path d="M2 8 H50 L44 22 H8 Z" fill="#2a2d36" stroke="#0a0c12" stroke-width="1.5"></path><path d="M20 22 L18 30 M32 22 L34 30" stroke="#2a2d36" stroke-width="3"></path></svg>
+</div>
+</div>
 
-      <!-- O Guardião: camada de hash (ameaças conhecidas) -->
-      <article class="personagem" id="guardiao">
-        <p class="balao" aria-live="polite">Todos a postos.</p>
-        <div class="figura">
-          <svg viewBox="0 0 140 160" role="img" aria-label="O Guardião, um cavaleiro com escudo">
-            <ellipse class="sombra" cx="70" cy="152" rx="38" ry="6"/>
-            <rect x="55" y="128" width="11" height="22" rx="4" fill="#2b3348"/>
-            <rect x="74" y="128" width="11" height="22" rx="4" fill="#2b3348"/>
-            <path d="M44 134 Q42 92 70 86 Q98 92 96 134 Z" fill="var(--cor)"/>
-            <path d="M58 90 L70 112 L82 90" fill="none" stroke="var(--cor-escura)" stroke-width="3"/>
-            <rect x="46" y="116" width="48" height="6" rx="2" fill="#d9a441"/>
-            <circle cx="70" cy="62" r="22" fill="#f1c9a5"/>
-            <path d="M46 64 Q46 34 70 34 Q94 34 94 64 L94 56 Q70 48 46 56 Z" fill="#aab4c8"/>
-            <path d="M70 35 Q80 18 94 22 Q82 28 77 38 Z" fill="#c8453c"/>
-            <circle cx="62" cy="66" r="2.8" fill="#2a2230"/>
-            <circle cx="78" cy="66" r="2.8" fill="#2a2230"/>
-            <path d="M64 75 Q70 79 76 75" fill="none" stroke="#2a2230" stroke-width="2" stroke-linecap="round"/>
-            <g class="escudo">
-              <path d="M88 94 L120 94 L120 114 Q120 134 104 143 Q88 134 88 114 Z" fill="var(--cor-escura)" stroke="#d9a441" stroke-width="3"/>
-              <path d="M104 102 L104 134 M94 114 L114 114" stroke="#d9a441" stroke-width="3.5" stroke-linecap="round"/>
-            </g>
-          </svg>
-        </div>
-        <h2>O Guardião</h2>
-        <p class="papel">Reconhece ameaças conhecidas</p>
-        <span class="contador" title="Ameaças encontradas">0</span>
-      </article>
+<div class="mu-rolagem">
+<div class="mu-miolo">
+<header class="mu-topo">
+<div class="mu-marca"><img src="/estatico/arte/emblema.svg" alt="">Guarnição</div>
+<nav class="mu-nav" aria-label="Seções">
+<a href="#painel" aria-current="page">Painel</a><a href="#historico">Histórico</a><a href="#quarentena">Quarentena</a>
+</nav>
+</header>
+<section class="mu-estado" aria-labelledby="titulo" aria-live="polite">
+<h1 id="titulo" class="mu-titulo">Guarnição</h1>
+<dl class="mu-resumo" id="resumo"></dl>
+<div class="mu-progresso" id="progresso" hidden>
+<div class="mu-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Andamento da varredura" id="barra"><div></div></div>
+<div class="mu-arquivo">Arquivo atual <span id="arquivo-atual"></span></div>
+</div>
+</section>
+</div>
 
-      <!-- A Arqueira: camada YARA (padrões dentro dos arquivos) -->
-      <article class="personagem" id="arqueira">
-        <p class="balao" aria-live="polite">Arco pronto.</p>
-        <div class="figura">
-          <div class="flecha" aria-hidden="true"></div>
-          <svg viewBox="0 0 140 160" role="img" aria-label="A Arqueira, de capuz e arco">
-            <ellipse class="sombra" cx="70" cy="152" rx="36" ry="6"/>
-            <rect x="57" y="130" width="10" height="20" rx="4" fill="#3b2f25"/>
-            <rect x="73" y="130" width="10" height="20" rx="4" fill="#3b2f25"/>
-            <g transform="rotate(18 96 96)">
-              <rect x="90" y="74" width="12" height="44" rx="4" fill="#7a5233"/>
-              <path d="M92 74 L96 64 L100 74 M96 70 L96 60" stroke="#e8e0d0" stroke-width="2" fill="none"/>
-            </g>
-            <path d="M46 140 Q48 96 70 88 Q92 96 94 140 Z" fill="var(--cor)"/>
-            <rect x="48" y="118" width="44" height="5" rx="2" fill="#7a5233"/>
-            <circle cx="70" cy="64" r="20" fill="#e8b48f"/>
-            <path d="M46 72 Q42 32 70 30 Q98 32 94 72 Q91 50 70 48 Q49 50 46 72 Z" fill="var(--cor-escura)"/>
-            <circle cx="63" cy="66" r="2.6" fill="#2a2230"/>
-            <circle cx="77" cy="66" r="2.6" fill="#2a2230"/>
-            <path d="M65 74 Q70 77 75 74" fill="none" stroke="#2a2230" stroke-width="2" stroke-linecap="round"/>
-            <g class="arco">
-              <path d="M34 68 Q14 105 34 142" fill="none" stroke="#9a6a3c" stroke-width="4.5" stroke-linecap="round"/>
-              <path d="M34 68 L34 142" stroke="#efe6d2" stroke-width="1.5"/>
-            </g>
-          </svg>
-        </div>
-        <h2>A Arqueira</h2>
-        <p class="papel">Mira em padrões perigosos</p>
-        <span class="contador" title="Achados por regras">0</span>
-      </article>
+<section class="mu-ameias" id="ameias" aria-label="Os quatro guardiões"></section>
 
-      <!-- O Vidente: heurísticas (intuição) -->
-      <article class="personagem" id="vidente">
-        <p class="balao" aria-live="polite">Vejo tudo daqui.</p>
-        <div class="figura">
-          <svg viewBox="0 0 140 160" role="img" aria-label="O Vidente, de chapéu pontudo e bola de cristal">
-            <defs>
-              <radialGradient id="grad-bola" cx="40%" cy="35%" r="70%">
-                <stop offset="0%" stop-color="#f4f0ff"/>
-                <stop offset="45%" stop-color="#9f8cf0"/>
-                <stop offset="100%" stop-color="#4a3a9e"/>
-              </radialGradient>
-            </defs>
-            <ellipse class="sombra" cx="70" cy="152" rx="38" ry="6"/>
-            <path d="M42 146 Q46 92 70 86 Q94 92 98 146 Z" fill="var(--cor)"/>
-            <circle cx="70" cy="68" r="19" fill="#f0c4a2"/>
-            <path d="M53 72 Q70 108 87 72 Q79 80 70 80 Q61 80 53 72 Z" fill="#e6e2ef"/>
-            <circle cx="63" cy="67" r="2.5" fill="#2a2230"/>
-            <circle cx="77" cy="67" r="2.5" fill="#2a2230"/>
-            <path d="M42 58 Q70 49 98 58 L70 6 Z" fill="var(--cor-escura)"/>
-            <ellipse cx="70" cy="58" rx="31" ry="6" fill="var(--cor-escura)"/>
-            <circle cx="66" cy="34" r="2.2" fill="#f2cf63"/>
-            <circle cx="76" cy="44" r="1.6" fill="#f2cf63"/>
-            <circle cx="72" cy="22" r="1.4" fill="#f2cf63"/>
-            <path d="M58 136 L82 136 L78 128 L62 128 Z" fill="#7a5233"/>
-            <g class="bola">
-              <circle cx="70" cy="114" r="15" fill="url(#grad-bola)"/>
-              <circle cx="65" cy="109" r="3.5" fill="#ffffff" opacity="0.8"/>
-            </g>
-          </svg>
-        </div>
-        <h2>O Vidente</h2>
-        <p class="papel">Sente o que não tem nome</p>
-        <span class="contador" title="Arquivos suspeitos">0</span>
-      </article>
+<div class="mu-muro">
+<div class="mu-placas" id="placas"></div>
+<div class="mu-miolo2">
+<section class="mu-acoes" id="acoes" aria-label="Ações"></section>
+<div id="alertas"></div>
+<div class="mu-dupla">
+<section class="mu-painel" aria-labelledby="fundo-titulo"><h2 id="fundo-titulo">Em segundo plano</h2><div id="fundo"></div></section>
+<section class="mu-painel" aria-labelledby="ultimas-titulo">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><h2 id="ultimas-titulo">Últimas varreduras</h2><a class="mu-link" href="#historico">Ver histórico</a></div>
+<div id="ultimas"></div>
+</section>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-      <!-- O Carcereiro: quarentena -->
-      <article class="personagem" id="carcereiro">
-        <p class="balao" aria-live="polite">Celas prontas.</p>
-        <div class="figura">
-          <svg viewBox="0 0 140 160" role="img" aria-label="O Carcereiro, barbudo com um molho de chaves">
-            <ellipse class="sombra" cx="70" cy="152" rx="40" ry="6"/>
-            <rect x="53" y="130" width="13" height="20" rx="4" fill="#2f2a26"/>
-            <rect x="74" y="130" width="13" height="20" rx="4" fill="#2f2a26"/>
-            <path d="M36 140 Q36 94 70 88 Q104 94 104 140 Z" fill="var(--cor)"/>
-            <rect x="38" y="114" width="64" height="8" rx="3" fill="#3a2a1e"/>
-            <rect x="65" y="113" width="10" height="10" rx="2" fill="#d9a441"/>
-            <circle cx="70" cy="64" r="22" fill="#e2b08c"/>
-            <path d="M48 66 Q50 100 70 102 Q90 100 92 66 Q86 80 70 80 Q54 80 48 66 Z" fill="#6b4a32"/>
-            <path d="M58 58 L66 60 M74 60 L82 58" stroke="#4a3426" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="62" cy="65" r="2.6" fill="#2a2230"/>
-            <circle cx="78" cy="65" r="2.6" fill="#2a2230"/>
-            <path d="M50 52 Q70 36 90 52 Q80 44 70 44 Q60 44 50 52 Z" fill="#6b4a32"/>
-            <g class="chaves">
-              <circle cx="108" cy="112" r="9" fill="none" stroke="#d9a441" stroke-width="3"/>
-              <path d="M104 120 L100 140 M100 134 L95 134 M100 139 L96 139" stroke="#d9a441" stroke-width="3" stroke-linecap="round"/>
-              <path d="M113 120 L118 138 M117 133 L121 132" stroke="#c9b27a" stroke-width="3" stroke-linecap="round"/>
-            </g>
-          </svg>
-        </div>
-        <h2>O Carcereiro</h2>
-        <p class="papel">Tranca o que é perigoso</p>
-        <span class="contador" title="Ameaças para isolar">0</span>
-      </article>
-    </section>
-
-    <section class="painel">
-      <div class="acoes">
-        <button id="btn-rapida" class="botao principal" type="button">Varredura rápida</button>
-        <button id="btn-completa" class="botao" type="button">Varredura completa</button>
-        <button id="btn-pasta" class="botao" type="button">Escolher pasta…</button>
-        <button id="btn-demo" class="botao" type="button">Simular ataque <small>(demonstração)</small></button>
-        <button id="btn-parar" class="botao parar" type="button" hidden>Parar</button>
-        <button id="btn-trancar-todas" class="botao trancar-todas" type="button" hidden>Trancar todas</button>
-      </div>
-      <p class="memoria" hidden></p>
-      <div class="progresso" hidden>
-        <div class="barra"><div class="preenchido"></div></div>
-        <p class="atual"></p>
-      </div>
-    </section>
-
-    <section class="registro" aria-label="Registro da patrulha">
-      <h3>Registro da patrulha</h3>
-      <p class="vazio">Nenhuma patrulha ainda. Chame os guardiões.</p>
-      <ol id="lista"></ol>
-    </section>
-
-    <section class="registro historico" aria-label="Últimas patrulhas" hidden>
-      <h3>Últimas patrulhas</h3>
-      <ol id="historico"></ol>
-    </section>
-  </main>
-
-  <script src="/estatico/app.js"></script>
+<div class="mu-recado" id="recado" role="status" hidden></div>
+<script src="/estatico/app.js"></script>
 </body>
 </html>

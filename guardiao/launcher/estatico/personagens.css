@@ -1,0 +1,163 @@
+/* Animações dos quatro personagens (protótipos aprovados em design/telas/anim-*.html).
+   O estado vai no elemento em volta do retrato:
+   m-inativo (fora da vez), m-entrada (chegou a vez, uma vez), m-agindo (repete enquanto trabalha),
+   m-achou (achou ameaça, uma vez) e m-trancou (só o Carcereiro, uma vez). */
+.m-inativo .mu-retrato{filter:grayscale(1);opacity:.5}
+/* ---- cavaleiro ---- */
+.cv-corpo,.cv-pluma,.cv-brilho,.cv-selo{transform-box:view-box}
+.cv-corpo{transform-origin:120px 300px}
+.cv-pluma{transform-origin:124px 66px}
+.cv-selo{opacity:0}
+.cv-brilho{opacity:0}
+/* parado e fora da vez: cinza */
+/* agindo: respira, pluma balança, luz passa no elmo */
+.m-agindo .cv-corpo{animation:cvRespira 3.2s ease-in-out infinite}
+.m-agindo .cv-pluma{animation:cvPluma 2.6s ease-in-out infinite}
+.m-agindo .cv-brilho{animation:cvBrilho 3.2s ease-in-out infinite}
+/* entrada */
+.m-entrada .cv-retrato{animation:cvAcorda 4s ease-out}
+.m-entrada .cv-corpo{animation:cvPasso 4s ease-out}
+.m-entrada .cv-selo{animation:cvSelo 4s ease-out}
+.m-entrada .cv-pluma{animation:cvPlumaEntra 4s ease-out}
+/* achou ameaça */
+.m-achou .cv-corpo{animation:cvFirme 3s ease-out}
+.m-achou .cv-selo{fill:#ff8a7a;animation:cvSelo 3s ease-out}
+.m-achou .cv-pluma{animation:cvPlumaEntra 3s ease-out}
+@keyframes cvRespira{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.016)}}
+@keyframes cvPluma{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(4deg)}}
+@keyframes cvBrilho{0%,40%{opacity:0;transform:skewX(-18deg) translateX(0)}45%{opacity:1}70%{opacity:1;transform:skewX(-18deg) translateX(110px)}75%,100%{opacity:0;transform:skewX(-18deg) translateX(110px)}}
+@keyframes cvMoldura{0%,100%{box-shadow:0 0 0 0 rgba(212,175,106,0)}50%{box-shadow:0 0 22px 2px rgba(212,175,106,.35)}}
+@keyframes cvAcorda{0%{filter:grayscale(1);opacity:.5}12%{filter:grayscale(0) brightness(1.25);opacity:1}25%,100%{filter:none;opacity:1}}
+@keyframes cvPasso{0%{transform:translateY(4px)}14%{transform:translateY(-3px)}24%,100%{transform:translateY(0)}}
+@keyframes cvSelo{0%,6%{opacity:0}14%{opacity:.95}30%,100%{opacity:0}}
+@keyframes cvPlumaEntra{0%{transform:rotate(0)}12%{transform:rotate(8deg)}22%{transform:rotate(-4deg)}32%,100%{transform:rotate(0)}}
+@keyframes cvFirme{0%,100%{transform:translateY(0) scale(1)}10%{transform:translateY(-4px) scale(1.012)}22%{transform:translateY(0) scale(1)}}
+@keyframes cvVermelho{0%,100%{box-shadow:0 0 0 0 rgba(255,138,122,0)}10%{box-shadow:0 0 26px 4px rgba(255,138,122,.55)}40%{box-shadow:0 0 0 0 rgba(255,138,122,0)}}
+
+/* ---- arqueira ---- */
+.ar-corpo,.ar-selo,.ar-sobr,.ar-palp{transform-box:view-box}
+.ar-olhos,.ar-folha,.ar-flecha{transform-box:fill-box;transform-origin:center}
+.ar-corpo{transform-origin:120px 300px}
+.ar-selo,.ar-folha,.ar-flecha{opacity:0}
+.ar-onda{stroke-dasharray:80 400;stroke-dashoffset:80;opacity:0}
+.m-agindo .ar-onda{animation:arOnda 4.8s ease-in-out infinite}
+/* entrada */
+.m-entrada .ar-retrato{animation:arAcorda 4s ease-out}
+.m-entrada .ar-corpo{animation:arPasso 4s ease-out}
+.m-entrada .ar-selo{animation:arSelo 4s ease-out}
+/* agindo: respira, o vento passa com folhas e ela aperta os olhos para ver longe */
+.m-agindo .ar-corpo{animation:arRespira 3.2s ease-in-out infinite}
+.m-agindo .ar-folha{animation:arFolha 4.8s ease-in-out infinite}
+.m-agindo .ar-olhos{animation:arOlhos 4.8s ease-in-out infinite}
+.m-agindo .ar-palp{animation:arPalp 4.8s ease-in-out infinite}
+.m-agindo .ar-sobr{animation:arSobr 4.8s ease-in-out infinite}
+/* achou: saraivada de flechas saindo de trás dela para a frente */
+.m-achou .ar-corpo{animation:arFirme 3s ease-out}
+.m-achou .ar-selo{fill:#ff8a7a;animation:arSelo 3s ease-out}
+.m-achou .ar-flecha{animation:arFlecha 3s ease-in}
+.m-achou .ar-olhos{animation:arOlhosFixo 3s ease-out}
+.m-achou .ar-palp{animation:arPalpFixo 3s ease-out}
+.m-achou .ar-sobr{animation:arSobrFixo 3s ease-out}
+@keyframes arRespira{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.016)}}
+@keyframes arMoldura{0%,100%{box-shadow:0 0 0 0 rgba(212,175,106,0)}50%{box-shadow:0 0 22px 2px rgba(212,175,106,.35)}}
+@keyframes arAcorda{0%{filter:grayscale(1);opacity:.5}12%{filter:grayscale(0) brightness(1.25);opacity:1}25%,100%{filter:none;opacity:1}}
+@keyframes arPasso{0%{transform:translateY(4px)}14%{transform:translateY(-3px)}24%,100%{transform:translateY(0)}}
+@keyframes arSelo{0%,6%{opacity:0}14%{opacity:.95}30%,100%{opacity:0}}
+@keyframes arFolha{0%{opacity:0;transform:translate(-10px,0) rotate(0)}4%{opacity:1}14%{transform:translate(70px,-8px) rotate(160deg)}24%{transform:translate(150px,6px) rotate(330deg)}34%{opacity:1;transform:translate(240px,-6px) rotate(520deg)}36%,100%{opacity:0;transform:translate(260px,-6px) rotate(540deg)}}
+@keyframes arOnda{0%{opacity:0;stroke-dashoffset:80}3%{opacity:1}30%{opacity:1;stroke-dashoffset:-260}36%,100%{opacity:0;stroke-dashoffset:-300}}
+@keyframes arOlhos{0%,16%{transform:scaleY(1)}24%,46%{transform:scaleY(.62)}54%,100%{transform:scaleY(1)}}
+@keyframes arPalp{0%,16%{transform:translateY(0)}24%,46%{transform:translateY(1.1px)}54%,100%{transform:translateY(0)}}
+@keyframes arSobr{0%,16%{transform:translateY(0)}24%,46%{transform:translateY(1.3px)}54%,100%{transform:translateY(0)}}
+@keyframes arVermelho{0%,100%{box-shadow:0 0 0 0 rgba(255,138,122,0)}10%{box-shadow:0 0 26px 4px rgba(255,138,122,.55)}40%{box-shadow:0 0 0 0 rgba(255,138,122,0)}}
+@keyframes arFirme{0%,100%{transform:translateY(0) scale(1)}10%{transform:translateY(-4px) scale(1.012)}22%{transform:translateY(0) scale(1)}}
+@keyframes arFlecha{0%{opacity:0;transform:translateX(0) scale(.35)}6%{opacity:1}42%{opacity:1;transform:translateX(150px) scale(2.6)}48%,100%{opacity:0;transform:translateX(170px) scale(2.8)}}
+@keyframes arOlhosFixo{0%{transform:scaleY(1)}8%,60%{transform:scaleY(.62)}70%,100%{transform:scaleY(1)}}
+@keyframes arPalpFixo{0%{transform:translateY(0)}8%,60%{transform:translateY(1.6px)}70%,100%{transform:translateY(0)}}
+@keyframes arSobrFixo{0%{transform:translateY(0)}8%,60%{transform:translateY(1.6px)}70%,100%{transform:translateY(0)}}
+
+/* ---- vidente ---- */
+.vd-corpo,.vd-circulo{transform-box:view-box}
+.vd-halo,.vd-halo2,.vd-fumo,.vd-faisca{transform-box:fill-box;transform-origin:center}
+.vd-corpo{transform-origin:120px 300px}
+.vd-circulo{transform-origin:120px 150px}
+.vd-orbe,.vd-fumo,.vd-faisca{opacity:0}
+/* entrada */
+.m-entrada .vd-retrato{animation:vdAcorda 4s ease-out}
+.m-entrada .vd-corpo{animation:vdPasso 4s ease-out}
+.m-entrada .vd-orbe{animation:vdClarao 4s ease-out}
+/* agindo: o orbe pulsa, fumaça mágica e faíscas sobem do cajado, os olhos brilham */
+.m-agindo .vd-corpo{animation:vdRespira 3.2s ease-in-out infinite}
+.m-agindo .vd-halo{animation:vdHalo 2.4s ease-in-out infinite}
+.m-agindo .vd-halo2{animation:vdHalo 2.4s ease-in-out .3s infinite}
+.m-agindo .vd-orbe{animation:vdOrbe 2.4s ease-in-out infinite}
+.m-agindo .vd-fumo{animation:vdFumo 2.1s ease-out infinite}
+.m-agindo .vd-faisca{animation:vdFaisca 3.2s ease-out infinite}
+.m-agindo .vd-olho{animation:vdOlho 2.4s ease-in-out infinite}
+/* achou: o círculo mágico gira e fica vermelho */
+.m-achou .vd-corpo{animation:vdFirme 3s ease-out}
+.m-achou .vd-circulo{animation:vdGira 3s cubic-bezier(.2,.7,.3,1)}
+.m-achou .vd-circulo *{stroke:#ff8a7a}
+.m-achou .vd-orbe{fill:#ffc2b8;animation:vdClarao 3s ease-out}
+.m-achou .vd-olho{fill:#ff8a7a;animation:vdOlhoFixo 3s ease-out}
+.m-achou .vd-halo,.m-achou .vd-halo2{fill:#ff8a7a}
+@keyframes vdRespira{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.016)}}
+@keyframes vdMoldura{0%,100%{box-shadow:0 0 0 0 rgba(212,175,106,0)}50%{box-shadow:0 0 22px 2px rgba(212,175,106,.35)}}
+@keyframes vdAcorda{0%{filter:grayscale(1);opacity:.5}12%{filter:grayscale(0) brightness(1.25);opacity:1}25%,100%{filter:none;opacity:1}}
+@keyframes vdPasso{0%{transform:translateY(4px)}14%{transform:translateY(-3px)}24%,100%{transform:translateY(0)}}
+@keyframes vdClarao{0%,6%{opacity:0}14%{opacity:.95}34%,100%{opacity:0}}
+@keyframes vdHalo{0%,100%{transform:scale(1);opacity:.2}50%{transform:scale(1.35);opacity:.45}}
+@keyframes vdOrbe{0%,100%{opacity:0}50%{opacity:.55}}
+@keyframes vdFumo{0%{opacity:0;transform:translateY(6px) scaleX(.6)}25%{opacity:.75}100%{opacity:0;transform:translateY(-14px) scaleX(1.3)}}
+@keyframes vdFaisca{0%{opacity:0;transform:translate(0,0) scale(.4)}15%{opacity:1}60%{opacity:0;transform:translate(0,-34px) scale(1.2)}100%{opacity:0;transform:translate(0,-34px) scale(1.2)}}
+@keyframes vdOlho{0%,100%{opacity:.35}50%{opacity:.85}}
+@keyframes vdVermelho{0%,100%{box-shadow:0 0 0 0 rgba(255,138,122,0)}10%{box-shadow:0 0 26px 4px rgba(255,138,122,.55)}40%{box-shadow:0 0 0 0 rgba(255,138,122,0)}}
+@keyframes vdFirme{0%,100%{transform:translateY(0) scale(1)}10%{transform:translateY(-4px) scale(1.012)}22%{transform:translateY(0) scale(1)}}
+@keyframes vdGira{0%{transform:rotate(0)}60%,100%{transform:rotate(360deg)}}
+@keyframes vdOlhoFixo{0%{opacity:.35}10%,70%{opacity:.9}100%{opacity:.35}}
+
+/* ---- carcereiro ---- */
+.car-corpo,.car-correntes,.car-grade{transform-box:view-box}
+.car-chama,.car-luz,.car-luz2{transform-box:fill-box;transform-origin:center}
+.car-chama{transform-origin:50% 100%}
+.car-corpo{transform-origin:120px 300px}
+.car-correntes{transform-origin:207px 36px}
+.car-grade{transform:translateY(-280px)}
+/* entrada */
+.m-entrada .car-retrato{animation:crAcorda 4s ease-out}
+.m-entrada .car-corpo{animation:crPasso 4s ease-out}
+.m-entrada .car-parede{animation:crClarao 4s ease-out}
+.m-entrada .car-chama{animation:crChamaSobe 4s ease-out}
+/* agindo: a lanterna tremula e a luz dança na parede, as correntes balançam */
+.m-agindo .car-corpo{animation:crRespira 3.2s ease-in-out infinite}
+.m-agindo .car-chama{animation:crChama 1.3s ease-in-out infinite}
+.m-agindo .car-luz{animation:crLuz 1.7s ease-in-out infinite}
+.m-agindo .car-luz2{animation:crLuz 1.3s ease-in-out .2s infinite}
+.m-agindo .car-parede{animation:crParede 2.3s ease-in-out infinite}
+.m-agindo .car-correntes{animation:crBalanca 3.6s ease-in-out infinite}
+/* trancou: a grade desce na porta atrás dele com um baque */
+.cr-selo{position:absolute;left:50%;bottom:6px;transform:translate(-50%,0);opacity:0}
+.m-trancou .cr-selo{animation:crSeloEntra 4s ease-out}
+.m-trancou .car-grade{animation:crGrade 4s}
+.m-trancou .car-corpo{animation:crBaque 4s ease-out}
+.m-trancou .car-correntes{animation:crSacode 4s ease-out}
+.m-trancou .car-parede{animation:crClaraoT 4s ease-out}
+.m-trancou .car-chama{animation:crChama 1.3s ease-in-out}
+@keyframes crRespira{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.016)}}
+@keyframes crMoldura{0%,100%{box-shadow:0 0 0 0 rgba(212,175,106,0)}50%{box-shadow:0 0 22px 2px rgba(212,175,106,.35)}}
+@keyframes crAcorda{0%{filter:grayscale(1);opacity:.5}12%{filter:grayscale(0) brightness(1.25);opacity:1}25%,100%{filter:none;opacity:1}}
+@keyframes crPasso{0%{transform:translateY(4px)}14%{transform:translateY(-3px)}24%,100%{transform:translateY(0)}}
+@keyframes crClarao{0%,6%{opacity:0}14%{opacity:.3}34%,100%{opacity:0}}
+@keyframes crChamaSobe{0%,6%{transform:scale(1)}14%{transform:scale(1.5,1.9)}34%,100%{transform:scale(1)}}
+@keyframes crChama{0%,100%{transform:scale(1,1)}25%{transform:scale(.85,1.2) skewX(4deg)}50%{transform:scale(1.1,.9)}75%{transform:scale(.9,1.15) skewX(-4deg)}}
+@keyframes crLuz{0%,100%{opacity:.18;transform:scale(1)}40%{opacity:.3;transform:scale(1.08)}70%{opacity:.14;transform:scale(.96)}}
+@keyframes crParede{0%,100%{opacity:.02}30%{opacity:.1}55%{opacity:.04}80%{opacity:.12}}
+@keyframes crBalanca{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.8deg)}}
+@keyframes crVerde{0%,15%{border-color:#D4AF6A;box-shadow:0 0 0 0 rgba(143,211,176,0)}19%{border-color:#8FD3B0;box-shadow:0 0 0 3px rgba(143,211,176,.35),0 0 30px 6px rgba(143,211,176,.55)}45%,86%{border-color:#8FD3B0;box-shadow:0 0 0 3px rgba(143,211,176,.25),0 0 14px 2px rgba(143,211,176,.25)}96%,100%{border-color:#D4AF6A;box-shadow:0 0 0 0 rgba(143,211,176,0)}}
+@keyframes crSeloEntra{0%,17%{opacity:0;transform:translate(-50%,10px) scale(.6)}23%{opacity:1;transform:translate(-50%,0) scale(1.12)}28%,86%{opacity:1;transform:translate(-50%,0) scale(1)}94%,100%{opacity:0;transform:translate(-50%,0) scale(1)}}
+@keyframes crOuro{0%,12%{box-shadow:0 0 0 0 rgba(212,175,106,0)}20%{box-shadow:0 0 28px 5px rgba(212,175,106,.6)}50%,100%{box-shadow:0 0 0 0 rgba(212,175,106,0)}}
+@keyframes crGrade{0%,4%{transform:translateY(-280px);opacity:1;animation-timing-function:cubic-bezier(.55,0,1,.45)}16%{transform:translateY(0);animation-timing-function:ease-out}19%{transform:translateY(-7px);animation-timing-function:ease-in}22%,86%{transform:translateY(0);opacity:1}96%,100%{transform:translateY(0);opacity:0}}
+@keyframes crBaque{0%,15%{transform:translateY(0)}17%{transform:translateY(2px) scale(1.01,.99)}21%{transform:translateY(-2px)}26%,100%{transform:translateY(0)}}
+@keyframes crSacode{0%,15%{transform:rotate(0)}18%{transform:rotate(4deg)}23%{transform:rotate(-3deg)}29%{transform:rotate(1.5deg)}36%,100%{transform:rotate(0)}}
+@keyframes crClaraoT{0%,15%{opacity:0}18%{opacity:.22}40%,100%{opacity:.04}}
+
+@media (prefers-reduced-motion: reduce){.mu-sentinela *{animation:none !important}}
