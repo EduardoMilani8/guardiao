@@ -9,10 +9,10 @@ Usar a Guarnição no dia a dia e contar o que aconteceu já ajuda muito.
 
 | O que aconteceu | Onde avisar |
 |---|---|
-| Algo quebrou, travou ou deu mensagem de erro | [Erro](https://github.com/EduardoMilani8/guardiao/issues/new?template=1-erro.yml) |
-| Um arquivo seu, legítimo, foi marcado como ameaça ou suspeito | [Falso positivo](https://github.com/EduardoMilani8/guardiao/issues/new?template=2-falso-positivo.yml) |
-| Um malware passou sem ser detectado | [Não detectado](https://github.com/EduardoMilani8/guardiao/issues/new?template=3-nao-detectado.yml) |
-| Uma ideia de melhoria | [Sugestão](https://github.com/EduardoMilani8/guardiao/issues/new?template=4-sugestao.yml) |
+| Algo quebrou, travou ou deu mensagem de erro | [Erro](https://github.com/EduardoMilani8/guarnicao/issues/new?template=1-erro.yml) |
+| Um arquivo seu, legítimo, foi marcado como ameaça ou suspeito | [Falso positivo](https://github.com/EduardoMilani8/guarnicao/issues/new?template=2-falso-positivo.yml) |
+| Um malware passou sem ser detectado | [Não detectado](https://github.com/EduardoMilani8/guarnicao/issues/new?template=3-nao-detectado.yml) |
+| Uma ideia de melhoria | [Sugestão](https://github.com/EduardoMilani8/guarnicao/issues/new?template=4-sugestao.yml) |
 | Uma falha de segurança na própria Guarnição | **Não abra issue.** Veja o [SECURITY.md](SECURITY.md) |
 
 **Nunca anexe malware de verdade** numa issue, nem dentro de um `.zip`. Mande o
@@ -26,8 +26,8 @@ SHA-256 do arquivo (`sha256sum arquivo`) ou o link dele no
 Precisa de Linux e Python 3.11 ou mais novo. O ClamAV é opcional.
 
 ```bash
-git clone https://github.com/EduardoMilani8/guardiao.git
-cd guardiao
+git clone https://github.com/EduardoMilani8/guarnicao.git
+cd guarnicao
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m pytest -q

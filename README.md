@@ -114,8 +114,8 @@ método estão em [docs/deteccao.md](docs/deteccao.md).
 Requer Linux e Python 3.11 ou mais novo.
 
 ```bash
-git clone https://github.com/EduardoMilani8/guardiao.git
-cd guardiao
+git clone https://github.com/EduardoMilani8/guarnicao.git
+cd guarnicao
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 sudo apt install clamav clamav-daemon      # recomendado
@@ -155,6 +155,10 @@ histórico e a quarentena mudam sozinhos de `guardiao` para `guarnicao` (em
 `~/.config`, `~/.local/share` e `~/.cache`) na primeira vez que a Guarnição roda, e
 o nome antigo fica como atalho para o novo. O comando `python -m guardiao` e as
 variáveis `GUARDIAO_*` continuam funcionando por enquanto.
+
+A pasta do projeto pode continuar se chamando `guardiao`. Se mudar o nome dela, rode
+`contrib/instalar-servicos.sh` de novo para os serviços acharem o lugar novo (o
+protetor não depende dela: ele roda da cópia em `/opt/guarnicao`).
 
 ## Uso pelo terminal
 

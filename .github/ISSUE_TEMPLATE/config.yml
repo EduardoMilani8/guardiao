@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Falha de segurança na Guarnição
-    url: https://github.com/EduardoMilani8/guardiao/security/advisories/new
+    url: https://github.com/EduardoMilani8/guarnicao/security/advisories/new
     about: Avise em particular, não numa issue pública.
   - name: Como cada parte funciona
-    url: https://github.com/EduardoMilani8/guardiao/blob/main/docs/como-funciona.md
+    url: https://github.com/EduardoMilani8/guarnicao/blob/main/docs/como-funciona.md
     about: Prazos, cache, configuração e limites. Talvez a dúvida já esteja respondida aqui.

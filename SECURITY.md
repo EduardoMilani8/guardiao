@@ -6,7 +6,7 @@ falha na Guarnição pode ser usada contra quem a instalou.
 ## Como avisar de uma falha
 
 **Não abra uma issue pública.** Use o aviso privado do GitHub:
-[Report a vulnerability](https://github.com/EduardoMilani8/guardiao/security/advisories/new).
+[Report a vulnerability](https://github.com/EduardoMilani8/guarnicao/security/advisories/new).
 Só quem mantém o projeto vê o que você mandar.
 
 Conte o que for possível:
@@ -27,4 +27,4 @@ publicada com o crédito para você, se quiser.
 - Desligar ou enganar o protetor sem ser root.
 
 Um malware que passa sem ser detectado não é falha de segurança: é um caso de
-[Não detectado](https://github.com/EduardoMilani8/guardiao/issues/new?template=3-nao-detectado.yml).
+[Não detectado](https://github.com/EduardoMilani8/guarnicao/issues/new?template=3-nao-detectado.yml).
