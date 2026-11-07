@@ -67,9 +67,12 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
   - [ ] Extensão do GNOME com a mesma arte do painel: o aviso no canto da tela e um
         escudo na barra de cima que mostra o estado (no Wayland, um aplicativo comum
         não pode escolher onde a janela aparece)
-- [ ] **Desempenho em segundo plano**: medir com calma e reduzir o que der. Medido em
-      04/11/2026: protetor e monitor somam cerca de 400 MB de memória e menos de 1% de
-      um núcleo; as regras YARA são carregadas duas vezes (no monitor e no protetor)
+- [x] **Desempenho em segundo plano**: as regras YARA agora são compiladas uma vez e
+      divididas entre os processos que analisam. Medido em 07/11/2026: o protetor
+      (2 processos) caiu para 246 MB no total (antes, cada processo tinha a própria
+      cópia, uns 200 MB cada) e o pico da varredura rápida, de 768 MB para ~580 MB.
+      O monitor (~170 MB) continua com a cópia dele: dividir com o protetor, que roda
+      como root, exigiria abrir um canal entre os dois
 
 ## Para depois
 
