@@ -2,7 +2,7 @@
 const fs=require('fs');
 const [,,arq,propsJson,saida]=process.argv;
 const src=fs.readFileSync('canvas/project/'+arq,'utf8');
-let body=src.slice(src.indexOf('<x-dc>')+6,src.indexOf('</x-dc>')).replace(/<helmet>[\s\S]*?<\/helmet>/,'');
+let body=src.slice(src.indexOf('<x-dc>')+6,src.indexOf('</x-dc>'));const hm=body.match(/<helmet>([\s\S]*?)<\/helmet>/);body=(hm?hm[1].replace(/<style>body\{margin:0\}<\/style>/,''):'')+body.replace(/<helmet>[\s\S]*?<\/helmet>/,'');
 const code=src.match(/data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1];
 class DCLogic{constructor(p){this.props=p}}
 const C=new Function('DCLogic',code+';return Component')(DCLogic);
