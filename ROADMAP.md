@@ -55,8 +55,9 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
 - [ ] Medir a taxa de detecção de novo de tempos em tempos, com amostras recentes
       (`ferramentas/medir_deteccao.py`; a próxima a partir de 11/11/2026)
 - [x] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
-- [ ] **Painel novo**: um visual mais bonito para o painel, que vai servir de base
-      para a arte dos avisos
+- [x] **Painel novo**: um visual mais bonito para o painel, que vai servir de base
+      para a arte dos avisos (alto da muralha, histórico em pergaminho e quarentena
+      na cela, só no tema escuro)
 - [ ] **Avisos que mostram que a Guarnição está trabalhando, sem cansar.** O objetivo é a
       pessoa lembrar que está protegida sem ser incomodada:
   - [x] Ameaça: aviso forte, que fica até a pessoa agir
