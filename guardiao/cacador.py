@@ -113,7 +113,7 @@ def cacar(julgar: Juiz | None = None, pacotes: Pacotes | None = None,
     lares = casas() if casa is None else [casa]
     achados = [
         *preload(pacotes),
-        *ld_preload_em_processos(pacotes),
+        *ld_preload_em_processos(pacotes, julgar=julgar),
         *processos(julgar, pacotes),
         *persistencia(julgar, pacotes, locais_de_persistencia(casa or casa_real())),
         *(a for arquivo in arquivos_de_shell(lares) if (a := shell(arquivo, julgar, pacotes))),
@@ -190,9 +190,55 @@ def resolver_biblioteca(nome: str, ld_library_path: str) -> str:
     return nome
 
 
-def ld_preload_em_processos(pacotes: Pacotes, proc: Path = PROC) -> Iterator[Achado]:
+# O ld.so troca $LIB pela pasta de bibliotecas do processo (32 ou 64 bits).
+EXPANSOES_DE_LIB = ("lib/x86_64-linux-gnu", "lib/i386-linux-gnu", "lib64", "lib32", "lib")
+# Onde a Steam se instala dentro da pasta pessoal (normal, .deb e Flatpak).
+PASTAS_DA_STEAM = (".local/share/Steam", ".steam/debian-installation", ".steam/steam",
+                   ".var/app/com.valvesoftware.Steam/.local/share/Steam")
+OVERLAY_DA_STEAM = "gameoverlayrenderer.so"
+
+
+def expandir_lib(lib: str) -> list[str]:
+    """'/tmp/x/${LIB}/a.so' → os caminhos que existem para cada valor de $LIB."""
+    if "$LIB" not in lib and "${LIB}" not in lib:
+        return [lib]
+    return [c for exp in EXPANSOES_DE_LIB
+            if os.path.exists(c := lib.replace("${LIB}", exp).replace("$LIB", exp))]
+
+
+def _casa_do_dono(pid: Path) -> str | None:
+    # Pelo dono do processo, não pelo $HOME dele: o ambiente o próprio processo escolhe.
+    try:
+        return pwd.getpwuid(pid.stat().st_uid).pw_dir
+    except (OSError, KeyError):
+        return None
+
+
+def overlay_da_steam(lib: str, casa: str | None, julgar: "Juiz | Julgar | None") -> bool:
+    """A Steam injeta o overlay (Shift+Tab: amigos, chat, FPS) em todo jogo pelo
+    LD_PRELOAD. Só o nome não basta, qualquer arquivo pode se chamar assim: o
+    arquivo de verdade (seguindo atalhos, como os que o Proton cria no /tmp) tem
+    de estar na instalação da Steam do dono do processo, e o motor tem de achá-lo limpo."""
+    if os.path.basename(lib) != OVERLAY_DA_STEAM or not casa or julgar is None:
+        return False
+    pastas = [os.path.realpath(os.path.join(casa, p)) + os.sep for p in PASTAS_DA_STEAM]
+    reais = [os.path.realpath(c) for c in expandir_lib(lib)]
+    if not reais:
+        return False
+    for real in reais:
+        if em_pasta_temporaria(real) or not any(real.startswith(p) for p in pastas):
+            return False
+        resultado = julgar(Path(real))
+        if resultado is None or resultado.infectado or resultado.suspeito:
+            return False
+    return True
+
+
+def ld_preload_em_processos(pacotes: Pacotes, proc: Path = PROC,
+                            julgar: "Juiz | Julgar | None" = None) -> Iterator[Achado]:
     """LD_PRELOAD faz o mesmo que o ld.so.preload, só para um processo e seus filhos."""
     por_lib: dict[str, list[str]] = {}
+    casas: dict[str, str | None] = {}
     for pid in proc.iterdir():
         if not pid.name.isdigit():
             continue
@@ -203,10 +249,23 @@ def ld_preload_em_processos(pacotes: Pacotes, proc: Path = PROC) -> Iterator[Ach
             if lib.startswith("/snap/"):
                 continue
             por_lib.setdefault(lib, []).append(f"{nome_do_processo(pid)} ({pid.name})")
+            casas.setdefault(lib, _casa_do_dono(pid))
     for lib, processos in por_lib.items():
-        gravidade, motivo = _gravidade_da_biblioteca(lib, pacotes)
         quem = ", ".join(processos[:5]) + (f" e mais {len(processos) - 5}" if len(processos) > 5 else "")
-        yield Achado(gravidade, "LD_PRELOAD", Path(lib), f"injetada em {quem}; {motivo}")
+        if overlay_da_steam(lib, casas[lib], julgar):
+            yield Achado("info", "LD_PRELOAD", Path(lib),
+                         f"overlay da Steam (amigos, chat e FPS por cima do jogo) em {quem}; o motor achou limpo")
+            continue
+        gravidade, motivo = _gravidade_da_biblioteca(lib, pacotes)
+        mensagem = f"injetada em {quem}; {motivo}"
+        # O conteúdo também conta: uma biblioteca que o motor reconhece é ameaça, venha de onde vier.
+        if julgar is not None and gravidade != "info":
+            for real in expandir_lib(lib):
+                resultado = julgar(Path(real)) if os.path.isfile(real) else None
+                if resultado and resultado.infectado:
+                    gravidade, mensagem = "alta", f"{resultado.ameaca} · {mensagem}"
+                    break
+        yield Achado(gravidade, "LD_PRELOAD", Path(lib), mensagem)
 
 
 # --- processos --------------------------------------------------------------

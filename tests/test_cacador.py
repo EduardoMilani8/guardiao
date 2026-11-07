@@ -123,11 +123,73 @@ def test_processo_ilegivel_e_pulado(tmp_path, pacotes):
     assert list(cacador.ld_preload_em_processos(pacotes, proc)) == []
 
 
-# --- processos --------------------------------------------------------------
-
 def julgar_nada(_caminho):
     return None
 
+
+# --- overlay da Steam ---------------------------------------------------------
+
+def julgar_limpo(caminho):
+    return cacador.scanner.Resultado(caminho, "0" * 64)
+
+
+def julgar_infectado(caminho):
+    return cacador.scanner.Resultado(caminho, "0" * 64, ameaca="Linux.Rootkit.Falso", camada="hash")
+
+
+@pytest.fixture
+def steam(tmp_path, monkeypatch, tmp_nao_e_temporaria):
+    """Uma casa com a Steam instalada e o atalho que o Proton cria (pressure-vessel)."""
+    casa = tmp_path / "casa"
+    for bits in ("ubuntu12_32", "ubuntu12_64"):
+        (casa / ".local/share/Steam" / bits).mkdir(parents=True)
+        (casa / ".local/share/Steam" / bits / "gameoverlayrenderer.so").write_bytes(b"\x7fELF")
+    vaso = tmp_path / "pressure-vessel-libs-abc"
+    for lib, bits in (("x86_64-linux-gnu", "ubuntu12_64"), ("i386-linux-gnu", "ubuntu12_32")):
+        (vaso / "lib" / lib).mkdir(parents=True)
+        (vaso / "lib" / lib / "gameoverlayrenderer.so").symlink_to(casa / ".local/share/Steam" / bits / "gameoverlayrenderer.so")
+    monkeypatch.setattr(cacador.pwd, "getpwuid", lambda _uid: type("U", (), {"pw_dir": str(casa)})())
+    return casa, vaso
+
+
+def test_overlay_da_steam_e_informativo(tmp_path, pacotes, steam):
+    casa, vaso = steam
+    proc = tmp_path / "proc"
+    steam32 = casa / ".local/share/Steam/ubuntu12_32/gameoverlayrenderer.so"
+    processo(proc, 70, "reaper", {"LD_PRELOAD": f"{steam32}:{str(steam32).replace('_32', '_64')}"})
+    processo(proc, 71, "GrandChase.exe", {"LD_PRELOAD": f"{vaso}/${{LIB}}/gameoverlayrenderer.so"})
+    achados = list(cacador.ld_preload_em_processos(pacotes, proc, julgar_limpo))
+    assert len(achados) == 3
+    assert all(a.gravidade == "info" and "overlay da Steam" in a.mensagem for a in achados)
+
+
+def test_overlay_falso_fora_da_steam_continua_alto(tmp_path, pacotes, steam):
+    impostor = tmp_path / "escondido" / "gameoverlayrenderer.so"
+    impostor.parent.mkdir()
+    impostor.write_bytes(b"\x7fELF")
+    proc = tmp_path / "proc"
+    processo(proc, 72, "bash", {"LD_PRELOAD": str(impostor)})
+    [achado] = cacador.ld_preload_em_processos(pacotes, proc, julgar_limpo)
+    assert achado.gravidade == "alta" and "não veio de nenhum pacote" in achado.mensagem
+
+
+def test_overlay_que_o_motor_reconhece_e_ameaca(tmp_path, pacotes, steam):
+    casa, _ = steam
+    proc = tmp_path / "proc"
+    processo(proc, 73, "jogo", {"LD_PRELOAD": str(casa / ".local/share/Steam/ubuntu12_64/gameoverlayrenderer.so")})
+    [achado] = cacador.ld_preload_em_processos(pacotes, proc, julgar_infectado)
+    assert achado.gravidade == "alta" and achado.mensagem.startswith("Linux.Rootkit.Falso")
+
+
+def test_overlay_sem_motor_nao_e_liberado(tmp_path, pacotes, steam):
+    casa, _ = steam
+    proc = tmp_path / "proc"
+    processo(proc, 74, "jogo", {"LD_PRELOAD": str(casa / ".local/share/Steam/ubuntu12_64/gameoverlayrenderer.so")})
+    [achado] = cacador.ld_preload_em_processos(pacotes, proc, julgar_nada)
+    assert achado.gravidade == "alta"
+
+
+# --- processos --------------------------------------------------------------
 
 def test_processo_de_pasta_temporaria_e_alto(tmp_path, pacotes):
     proc = tmp_path / "proc"
