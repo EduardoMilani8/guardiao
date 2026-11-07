@@ -1,6 +1,6 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Falha de segurança no Guardião
+  - name: Falha de segurança na Guarnição
     url: https://github.com/EduardoMilani8/guardiao/security/advisories/new
     about: Avise em particular, não numa issue pública.
   - name: Como cada parte funciona

@@ -18,7 +18,7 @@ body:
     id: motivo
     attributes:
       label: Que problema ela resolve?
-      placeholder: "Hoje, quando ..., o Guardião ..."
+      placeholder: "Hoje, quando ..., a Guarnição ..."
     validations:
       required: true
   - type: checkboxes

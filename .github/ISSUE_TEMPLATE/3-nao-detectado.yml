@@ -43,5 +43,5 @@ body:
     id: status
     attributes:
       label: Situação das bases
-      description: "Cole a saída de `.venv/bin/python -m guardiao atualizar --status`. Um malware novo costuma ser reconhecido depois de a base atualizar."
+      description: "Cole a saída de `.venv/bin/python -m guarnicao atualizar --status`. Um malware novo costuma ser reconhecido depois de a base atualizar."
       render: text

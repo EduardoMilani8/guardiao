@@ -13,14 +13,14 @@ enviada por pesquisadores passa a ser reconhecida em até uma hora.
 ## Malware novo
 
 Medido *sem* a base de hashes, que daria 100% por construção, já que as amostras
-vieram dela. É o que o Guardião reconhece de malware que ninguém reportou ainda:
+vieram dela. É o que a Guarnição reconhece de malware que ninguém reportou ainda:
 
 | | Todas | Linux (ELF) | Windows (EXE) | Shell | JavaScript |
 |---|---|---|---|---|---|
 | ClamAV sozinho | 22,1% | 39,8% | 8,3% | 0% | 0% |
 | Regras YARA sozinhas | 3,6% | 5,1% | 0% | 8,3% | 0% |
-| **Guardião: ameaça** | **25,6%** | **44,9%** | 8,3% | 8,3% | 0% |
-| **Guardião: ameaça ou suspeito** | **34,9%** | **54,1%** | 16,7% | 29,2% | 0% |
+| **Guarnição: ameaça** | **25,6%** | **44,9%** | 8,3% | 8,3% | 0% |
+| **Guarnição: ameaça ou suspeito** | **34,9%** | **54,1%** | 16,7% | 29,2% | 0% |
 
 O que mais escapou foram variantes recompiladas da botnet Mirai, cada uma com um
 hash novo, e JavaScript ofuscado (ladrões de senha do Windows).

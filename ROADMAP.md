@@ -11,7 +11,7 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
       **personalizada** (pasta escolhida num seletor nativo)
 - [x] Ignorar o que não é arquivo de verdade (`/proc`, `/sys`, `/dev`) pelo tipo do
       sistema de arquivos, e discos externos e de rede por padrão
-- [x] Exclusões configuráveis e limite de tamanho (`~/.config/guardiao/config.toml`)
+- [x] Exclusões configuráveis e limite de tamanho (`~/.config/guarnicao/config.toml`)
 - [x] Cache: pular arquivos que não mudaram desde a última varredura
 - [x] Análise em paralelo, um processo por núcleo
 - [x] Modo root opcional para as pastas do sistema
@@ -57,7 +57,7 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
 - [x] Opcional: consultar o hash (nunca o arquivo) no VirusTotal
 - [ ] **Painel novo**: um visual mais bonito para o painel, que vai servir de base
       para a arte dos avisos
-- [ ] **Avisos que mostram que o Guardião está trabalhando, sem cansar.** O objetivo é a
+- [ ] **Avisos que mostram que a Guarnição está trabalhando, sem cansar.** O objetivo é a
       pessoa lembrar que está protegida sem ser incomodada:
   - [x] Ameaça: aviso forte, que fica até a pessoa agir
   - [ ] Varredura automática que terminou limpa: resumo discreto, que some sozinho

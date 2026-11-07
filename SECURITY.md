@@ -1,7 +1,7 @@
 # Segurança
 
 Um antivírus roda com acesso amplo ao sistema (o protetor roda como root), então uma
-falha no Guardião pode ser usada contra quem o instalou.
+falha na Guarnição pode ser usada contra quem a instalou.
 
 ## Como avisar de uma falha
 
@@ -23,7 +23,7 @@ publicada com o crédito para você, se quiser.
 
 - Escalar privilégios pelo protetor ou pelos instaladores.
 - Fazer o painel agir a pedido de outro site (mover, apagar ou ler arquivos).
-- Fazer o Guardião executar um arquivo analisado.
+- Fazer a Guarnição executar um arquivo analisado.
 - Desligar ou enganar o protetor sem ser root.
 
 Um malware que passa sem ser detectado não é falha de segurança: é um caso de

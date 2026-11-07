@@ -45,12 +45,12 @@ body:
         lsb_release -ds
         python3 --version
         git log -1 --oneline
-        .venv/bin/python -m guardiao atualizar --status
+        .venv/bin/python -m guarnicao atualizar --status
     validations:
       required: true
   - type: textarea
     id: registro
     attributes:
       label: Registro do serviço
-      description: "Opcional. Se o erro foi num serviço, cole as últimas linhas de `journalctl --user -u guardiao-monitor -n 50` (ou `sudo journalctl -u guardiao-protetor -n 50`)."
+      description: "Opcional. Se o erro foi num serviço, cole as últimas linhas de `journalctl --user -u guarnicao-monitor -n 50` (ou `sudo journalctl -u guarnicao-protetor -n 50`)."
       render: text

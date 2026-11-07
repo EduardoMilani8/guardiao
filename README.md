@@ -1,4 +1,4 @@
-# Guardião
+# Guarnição
 
 ![Linux](https://img.shields.io/badge/plataforma-Linux-333)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776ab)
@@ -8,11 +8,14 @@ Antivírus para Linux. Bloqueia ameaças antes de elas executarem, vigia os down
 e os processos e varre o sistema com ClamAV, regras YARA e os hashes do
 MalwareBazaar, atualizados de hora em hora.
 
+Até novembro de 2026 o projeto se chamava Guardião. Quem instalou com o nome
+antigo não perde nada: veja [Vindo do Guardião](#vindo-do-guardião).
+
 ![Uma varredura no painel: os guardiões acendem as tochas, o Cavaleiro acha um arquivo perigoso e o Carcereiro tranca](docs/imagens/guarnicao.gif)
 
 ## Como funciona
 
-Depois de instalado, o Guardião é formado por cinco serviços do systemd. Nenhum
+Depois de instalado, a Guarnição é formada por cinco serviços do systemd. Nenhum
 depende de uma janela aberta.
 
 | Serviço | O que faz | Quando roda |
@@ -33,10 +36,10 @@ você decide no painel.
 ## Painel
 
 ```bash
-.venv/bin/python -m guardiao launcher
+.venv/bin/python -m guarnicao launcher
 ```
 
-Abre uma página local, a Guarnição, desenhada como um livro de fantasia. Uma
+Abre o painel numa página local, desenhada como um livro de fantasia. Uma
 barra no alto leva às três telas, sempre no mesmo lugar; clicar no emblema volta
 ao Painel. Tudo roda no próprio computador, sem nada vindo da internet, nem as
 fontes. O painel nunca roda como root e só liga serviços mostrando o comando para
@@ -126,7 +129,7 @@ sudo contrib/instalar-protetor.sh          # protetor (precisa de root)
 ```
 
 O MalwareBazaar pede uma chave gratuita, criada em [auth.abuse.ch](https://auth.abuse.ch)
-e colocada em `~/.config/guardiao/config.toml`:
+e colocada em `~/.config/guarnicao/config.toml`:
 
 ```toml
 [malwarebazaar]
@@ -137,25 +140,41 @@ Para o VirusTotal (opcional), a chave grátis vai no mesmo arquivo, na seção
 `[virustotal]`. Sem o ClamAV ou sem uma das chaves, aquela camada fica desligada e o resto funciona
 normalmente.
 
+### Vindo do Guardião
+
+Depois do `git pull`, rode os dois instaladores de novo:
+
+```bash
+contrib/instalar-servicos.sh
+sudo contrib/instalar-protetor.sh
+```
+
+Eles desligam os serviços `guardiao-*` e ligam os `guarnicao-*` no lugar; a cópia
+de root muda de `/opt/guardiao` para `/opt/guarnicao`. A configuração, as bases, o
+histórico e a quarentena mudam sozinhos de `guardiao` para `guarnicao` (em
+`~/.config`, `~/.local/share` e `~/.cache`) na primeira vez que a Guarnição roda, e
+o nome antigo fica como atalho para o novo. O comando `python -m guardiao` e as
+variáveis `GUARDIAO_*` continuam funcionando por enquanto.
+
 ## Uso pelo terminal
 
 ```bash
-.venv/bin/python -m guardiao varrer --rapida
-.venv/bin/python -m guardiao varrer ~/Downloads --isolar
-sudo .venv/bin/python -m guardiao varrer --completa      # inclui arquivos do sistema
-.venv/bin/python -m guardiao historico --achados
-.venv/bin/python -m guardiao virustotal arquivo.exe        # só o hash é enviado
-.venv/bin/python -m guardiao quarentena listar
-.venv/bin/python -m guardiao quarentena restaurar <id>
-.venv/bin/python -m guardiao quarentena apagar <id>       # de vez, pede confirmação
+.venv/bin/python -m guarnicao varrer --rapida
+.venv/bin/python -m guarnicao varrer ~/Downloads --isolar
+sudo .venv/bin/python -m guarnicao varrer --completa      # inclui arquivos do sistema
+.venv/bin/python -m guarnicao historico --achados
+.venv/bin/python -m guarnicao virustotal arquivo.exe        # só o hash é enviado
+.venv/bin/python -m guarnicao quarentena listar
+.venv/bin/python -m guarnicao quarentena restaurar <id>
+.venv/bin/python -m guarnicao quarentena apagar <id>       # de vez, pede confirmação
 ```
 
 Duas ferramentas para usar quando quiser:
 
-- `guardiao cacar` procura o que já se instalou e se esconde: bibliotecas
+- `guarnicao cacar` procura o que já se instalou e se esconde: bibliotecas
   injetadas, processos rodando de `/tmp`, serviços que não vieram de nenhum pacote,
   programas do sistema alterados.
-- `guardiao dev <pasta>` audita um projeto de programação antes de você instalar as
+- `guarnicao dev <pasta>` audita um projeto de programação antes de você instalar as
   dependências: scripts de instalação maliciosos, pacotes com nome falsificado,
   tarefas que rodam sozinhas ao abrir a pasta no editor.
 
@@ -179,7 +198,7 @@ Duas ferramentas para usar quando quiser:
 ## Contribuir
 
 Achou um erro, um falso positivo ou um malware que passou? Veja o
-[CONTRIBUTING.md](CONTRIBUTING.md). Falhas de segurança no próprio Guardião vão
+[CONTRIBUTING.md](CONTRIBUTING.md). Falhas de segurança na própria Guarnição vão
 pelo [aviso privado](SECURITY.md), nunca por issue pública.
 
 ## Testes

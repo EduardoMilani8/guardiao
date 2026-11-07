@@ -1,11 +1,11 @@
 # Como contribuir
 
-Obrigado por querer ajudar. O Guardião protege o computador de quem o usa, então
+Obrigado por querer ajudar. A Guarnição protege o computador de quem o usa, então
 cada contribuição precisa deixar a proteção mais confiável, nunca menos.
 
 ## Sem programar
 
-Usar o Guardião no dia a dia e contar o que aconteceu já ajuda muito.
+Usar a Guarnição no dia a dia e contar o que aconteceu já ajuda muito.
 
 | O que aconteceu | Onde avisar |
 |---|---|
@@ -13,7 +13,7 @@ Usar o Guardião no dia a dia e contar o que aconteceu já ajuda muito.
 | Um arquivo seu, legítimo, foi marcado como ameaça ou suspeito | [Falso positivo](https://github.com/EduardoMilani8/guardiao/issues/new?template=2-falso-positivo.yml) |
 | Um malware passou sem ser detectado | [Não detectado](https://github.com/EduardoMilani8/guardiao/issues/new?template=3-nao-detectado.yml) |
 | Uma ideia de melhoria | [Sugestão](https://github.com/EduardoMilani8/guardiao/issues/new?template=4-sugestao.yml) |
-| Uma falha de segurança no próprio Guardião | **Não abra issue.** Veja o [SECURITY.md](SECURITY.md) |
+| Uma falha de segurança na própria Guarnição | **Não abra issue.** Veja o [SECURITY.md](SECURITY.md) |
 
 **Nunca anexe malware de verdade** numa issue, nem dentro de um `.zip`. Mande o
 SHA-256 do arquivo (`sha256sum arquivo`) ou o link dele no
@@ -39,8 +39,8 @@ usam pastas temporárias e imitações de cada parte.
 ### Onde fica cada coisa
 
 ```
-guardiao/            o programa (cada arquivo começa explicando o que faz)
-guardiao/launcher/   o painel: servidor local e a página
+guarnicao/            o programa (cada arquivo começa explicando o que faz)
+guarnicao/launcher/   o painel: servidor local e a página
 regras/              regras YARA do projeto
 contrib/             serviços do systemd e os instaladores
 ferramentas/         medição da taxa de detecção
@@ -65,7 +65,7 @@ O [docs/como-funciona.md](docs/como-funciona.md) explica as decisões de cada pa
 
 - **Amostras de malware nunca entram no repositório.** Os testes usam o arquivo de
   teste EICAR e trechos montados em tempo de execução com `"".join([...])`, para o
-  próprio código do Guardião não ser detectado por outros antivírus. Vale para nomes
+  próprio código da Guarnição não ser detectado por outros antivírus. Vale para nomes
   de regra, variáveis e comentários também.
 - **Amostras reais só são lidas, nunca executadas**, e são apagadas depois.
 - **O protetor nunca pode travar o computador.** Ele tem 2 segundos para decidir, não
@@ -84,5 +84,5 @@ O [docs/como-funciona.md](docs/como-funciona.md) explica as decisões de cada pa
 
 ## Convivência
 
-Seja respeitoso. Discussões aqui são sobre o Guardião e o código; mensagens com
+Seja respeitoso. Discussões aqui são sobre a Guarnição e o código; mensagens com
 ataque pessoal ou propaganda serão fechadas.

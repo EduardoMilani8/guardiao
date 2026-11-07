@@ -1,6 +1,6 @@
 # Como cada parte funciona
 
-O [README](../README.md) resume o Guardião. Aqui estão os detalhes de cada parte,
+O [README](../README.md) resume a Guarnição. Aqui estão os detalhes de cada parte,
 para quem quer entender as decisões ou ajustar o comportamento.
 
 - [Protetor](#protetor)
@@ -15,17 +15,17 @@ para quem quer entender as decisões ou ajustar o comportamento.
 
 ## Protetor
 
-Com o `fanotify` (`FAN_OPEN_EXEC_PERM`), o kernel segura cada `execve()` até o
-Guardião responder. Se o arquivo é uma ameaça (hash conhecido, ClamAV ou regra YARA
+Com o `fanotify` (`FAN_OPEN_EXEC_PERM`), o kernel segura cada `execve()` até a
+Guarnição responder. Se o arquivo é uma ameaça (hash conhecido, ClamAV ou regra YARA
 de gravidade alta), quem tentou executar recebe "Operação não permitida" e uma
 notificação aparece na sua área de trabalho.
 
 ```bash
 sudo contrib/instalar-protetor.sh          # instala ou atualiza o serviço
-journalctl -u guardiao-protetor -f         # o que ele está bloqueando
+journalctl -u guarnicao-protetor -f         # o que ele está bloqueando
 ```
 
-O instalador copia o Guardião para `/opt/guardiao`, de root. Um serviço root
+O instalador copia a Guarnição para `/opt/guarnicao`, de root. Um serviço root
 rodando código que a sua conta pode alterar seria um atalho para root para qualquer
 malware que entrasse nela. Por isso, depois de um `git pull`, rode o instalador de
 novo.
@@ -47,15 +47,15 @@ O cuidado principal é nunca travar o computador:
 Limite: vale para o que é *executado*. `python script.py` executa o Python, que é
 confiável, e não o script. Scripts com `#!` e permissão de execução, e binários,
 passam pelo protetor. Para testar sem bloquear nada:
-`sudo .venv/bin/python -m guardiao proteger --so-avisar`.
+`sudo .venv/bin/python -m guarnicao proteger --so-avisar`.
 
 ## Monitor de downloads
 
-O serviço `guardiao-monitor` observa a pasta Downloads com o inotify. Cada arquivo
+O serviço `guarnicao-monitor` observa a pasta Downloads com o inotify. Cada arquivo
 é analisado assim que o navegador termina de baixá-lo (arquivos `.part` e
 `.crdownload` são ignorados até virarem o nome final) e, se for uma ameaça, vai
 direto para a quarentena. Para vigiar outras pastas:
-`.venv/bin/python -m guardiao monitorar ~/Downloads ~/Área\ de\ Trabalho --isolar`.
+`.venv/bin/python -m guarnicao monitorar ~/Downloads ~/Área\ de\ Trabalho --isolar`.
 
 ## Monitor de comportamento
 
@@ -70,7 +70,7 @@ O que ele *faz* muda bem menos. O monitor lê o `/proc` a cada 5 segundos (cerca
   típica de pool de mineração (3333, 4444, 14444...).
 
 Conexões dentro da própria máquina (127.0.0.1) pedem só atenção. O alerta traz o
-pid e o comando para encerrar; o Guardião não mata processos sozinho. Sem root, só
+pid e o comando para encerrar; a Guarnição não mata processos sozinha. Sem root, só
 os seus processos são vistos, que é onde roda o que você baixa. Para desligar:
 `monitorar --sem-comportamento`.
 
@@ -82,18 +82,18 @@ os seus processos são vistos, que é onde roda o que você baixa. Para desligar
 | [YARA Forge](https://github.com/YARAHQ/yara-forge) | Cerca de 5 mil regras da comunidade, calibradas contra falsos positivos | Uma vez por semana |
 | [ClamAV](https://www.clamav.net/) | Milhões de assinaturas, atualizadas pelo próprio `freshclam` | Pelo ClamAV |
 
-O timer `guardiao-atualizar` confere de hora em hora; quando nada mudou, leva
-segundos. A troca é atômica: um download quebrado nunca deixa o Guardião sem a
+O timer `guarnicao-atualizar` confere de hora em hora; quando nada mudou, leva
+segundos. A troca é atômica: um download quebrado nunca deixa a Guarnição sem a
 versão anterior. A varredura e o painel avisam quando uma base passa de 2 dias sem
 atualizar.
 
 ```bash
-.venv/bin/python -m guardiao atualizar            # atualiza agora
-.venv/bin/python -m guardiao atualizar --status   # situação de cada base
+.venv/bin/python -m guarnicao atualizar            # atualiza agora
+.venv/bin/python -m guarnicao atualizar --status   # situação de cada base
 ```
 
 O MalwareBazaar precisa de uma chave gratuita, criada em
-[auth.abuse.ch](https://auth.abuse.ch), no `~/.config/guardiao/config.toml`:
+[auth.abuse.ch](https://auth.abuse.ch), no `~/.config/guarnicao/config.toml`:
 
 ```toml
 [malwarebazaar]
@@ -113,7 +113,7 @@ próxima vez, a menos que mudem (tamanho, mtime ou ctime) ou que as regras sejam
 atualizadas. Quando chegam hashes novos, o cache reconfere o hash guardado de cada
 arquivo sem precisar lê-lo de novo. Ameaças e suspeitos nunca entram no cache.
 
-Exclusões e limite de tamanho ficam no `~/.config/guardiao/config.toml`:
+Exclusões e limite de tamanho ficam no `~/.config/guarnicao/config.toml`:
 
 ```toml
 excluir_pastas = ["~/Vídeos", "~/VirtualBox VMs"]
@@ -121,36 +121,36 @@ excluir_padroes = ["*.iso"]
 tamanho_maximo_mb = 512     # padrão: 256
 ```
 
-**Agendadas.** Os timers `guardiao-varrer-rapida` (todo dia, por volta das 12:30) e
-`guardiao-varrer-completa` (domingo, por volta das 13:00, só com o carregador
+**Agendadas.** Os timers `guarnicao-varrer-rapida` (todo dia, por volta das 12:30) e
+`guarnicao-varrer-completa` (domingo, por volta das 13:00, só com o carregador
 ligado) rodam em prioridade mínima de CPU e disco, com no máximo 4 processos. Se o
 computador estava desligado na hora, rodam assim que ele ligar. Elas **não isolam
 sozinhas**: notificam o que acharem, e você decide no painel. Um alarme falso numa
 varredura do disco inteiro moveria um arquivo seu sem você ver.
 
 **Histórico.** Toda varredura (do terminal, agendada ou do painel) grava quando foi,
-quanto levou e o que achou em `~/.local/share/guardiao/historico.jsonl`.
-`guardiao historico --achados` mostra as últimas.
+quanto levou e o que achou em `~/.local/share/guarnicao/historico.jsonl`.
+`guarnicao historico --achados` mostra as últimas.
 
 ## VirusTotal
 
 Opcional e desligado por padrão. Com uma chave grátis, criada em
-[virustotal.com](https://www.virustotal.com), no `~/.config/guardiao/config.toml`:
+[virustotal.com](https://www.virustotal.com), no `~/.config/guarnicao/config.toml`:
 
 ```toml
 [virustotal]
 chave = "..."
 ```
 
-o Guardião pergunta ao VirusTotal o que uns 70 antivírus acham de um arquivo. Só
+a Guarnição pergunta ao VirusTotal o que uns 70 antivírus acham de um arquivo. Só
 o SHA-256 sai do computador, nunca o conteúdo. Ainda assim, cada consulta conta ao
 VirusTotal que aquele hash existe na sua máquina, então ela é feita só em três
 casos:
 
 - **downloads novos**, pelo monitor (reinicie o serviço depois de pôr a chave:
-  `systemctl --user restart guardiao-monitor`);
+  `systemctl --user restart guarnicao-monitor`);
 - **arquivos suspeitos** encontrados pela varredura, no máximo 20 por varredura;
-- quando você pede: `guardiao virustotal <arquivo>`.
+- quando você pede: `guarnicao virustotal <arquivo>`.
 
 | Antivírus que apontam "malicioso" | Resultado |
 |---|---|
@@ -161,13 +161,13 @@ casos:
 A chave grátis permite 4 consultas por minuto e 500 por dia. As respostas ficam
 guardadas (arquivos conhecidos por 7 dias, desconhecidos por 1 dia) e a cota é
 contada num arquivo com trava, que o monitor e as varreduras dividem. Passado o
-limite por minuto, o Guardião espera a vaga; acabada a cota do dia, ele avisa e
+limite por minuto, a Guarnição espera a vaga; acabada a cota do dia, ela avisa e
 segue sem o VirusTotal. O protetor não consulta: ele tem 2 segundos para decidir,
 e a rede não cabe nesse prazo.
 
 ## Painel
 
-Uma página local (`guardiao launcher`, em `127.0.0.1`) chamada Guarnição: quatro
+Uma página local (`guarnicao launcher`, em `127.0.0.1`): quatro
 personagens no alto de uma muralha, cada um responsável por uma parte do trabalho.
 
 | Personagem | O que faz |
@@ -228,13 +228,13 @@ O caçador também dá uma olhada de 3 segundos no comportamento dos processos. 
 só os seus processos e os arquivos legíveis por você são conferidos.
 
 ```bash
-.venv/bin/python -m guardiao cacar
-sudo .venv/bin/python -m guardiao cacar --todos
+.venv/bin/python -m guarnicao cacar
+sudo .venv/bin/python -m guarnicao cacar --todos
 ```
 
 ## Auditoria de projetos
 
-`guardiao dev <pasta>` procura riscos num projeto de programação antes de você
+`guarnicao dev <pasta>` procura riscos num projeto de programação antes de você
 instalar as dependências ou abri-lo no editor:
 
 - scripts de instalação do npm (`postinstall`) que baixam e executam código;
