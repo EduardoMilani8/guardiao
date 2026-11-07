@@ -27,3 +27,17 @@ def test_escudos_da_barra():
                             *(f"escudo-procurando-{n}" for n in range(1, 5))}
     for svg in escudos.values():
         assert "currentColor" not in svg and referencias_resolvidas(svg)
+
+
+def test_css_sem_margem_negativa():
+    # O St (toolkit da barra) não aceita margem negativa: o cartão ficava com
+    # altura infinita e vazio na tela (achado no teste ao vivo, GNOME 50).
+    import re
+    css = (RAIZ / "extensao" / "guarnicao@eduardomilani8.github.io" / "stylesheet.css").read_text()
+    assert not re.search(r"margin[^;]*:\s*[^;]*-\d", css)
+
+
+def test_emblema_dos_avisos_curtos():
+    # O emblema dourado do castelo, dos avisos curtos (limpa e trancado) do avisos-v3.
+    svg = construir_arte.emblema()
+    assert 'aria-label="Guarnição"' in svg and 'width="34"' in svg and referencias_resolvidas(svg)

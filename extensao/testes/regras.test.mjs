@@ -27,3 +27,30 @@ test('toda ação do escudo tem rótulo e comando', () => {
         assert.ok(ROTULOS_MENU[acao] && COMANDOS_MENU[acao], acao);
     }
 });
+
+test('quem aparece é quem vai agir (avisos-v3)', async () => {
+    const {retrato} = await import('../guarnicao@eduardomilani8.github.io/regras.js');
+    assert.equal(retrato({tipo: 'ameaca', personagem: 'cavaleiro'}), 'carcereiro');
+    assert.equal(retrato({tipo: 'varias'}), 'carcereiro');
+    assert.equal(retrato({tipo: 'trancado', personagem: 'carcereiro'}), 'carcereiro');
+    assert.equal(retrato({tipo: 'suspeito', personagem: 'vidente'}), 'vidente');
+    assert.equal(retrato({tipo: 'bases', personagem: 'cavaleiro'}), 'cavaleiro');
+    assert.equal(retrato({tipo: 'bloqueado', personagem: 'arqueira'}), 'arqueira');
+    assert.equal(retrato({tipo: 'limpa', personagem: ''}), null);
+});
+
+test('na ameaça o detalhe diz quem reconheceu', () => {
+    assert.equal(detalhe({tipo: 'ameaca', arquivo: 'x.exe', personagem: 'cavaleiro'}, 'x.exe\nEICAR'),
+        'Reconhecida pelo Cavaleiro · EICAR');
+    assert.equal(detalhe({tipo: 'ameaca', arquivo: 'x.exe', personagem: 'arqueira'}, 'x.exe\nRegra (YARA)'),
+        'Reconhecida pela Arqueira · Regra (YARA)');
+    assert.equal(detalhe({tipo: 'suspeito', arquivo: 'x.sh', personagem: 'vidente'}, 'x.sh\nbaixa script'),
+        'baixa script');
+});
+
+test('limpa e trancado são avisos curtos, sem retrato (avisos-v3)', async () => {
+    const {curto} = await import('../guarnicao@eduardomilani8.github.io/regras.js');
+    assert.equal(curto({tipo: 'limpa'}), true);
+    assert.equal(curto({tipo: 'trancado'}), true);
+    assert.equal(curto({tipo: 'ameaca'}), false);
+});

@@ -83,6 +83,10 @@ export class Avisos {
         if (!dados)
             return;
         const banner = tray._banner;
+        // O recheio antigo sai do balão mas some junto com ele (senão o GJS reclama na coleta de lixo).
+        const antigo = banner.get_child();
+        if (antigo)
+            banner.connect('destroy', () => antigo.destroy());
         banner.set_child(cartao({
             dados, titulo: n.title, corpo: n.body ?? '', pastaArte: this._pastaArte,
             aoClicar: args => {

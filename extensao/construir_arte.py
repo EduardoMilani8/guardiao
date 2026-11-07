@@ -10,6 +10,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 ARTE_PAINEL = RAIZ / "guarnicao" / "launcher" / "estatico" / "arte"
 BARRA = RAIZ / "design" / "telas" / "barra-v2.html"
+AVISOS = RAIZ / "design" / "telas" / "avisos-v3-muralha.html"
 DESTINO = RAIZ / "extensao" / "guarnicao@eduardomilani8.github.io" / "arte"
 NS = 'xmlns="http://www.w3.org/2000/svg"'
 # A barra do GNOME é sempre escura e o texto dela é branco. Não usamos ícone
@@ -64,6 +65,13 @@ def ameia(largura: int = 426) -> str:
             f'<rect x="0" y="7" width="{largura}" height="1" fill="#5a6584"/></svg>')
 
 
+def emblema() -> str:
+    """O emblema do castelo dos avisos curtos (limpa e trancado), do avisos-v3."""
+    html = AVISOS.read_text(encoding="utf-8")
+    svg = re.search(r'<svg viewBox="0 0 120 120"[^>]*aria-label="Guarnição">.*?</svg>', html, flags=re.S).group(0)
+    return svg.replace("<svg ", f'<svg {NS} width="34" height="34" ', 1).replace(' width="100%"', "")
+
+
 def main() -> None:
     DESTINO.mkdir(parents=True, exist_ok=True)
     for nome in ("cavaleiro", "arqueira", "vidente", "carcereiro"):
@@ -71,6 +79,7 @@ def main() -> None:
     for nome, svg in escudos().items():
         (DESTINO / f"{nome}.svg").write_text(svg, encoding="utf-8")
     (DESTINO / "ameia.svg").write_text(ameia(), encoding="utf-8")
+    (DESTINO / "emblema.svg").write_text(emblema(), encoding="utf-8")
     print(f"Arte gerada em {DESTINO}")
 
 

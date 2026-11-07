@@ -33,10 +33,31 @@ export function lerDados(hints) {
     return dados.tipo ? dados : null;
 }
 
+// "Quem aparece é quem vai agir" (avisos-v3): ameaça é do Carcereiro, que tranca;
+// suspeito, do Vidente; bases, do Cavaleiro. O bloqueio já foi feito por quem achou.
+const QUEM_AGE = {ameaca: 'carcereiro', varias: 'carcereiro', trancado: 'carcereiro',
+    suspeito: 'vidente', bases: 'cavaleiro'};
+
+// Os que só confirmam (avisos-v3): uma faixa curta com o emblema, sem retrato nem frase.
+export function curto(dados) {
+    return dados.tipo === 'limpa' || dados.tipo === 'trancado';
+}
+
+export function retrato(dados) {
+    const nome = QUEM_AGE[dados.tipo] ?? dados.personagem;
+    return NOMES[nome] ? nome : null;
+}
+
+const PELO = {cavaleiro: 'pelo Cavaleiro', arqueira: 'pela Arqueira', vidente: 'pelo Vidente'};
+
 // Quando há arquivo, a primeira linha do corpo é o nome dele: o cartão já mostra em fonte mono.
+// Na ameaça, quem reconheceu vem antes (o retrato é do Carcereiro).
 export function detalhe(dados, corpo) {
     const linhas = (corpo ?? '').split('\n').map(l => l.trim()).filter(Boolean);
-    return (dados.arquivo ? linhas.slice(1) : linhas).join(' · ');
+    const partes = dados.arquivo ? linhas.slice(1) : linhas;
+    if (dados.tipo === 'ameaca' && PELO[dados.personagem])
+        partes.unshift(`Reconhecida ${PELO[dados.personagem]}`);
+    return partes.join(' · ');
 }
 
 // Os botões de cada aviso, na ordem do avisos-v3 (o dourado por último).
