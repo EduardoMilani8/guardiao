@@ -24,6 +24,7 @@ def test_retratos_sozinhos():
 def test_escudos_da_barra():
     escudos = construir_arte.escudos()
     assert set(escudos) == {"escudo-certo", "escudo-atencao", "escudo-ameaca",
+                            "escudo-atencao-menu", "escudo-ameaca-menu",
                             *(f"escudo-procurando-{n}" for n in range(1, 5))}
     for svg in escudos.values():
         assert "currentColor" not in svg and referencias_resolvidas(svg)
@@ -41,3 +42,9 @@ def test_emblema_dos_avisos_curtos():
     # O emblema dourado do castelo, dos avisos curtos (limpa e trancado) do avisos-v3.
     svg = construir_arte.emblema()
     assert 'aria-label="Guarnição"' in svg and 'width="34"' in svg and referencias_resolvidas(svg)
+
+
+def test_escudos_coloridos_do_menu():
+    # Dentro do menu, a cor aparece junto do texto (barra-v2): âmbar e vermelho.
+    escudos = construir_arte.escudos()
+    assert "#F0B65A" in escudos["escudo-atencao-menu"] and "#FF8A7A" in escudos["escudo-ameaca-menu"]

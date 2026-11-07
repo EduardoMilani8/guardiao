@@ -6,7 +6,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {Fila} from './fila.js';
-import {ROTULOS_MENU, COMANDOS_MENU} from './regras.js';
+import {ROTULOS_MENU, COMANDOS_MENU, acaoPrincipal} from './regras.js';
 
 // O escudo da barra (barra-v2): o estado se lê pela forma, a cor só aparece no menu.
 export const Escudo = GObject.registerClass(
@@ -53,14 +53,36 @@ class Escudo extends PanelMenu.Button {
             this._mostrar(estado);
     }
 
-    _mostrar(e) {
-        const nome = e.estado === 'procurando' ? `escudo-procurando-${e.nivel ?? 1}` : `escudo-${e.estado}`;
-        this._icone.gicon = Gio.FileIcon.new(Gio.File.new_for_path(`${this._pasta}/arte/${nome}.svg`));
+    _arte(nome) {
+        return Gio.FileIcon.new(Gio.File.new_for_path(`${this._pasta}/arte/${nome}.svg`));
+    }
 
+    _mostrar(e) {
+        const icone = e.estado === 'procurando' ? `escudo-procurando-${e.nivel ?? 1}` : `escudo-${e.estado}`;
+        this._icone.gicon = this._arte(icone);
+
+        // Menu do barra-v2: emblema e nome, o estado com o escudinho, as linhas e as ações.
         this.menu.removeAll();
-        const titulo = new PopupMenu.PopupMenuItem(e.titulo, {reactive: false});
-        titulo.add_style_class_name(`guarnicao-menu-titulo ${e.estado}`);
+        const cabeca = new PopupMenu.PopupBaseMenuItem({reactive: false, style_class: 'guarnicao-menu-cabeca'});
+        cabeca.add_child(new St.Icon({gicon: this._arte('emblema'), icon_size: 18}));
+        cabeca.add_child(new St.Label({text: 'Guarnição', style_class: 'guarnicao-menu-nome'}));
+        this.menu.addMenuItem(cabeca);
+
+        const titulo = new PopupMenu.PopupBaseMenuItem({reactive: false, style_class: 'guarnicao-menu-estado'});
+        const colorido = e.estado === 'atencao' || e.estado === 'ameaca' ? `${icone}-menu` : icone;
+        titulo.add_child(new St.Icon({gicon: this._arte(colorido), icon_size: 16}));
+        titulo.add_child(new St.Label({text: e.titulo, style_class: `guarnicao-menu-titulo ${e.estado}`}));
         this.menu.addMenuItem(titulo);
+
+        if (e.estado === 'procurando' && Number.isFinite(e.pct)) {
+            const barra = new PopupMenu.PopupBaseMenuItem({reactive: false, style_class: 'guarnicao-menu-linha'});
+            const trilho = new St.Widget({style_class: 'guarnicao-menu-trilho', x_expand: true});
+            const cheio = new St.Widget({style_class: 'guarnicao-menu-cheio'});
+            trilho.add_child(cheio);
+            trilho.connect('notify::width', () => cheio.set_width(Math.round(trilho.width * e.pct / 100)));
+            barra.add_child(trilho);
+            this.menu.addMenuItem(barra);
+        }
         for (const linha of e.linhas ?? []) {
             const item = new PopupMenu.PopupMenuItem(linha, {reactive: false});
             item.add_style_class_name('guarnicao-menu-linha');
@@ -71,8 +93,7 @@ class Escudo extends PanelMenu.Button {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         e.acoes.forEach((acao, i) => {
             const item = new PopupMenu.PopupMenuItem(ROTULOS_MENU[acao] ?? acao);
-            // Com problema, a ação que resolve vem primeiro e dourada (barra-v2).
-            if (i === 0 && e.estado !== 'certo')
+            if (i === 0 && acaoPrincipal(e.estado))
                 item.add_style_class_name('guarnicao-acao-principal');
             item.connect('activate', () => this._comandos.rodar(COMANDOS_MENU[acao]));
             this.menu.addMenuItem(item);

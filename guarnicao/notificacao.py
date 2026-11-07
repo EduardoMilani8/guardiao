@@ -80,6 +80,12 @@ def comando(titulo: str, corpo: str, urgente: bool = False, discreto: bool = Fal
     return ["notify-send", "--app-name=Guarnição", *opcoes, *_hints(dados), "--", titulo, corpo]
 
 
+def contar_achados(ameacas: int, suspeitos: int) -> str:
+    """ "1 ameaça · 1 suspeito", como no avisos-v3 e no barra-v2 (sem as partes zeradas)."""
+    partes = [f"{n} {nome}{'s' if n > 1 else ''}" for n, nome in ((ameacas, "ameaça"), (suspeitos, "suspeito")) if n]
+    return " · ".join(partes)
+
+
 def texto_resumo_limpo(nome: str, total: int, quando: datetime) -> tuple[str, str]:
     """O texto do aviso de varredura limpa, igual ao desenho (avisos-v3-muralha)."""
     arquivos = f"{total:,}".replace(",", ".")

@@ -1,9 +1,15 @@
 /* Menu do escudo (barra-v2). A cor do estado só aparece aqui, junto do texto. */
-.guarnicao-menu-titulo { font-family: Fraunces, serif; font-weight: 600; font-size: 15px; color: #F3EEE2; }
+.guarnicao-menu-cabeca { spacing: 8px; padding-top: 6px; padding-bottom: 4px; }
+.guarnicao-menu-nome { font-family: Fraunces, serif; font-weight: 600; font-size: 14px; color: #E3C384; }
+.guarnicao-menu-estado { spacing: 8px; padding-top: 6px; padding-bottom: 2px; }
+.guarnicao-menu-titulo { font-family: "Source Sans 3", sans-serif; font-weight: 700; font-size: 15px; color: #F3EEE2; }
 .guarnicao-menu-titulo.ameaca { color: #FF8A7A; }
 .guarnicao-menu-titulo.atencao { color: #F0B65A; }
-.guarnicao-menu-linha { font-size: 13px; color: #B7BCCB; }
-.guarnicao-acao-principal { color: #D4AF6A; font-weight: 700; }
+.guarnicao-menu-linha { font-size: 13px; color: #B7BCCB; padding-top: 1px; padding-bottom: 1px; min-height: 0; }
+.guarnicao-menu-trilho { height: 5px; border-radius: 3px; background-color: rgba(255, 255, 255, 0.12); margin: 4px 0; }
+.guarnicao-menu-cheio { height: 5px; border-radius: 3px; background-color: #D4AF6A; }
+.guarnicao-acao-principal { background-color: #D4AF6A; color: #0D1626; font-weight: 700; border-radius: 8px; margin: 2px 6px; }
+.guarnicao-acao-principal:hover, .guarnicao-acao-principal:focus { background-color: #E3C384; color: #0D1626; }
 
 /* Cartão dos avisos (avisos-v3, muralha). */
 .guarnicao-banner { background: none; border: none; box-shadow: none; padding: 0; margin: 0 14px; }

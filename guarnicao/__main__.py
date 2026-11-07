@@ -218,7 +218,7 @@ def _varrer(args) -> int:
             else:
                 n = len(achados)
                 titulo = f"{n} arquivos perigosos"
-                corpo = (f"{contar_achados(resumo.ameacas, resumo.suspeitos)} · "
+                corpo = (f"{notificacao.contar_achados(resumo.ameacas, resumo.suspeitos)} · "
                          f"varredura {nome} de hoje, {datetime.now():%H:%M}")
                 dados = {"tipo": "varias"}
             notificacao.notificar(titulo, corpo, urgente=bool(resumo.ameacas) and dados["tipo"] != "trancado",
@@ -331,12 +331,6 @@ def cmd_atualizar(args) -> int:
             if e.versao:
                 print("               segue valendo a versão anterior")
     return 1 if falhou else 0
-
-
-def contar_achados(ameacas: int, suspeitos: int) -> str:
-    """ "1 ameaça · 1 suspeito", como no avisos-v3 (sem as partes zeradas)."""
-    partes = [f"{n} {nome}{'s' if n > 1 else ''}" for n, nome in ((ameacas, "ameaça"), (suspeitos, "suspeito")) if n]
-    return " · ".join(partes)
 
 
 def avisar_do_monitor(item: scanner.Resultado, id_: str | None) -> bool:

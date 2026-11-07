@@ -43,9 +43,9 @@ def escudos() -> dict[str, str]:
     simbolo = {i: re.sub(r"^<symbol[^>]*>|</symbol>$", "", pega(rf'<symbol id="{i}"[^>]*>.*?</symbol>'))
                for i in ("brOk", "brVar", "brAtn", "brAmc")}
 
-    def svg(corpo: str, extra: str = "") -> str:
+    def svg(corpo: str, extra: str = "", cor: str = COR_DA_BARRA) -> str:
         return (f'<svg {NS} width="16" height="16" viewBox="0 0 16 16"><defs>{mascara}{extra}</defs>'
-                f"{corpo}</svg>").replace("currentColor", COR_DA_BARRA)
+                f"{corpo}</svg>").replace("currentColor", cor)
 
     saida = {"escudo-certo": svg(simbolo["brOk"]), "escudo-atencao": svg(simbolo["brAtn"]),
              "escudo-ameaca": svg(simbolo["brAmc"])}
@@ -54,6 +54,9 @@ def escudos() -> dict[str, str]:
         topo = 14.5 - 12 * nivel / 4
         recorte = f'<clipPath id="brMeio"><rect x="0" y="{topo:.2f}" width="16" height="16"/></clipPath>'
         saida[f"escudo-procurando-{nivel}"] = svg(simbolo["brVar"], recorte)
+    # No menu a cor aparece junto do título (barra-v2).
+    saida["escudo-atencao-menu"] = svg(simbolo["brAtn"], cor="#F0B65A")
+    saida["escudo-ameaca-menu"] = svg(simbolo["brAmc"], cor="#FF8A7A")
     return saida
 
 

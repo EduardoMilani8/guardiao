@@ -18,6 +18,11 @@ export const ROTULOS_MENU = {
     atualizar: 'Atualizar agora', parar: 'Parar varredura',
 };
 
+// Com problema, a ação que resolve vem primeiro, num botão dourado (barra-v2).
+export function acaoPrincipal(estado) {
+    return estado === 'atencao' || estado === 'ameaca';
+}
+
 export const COMANDOS_MENU = {
     varrer: ['varrer', '--rapida', '--agendada'], abrir: ['launcher'], trancar: ['launcher'],
     atualizar: ['atualizar'], parar: ['varrer', '--parar'],

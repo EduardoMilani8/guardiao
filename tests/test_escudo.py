@@ -28,6 +28,7 @@ def test_procurando_enche_em_passos():
     e = escudo.montar(servicos(), [registro()], {"feitos": 183, "total": 305, "pode_parar": True}, AGORA)
     assert e["estado"] == "procurando" and e["nivel"] == 3
     assert e["linhas"][0] == "183 de 305 arquivos · 60%"
+    assert e["pct"] == 60          # a barrinha dourada do menu (barra-v2)
     assert e["acoes"] == ["abrir", "parar"]
 
 
@@ -55,6 +56,7 @@ def test_ameaca_vence_tudo(tmp_path):
     e = escudo.montar(servicos(protetor=False, avisos=["x"]), [registro([achado])],
                       {"feitos": 1, "total": 9, "pode_parar": True}, AGORA)
     assert e["estado"] == "ameaca" and e["titulo"] == "1 arquivo perigoso"
+    assert e["linhas"][0] == "1 ameaça"     # como no barra-v2: "1 ameaça · 1 suspeito"
     assert e["acoes"][0] == "trancar"
 
 

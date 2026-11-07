@@ -54,3 +54,11 @@ test('limpa e trancado são avisos curtos, sem retrato (avisos-v3)', async () =>
     assert.equal(curto({tipo: 'trancado'}), true);
     assert.equal(curto({tipo: 'ameaca'}), false);
 });
+
+test('botão dourado só quando há problema (barra-v2)', async () => {
+    const {acaoPrincipal} = await import('../guarnicao@eduardomilani8.github.io/regras.js');
+    assert.equal(acaoPrincipal('atencao'), true);
+    assert.equal(acaoPrincipal('ameaca'), true);
+    assert.equal(acaoPrincipal('procurando'), false);
+    assert.equal(acaoPrincipal('certo'), false);
+});

@@ -7,7 +7,7 @@ precisa de atenção > tudo certo. Só lê; quem age são os botões do menu.
 import math
 from datetime import datetime
 
-from . import historico
+from . import historico, notificacao
 
 
 def quando(instante: datetime, agora: datetime) -> str:
@@ -40,13 +40,14 @@ def montar(servicos: dict, registros: list, progresso: dict | None, agora: datet
         titulo = "1 arquivo perigoso" if n == 1 else f"{n} arquivos perigosos"
         r, _ = perigosos[0]
         return {"estado": "ameaca", "titulo": titulo,
-                "linhas": [f"{n} ameaça(s) no lugar", f"Varredura {r.tipo} · {quando(r.quando, agora)}"],
+                "linhas": [notificacao.contar_achados(n, 0), f"Varredura {r.tipo} · {quando(r.quando, agora)}"],
                 "acoes": ["trancar", "varrer"]}
 
     if progresso and progresso.get("total"):
         feitos, total = progresso["feitos"], progresso["total"]
         pct = min(100, round(100 * feitos / total))
         return {"estado": "procurando", "titulo": "Procurando ameaças…", "nivel": max(1, math.ceil(pct / 25)),
+                "pct": pct,
                 "linhas": [f"{feitos} de {total} arquivos · {pct}%", "Nada encontrado até agora"],
                 "acoes": ["abrir", "parar"] if progresso.get("pode_parar") else ["abrir"]}
 

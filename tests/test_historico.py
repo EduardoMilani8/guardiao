@@ -172,6 +172,6 @@ def test_monitor_suspeito_diz_algo_suspeito(tmp_path, monkeypatch):
 
 
 def test_contagem_dos_achados():
-    assert cli.contar_achados(2, 0) == "2 ameaças"
-    assert cli.contar_achados(1, 1) == "1 ameaça · 1 suspeito"
-    assert cli.contar_achados(0, 3) == "3 suspeitos"
+    assert notificacao.contar_achados(2, 0) == "2 ameaças"
+    assert notificacao.contar_achados(1, 1) == "1 ameaça · 1 suspeito"
+    assert notificacao.contar_achados(0, 3) == "3 suspeitos"
