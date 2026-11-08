@@ -27,6 +27,7 @@ FS_LOCAIS = {"ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "zfs", "jfs", "vfat
 EXTERNOS = ("/media", "/run/media", "/mnt")
 INTERVALO_PROGRESSO = 0.25   # segundos (painel)
 INTERVALO_ANDAMENTO = 1.0    # segundos (escudo da barra)
+LOTE = 2000                  # arquivos analisados por vez (o resto do disco não fica na memória)
 
 
 @dataclass
@@ -250,30 +251,42 @@ def _executar(
     banco = assinaturas.carregar()   # para reconferir os hashes guardados no cache
 
     try:
-        # 1) Listar: separa o que já está no cache do que precisa ser analisado.
-        pendentes: dict[str, os.stat_result] = {}
+        # 1) Contar, só para a barra de andamento saber o total. Não guarda nada:
+        #    guardar o disco inteiro (1,1 milhão de caminhos com stat) custava ~800 MB.
+        total = 0
         for raiz in raizes:
-            for caminho, st in percorrer(raiz, exclusoes, resumo):
-                sha = cache.consultar(st) if cache is not None else None
-                # Limpo da última vez, mas o hash pode ter virado ameaça numa base nova.
-                if sha is not None and banco.get(sha) is None:
-                    resumo.em_cache += 1
-                else:
-                    pendentes[caminho] = st
+            for caminho, _ in percorrer(raiz, exclusoes, Resumo()):
+                total += 1
                 if time.monotonic() - ultimo > INTERVALO_PROGRESSO:
                     ultimo = time.monotonic()
-                    yield Progresso("listando", resumo.em_cache + len(pendentes), 0, caminho)
+                    yield Progresso("listando", total, 0, caminho)
 
-        # 2) Analisar o que sobrou, em paralelo.
-        total = resumo.em_cache + len(pendentes)
-        yield Progresso("analisando", resumo.em_cache, total, "")
-        for item in _mapear(list(pendentes), processos):
+        # 2) Andar de novo e analisar em lotes: na memória, só um lote por vez.
+        yield Progresso("analisando", 0, total, "")
+
+        def lotes():
+            lote: dict[str, os.stat_result] = {}
+            for raiz in raizes:
+                for caminho, st in percorrer(raiz, exclusoes, resumo):
+                    sha = cache.consultar(st) if cache is not None else None
+                    # Limpo da última vez, mas o hash pode ter virado ameaça numa base nova.
+                    if sha is not None and banco.get(sha) is None:
+                        resumo.em_cache += 1
+                    else:
+                        lote[caminho] = st
+                        if len(lote) >= LOTE:
+                            yield lote
+                            lote = {}
+            if lote:
+                yield lote
+
+        for lote, item in _mapear(lotes(), processos, total):
             if isinstance(item, tuple):
                 resumo.sem_permissao += 1
                 yield item
                 continue
             resumo.analisados += 1
-            st = pendentes[str(item.caminho)]
+            st = lote[str(item.caminho)]
             if item.infectado:
                 resumo.ameacas += 1
             elif item.suspeito:
@@ -298,19 +311,23 @@ def _executar(
     yield resumo
 
 
-def _mapear(caminhos: list[str], processos: int):
-    if processos <= 1 or len(caminhos) < 50:
+def _mapear(lotes, processos: int, total: int):
+    """(lote, resultado) de cada arquivo, um lote por vez."""
+    if processos <= 1 or total < 50:
         # Poucos arquivos: abrir processos custa mais que ganha. Banco e Scanner
         # ficam locais, porque o Scanner do YARA-X não pode trocar de thread.
         banco, yara, cliente = assinaturas.carregar(), regras_yara.carregar(), clamav.conectar()
-        for caminho in caminhos:
-            try:
-                yield scanner.analisar(Path(caminho), banco, yara, cliente)
-            except OSError as erro:
-                yield Path(caminho), erro
+        for lote in lotes:
+            for caminho in lote:
+                try:
+                    yield lote, scanner.analisar(Path(caminho), banco, yara, cliente)
+                except OSError as erro:
+                    yield lote, (Path(caminho), erro)
         return
     # Os processos nascem do forkserver já com as regras YARA, divididas na memória.
     with regras_yara.contexto().Pool(processos, initializer=_iniciar_processo) as pool:
         # Se quem consome parar no meio (ex.: a página do launcher foi fechada),
         # o `with` encerra os processos.
-        yield from pool.imap_unordered(_analisar, caminhos, chunksize=16)
+        for lote in lotes:
+            for item in pool.imap_unordered(_analisar, list(lote), chunksize=16):
+                yield lote, item

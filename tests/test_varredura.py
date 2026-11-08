@@ -177,3 +177,30 @@ def test_progresso_final_bate_com_o_resumo(tmp_path):
     r = resumo(itens)
     assert ultimo.vistos == r.analisados + r.em_cache == 1
     assert ultimo.total == 2 and r.sem_permissao == 1
+
+
+def test_disco_inteiro_nao_fica_na_memoria(tmp_path, monkeypatch):
+    # 08/11/2026: listar o disco todo antes de analisar levou o processo a ~800 MB
+    # (1,1 milhão de caminhos com stat). Agora analisa em lotes: o primeiro
+    # arquivo é analisado antes de a listagem chegar ao fim.
+    for i in range(10):
+        (tmp_path / f"a{i:02}.txt").write_text(f"conteudo {i}")
+    monkeypatch.setattr(varredura, "LOTE", 3)
+    eventos = []
+    percorrer = varredura.percorrer
+
+    def percorrer_anotando(raiz, exclusoes, resumo):
+        for caminho, st in percorrer(raiz, exclusoes, resumo):
+            eventos.append(("lista", caminho))
+            yield caminho, st
+    monkeypatch.setattr(varredura, "percorrer", percorrer_anotando)
+    itens = []
+    for item in varredura.executar([tmp_path], varredura.Exclusoes(), usar_cache=False, processos=1):
+        if isinstance(item, scanner.Resultado):
+            eventos.append(("analisa", str(item.caminho)))
+        itens.append(item)
+    assert len(resultados(itens)) == 10 and resumo(itens).analisados == 10
+    # A segunda passada (a que manda analisar) intercala: no máximo um lote listado à frente.
+    segunda = eventos[[i for i, e in enumerate(eventos) if e[0] == "lista"][9] + 1:]
+    primeira_analise = next(i for i, e in enumerate(segunda) if e[0] == "analisa")
+    assert primeira_analise <= 3
