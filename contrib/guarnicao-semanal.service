@@ -1,0 +1,11 @@
+# Chamado pelo guarnicao-semanal.timer. Só decide (leva menos de um segundo);
+# a varredura em si roda no guarnicao-varrer-completa.service.
+
+[Unit]
+Description=Guarnição: pergunta ou começa a varredura completa da semana
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/guarnicao
+ExecStart=%h/guarnicao/.venv/bin/python -m guarnicao semanal
+Environment=PYTHONUNBUFFERED=1

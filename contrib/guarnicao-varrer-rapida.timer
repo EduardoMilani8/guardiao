@@ -1,12 +1,9 @@
 # Timer de usuário do systemd: varredura rápida todo dia.
 #
-# Instalar (as duas agendadas de uma vez):
-#   mkdir -p ~/.config/systemd/user
-#   cp contrib/guarnicao-varrer-*.service contrib/guarnicao-varrer-*.timer ~/.config/systemd/user/
-#   systemctl --user daemon-reload
-#   systemctl --user enable --now guarnicao-varrer-rapida.timer guarnicao-varrer-completa.timer
+# Instalado por contrib/instalar-servicos.sh (junto com o guarnicao-semanal.timer,
+# que cuida da completa da semana).
 #
-# Próxima execução:   systemctl --user list-timers 'guarnicao-varrer-*'
+# Próxima execução:   systemctl --user list-timers 'guarnicao-*'
 # Rodar agora:        systemctl --user start guarnicao-varrer-rapida
 # Ver o que fez:      python -m guarnicao historico   (ou journalctl --user -u guarnicao-varrer-rapida)
 # Desinstalar:        systemctl --user disable --now guarnicao-varrer-rapida.timer

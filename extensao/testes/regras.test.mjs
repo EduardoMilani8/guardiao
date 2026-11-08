@@ -62,3 +62,11 @@ test('botão dourado só quando há problema (barra-v2)', async () => {
     assert.equal(acaoPrincipal('procurando'), false);
     assert.equal(acaoPrincipal('certo'), false);
 });
+
+test('a completa da semana pergunta: Mais tarde ou Varrer agora', () => {
+    const b = botoes({tipo: 'semanal'});
+    assert.deepEqual(b.map(x => x.rotulo), ['Mais tarde', 'Varrer agora']);
+    assert.deepEqual(b[0].args, []);                       // só fecha o aviso
+    assert.deepEqual(b[1].args, ['semanal', '--agora']);
+    assert.equal(b[1].principal, true);
+});

@@ -27,3 +27,14 @@ def test_varreduras_automaticas_nunca_derrubam_um_jogo():
         assert tamanho(s["MemoryHigh"]) < tamanho(s["MemoryMax"]) <= 3 << 30, nome
         assert tamanho(s["MemorySwapMax"]) <= 1 << 30, nome   # não enche a swap do jogo
         assert int(s["OOMScoreAdjust"]) == 1000, nome         # a primeira a sair
+
+
+def test_completa_pergunta_antes_em_vez_de_comecar_no_domingo():
+    assert not (CONTRIB / "guarnicao-varrer-completa.timer").exists()
+    timer = (CONTRIB / "guarnicao-semanal.timer").read_text()
+    assert "OnCalendar=*:0/30" in timer
+    assert "semanal" in servico("guarnicao-semanal.service")["ExecStart"]
+    # Quem clica em "Varrer agora" na bateria quer varrer: a tomada só vale para começar sozinha.
+    assert "ConditionACPower" not in (CONTRIB / "guarnicao-varrer-completa.service").read_text()
+    instalador = (CONTRIB / "instalar-servicos.sh").read_text()
+    assert "guarnicao-semanal.timer" in instalador

@@ -1,10 +1,12 @@
-# Varredura completa agendada. Chamado pelo guarnicao-varrer-completa.timer.
-# A instalação está no guarnicao-varrer-completa.timer.
+# Varredura completa da semana. Quem começa é o `guarnicao semanal`
+# (guarnicao-semanal.timer): sozinho com o PC parado e na tomada, ou quando
+# você clica em "Varrer agora" no aviso.
+#
+# Rodar agora:   systemctl --user start guarnicao-varrer-completa
+# Parar:         systemctl --user stop guarnicao-varrer-completa
 
 [Unit]
-Description=Guarnição: varredura completa agendada
-# O disco inteiro na bateria gasta carga à toa: espera o carregador.
-ConditionACPower=true
+Description=Guarnição: varredura completa da semana
 
 [Service]
 Type=oneshot

@@ -1,0 +1,18 @@
+# Timer de usuário do systemd: confere a varredura completa da semana.
+# Instalado por contrib/instalar-servicos.sh.
+#
+# De meia em meia hora o `guarnicao semanal` vê se a completa da semana já foi
+# feita. Se não: com o PC parado há 15 min e na tomada, ela começa sozinha; com
+# alguém usando, aparece um aviso perguntando (no máximo um por dia).
+#
+# Rodar agora (sem perguntar): python -m guarnicao semanal --agora
+
+[Unit]
+Description=Guarnição: confere a varredura completa da semana
+
+[Timer]
+OnBootSec=10min
+OnCalendar=*:0/30
+
+[Install]
+WantedBy=timers.target

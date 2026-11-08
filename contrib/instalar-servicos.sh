@@ -27,17 +27,25 @@ if [ -n "$ANTIGOS" ]; then
     (cd "$DESTINO" && rm -f $ANTIGOS)
 fi
 
+# Até 08/11/2026 a completa começava sozinha todo domingo (e derrubou um jogo
+# por falta de memória). Agora ela pergunta antes: o timer antigo sai.
+if [ -f "$DESTINO/guarnicao-varrer-completa.timer" ]; then
+    systemctl --user disable --now guarnicao-varrer-completa.timer 2>/dev/null || true
+    rm -f "$DESTINO/guarnicao-varrer-completa.timer"
+fi
+
 for unidade in guarnicao-monitor.service \
                guarnicao-atualizar.service guarnicao-atualizar.timer \
                guarnicao-varrer-rapida.service guarnicao-varrer-rapida.timer \
-               guarnicao-varrer-completa.service guarnicao-varrer-completa.timer; do
+               guarnicao-varrer-completa.service \
+               guarnicao-semanal.service guarnicao-semanal.timer; do
     # Os arquivos supõem o projeto em ~/guarnicao; aqui vale onde ele estiver.
     sed "s|%h/guarnicao|$ORIGEM|g" "$ORIGEM/contrib/$unidade" > "$DESTINO/$unidade"
 done
 
 systemctl --user daemon-reload
 systemctl --user enable --now guarnicao-monitor.service guarnicao-atualizar.timer \
-    guarnicao-varrer-rapida.timer guarnicao-varrer-completa.timer
+    guarnicao-varrer-rapida.timer guarnicao-semanal.timer
 systemctl --user restart guarnicao-monitor.service
 echo
 systemctl --user --no-pager --lines=0 status guarnicao-monitor.service | head -3

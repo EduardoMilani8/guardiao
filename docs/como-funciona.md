@@ -121,10 +121,19 @@ excluir_padroes = ["*.iso"]
 tamanho_maximo_mb = 512     # padrão: 256
 ```
 
-**Agendadas.** Os timers `guarnicao-varrer-rapida` (todo dia, por volta das 12:30) e
-`guarnicao-varrer-completa` (domingo, por volta das 13:00, só com o carregador
-ligado) rodam em prioridade mínima de CPU e disco, com no máximo 4 processos. Se o
-computador estava desligado na hora, rodam assim que ele ligar. Elas **não isolam
+**Agendadas.** A rápida (`guarnicao-varrer-rapida`) roda todo dia, por volta das
+12:30; se o computador estava desligado na hora, roda assim que ele ligar. A
+completa é uma vez por semana, mas **pergunta antes**: de meia em meia hora o
+`guarnicao-semanal.timer` confere se ela já foi feita nos últimos 7 dias. Se não,
+com o PC parado há 15 minutos e no carregador, ela começa sozinha; com alguém
+usando, aparece um aviso com **Varrer agora** e **Mais tarde** (no máximo um por
+dia). Foi assim depois que, em 08/11/2026, a completa de domingo começou no meio
+de um jogo e a memória acabou.
+
+As duas rodam em prioridade mínima de CPU e disco, com no máximo 4 processos e um
+teto de memória (`MemoryHigh=1536M`, `MemoryMax=2560M`, swap até 512 MB). Se mesmo
+assim faltar memória no computador, o kernel encerra a varredura antes de qualquer
+programa seu (`OOMScoreAdjust=1000`). Elas **não isolam
 sozinhas**: notificam o que acharem, e você decide no painel. Um alarme falso numa
 varredura do disco inteiro moveria um arquivo seu sem você ver.
 

@@ -245,6 +245,33 @@ def cmd_estado(args) -> int:
     return 0
 
 
+def cmd_semanal(args) -> int:
+    """Chamado pelo timer de meia em meia hora, e pelo botão "Varrer agora" (--agora)."""
+    from datetime import datetime
+
+    from . import andamento, historico, semanal
+    if args.agora:
+        semanal.iniciar()
+        print("Varredura completa começando em segundo plano.")
+        return 0
+    rodando = andamento.ler()
+    if rodando and rodando.get("tipo") == "completa":
+        return 0
+    agora = datetime.now()
+    decisao = semanal.decidir(semanal.devida(historico.listar(None), agora), semanal.ocioso_ms(),
+                              semanal.na_tomada(), semanal.perguntou_hoje(agora))
+    if decisao == "rodar":
+        print("PC parado e na tomada: começando a varredura completa da semana.")
+        semanal.iniciar()
+    elif decisao == "perguntar":
+        notificacao.uma_vez_por_dia(semanal.MARCA, agora)
+        notificacao.notificar(
+            "Hora da varredura completa da semana",
+            "Olha o disco inteiro, em segundo plano. Se o PC ficar parado, ela começa sozinha.",
+            dados={"tipo": "semanal", "personagem": ""})
+    return 0
+
+
 def cmd_historico(args) -> int:
     from . import historico
 
@@ -647,6 +674,10 @@ def main() -> int:
     p_varrer.add_argument("--parar", action="store_true",
                           help="para a varredura do terminal ou do timer que está rodando")
     p_varrer.set_defaults(func=cmd_varrer)
+
+    p_sem = sub.add_parser("semanal", help="a completa da semana: pergunta antes, ou começa com o PC parado")
+    p_sem.add_argument("--agora", action="store_true", help="começa já (o botão Varrer agora do aviso)")
+    p_sem.set_defaults(func=cmd_semanal)
 
     p_e = sub.add_parser("estado", help="o estado em poucas linhas (o escudo da barra usa --json)")
     p_e.add_argument("--json", action="store_true")

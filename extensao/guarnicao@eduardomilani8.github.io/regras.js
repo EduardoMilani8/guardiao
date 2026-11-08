@@ -11,6 +11,7 @@ export const FRASE = {
     suspeito: 'O Vidente percebeu algo estranho.',
     bloqueado: 'O protetor impediu que ele rodasse.',
     bases: 'Sem bases novas, o Cavaleiro não reconhece ameaças recentes.',
+    semanal: 'Ela anda devagar e cede a vez a jogos e ao que estiver aberto.',
 };
 
 export const ROTULOS_MENU = {
@@ -77,6 +78,7 @@ export function botoes(dados) {
     case 'varias': return [painel('Ver o que foi achado'), {rotulo: 'Trancar todas', args: ['launcher'], principal: true}];
     case 'bases': return [painel('Abrir painel'), {rotulo: 'Atualizar agora', args: ['atualizar'], principal: true}];
     case 'bloqueado': return [painel('Abrir painel')];
+    case 'semanal': return [{rotulo: 'Mais tarde', args: []}, {rotulo: 'Varrer agora', args: ['semanal', '--agora'], principal: true}];
     case 'trancado': return dados.quarentena ? [{rotulo: 'Desfazer', args: ['quarentena', 'restaurar', dados.quarentena]}] : [];
     default: return [];
     }

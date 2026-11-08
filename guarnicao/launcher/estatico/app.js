@@ -353,13 +353,13 @@ function desenharFundo() {
     ? `De hora em hora · próxima às ${paraData(s.proximas.atualizar).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
     : 'De hora em hora';
   const velhas = s.bases.avisos.length || s.bases.freshclam_parado;
-  const prox = [s.proximas.rapida, s.proximas.completa].filter(Boolean).sort()[0];
+  const prox = s.proximas.rapida;
   $('#fundo').innerHTML = [
     servico(s.protetor, 'Protetor', 'Analisa cada programa ao ser executado'),
     servico(s.monitor, 'Monitor', 'Downloads concluídos e processos estranhos'),
     linhaFundo('Atualização das bases', velhas && s.bases.freshclam_parado ? 'Serviço do ClamAV parado' : proxAtualizar,
       ha(s.bases.conferidas), velhas ? 'aviso' : ''),
-    linhaFundo('Varreduras agendadas', 'Rápida todo dia · completa aos domingos',
+    linhaFundo('Varreduras agendadas', 'Rápida todo dia · completa toda semana, perguntando antes',
       prox ? quando(prox) : 'Desligadas', prox ? '' : 'aviso'),
   ].join('');
 }

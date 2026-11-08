@@ -90,7 +90,8 @@ export class Avisos {
         banner.set_child(cartao({
             dados, titulo: n.title, corpo: n.body ?? '', pastaArte: this._pastaArte,
             aoClicar: args => {
-                this._comandos.rodar(args);
+                if (args.length)       // "Mais tarde" só fecha o aviso
+                    this._comandos.rodar(args);
                 n.destroy();
             },
         }));

@@ -11,8 +11,8 @@ from .. import bases
 
 PROTETOR = "guarnicao-protetor.service"      # serviço do sistema (root)
 MONITOR = "guarnicao-monitor.service"         # serviços do usuário
-TIMERS = {"rapida": "guarnicao-varrer-rapida.timer", "completa": "guarnicao-varrer-completa.timer",
-          "atualizar": "guarnicao-atualizar.timer"}
+# A completa não tem hora marcada: pergunta antes, ou começa com o PC parado (semanal.py).
+TIMERS = {"rapida": "guarnicao-varrer-rapida.timer", "atualizar": "guarnicao-atualizar.timer"}
 LIGAR_PROTETOR = "sudo systemctl enable --now guarnicao-protetor"
 LIGAR_MONITOR = "systemctl --user enable --now guarnicao-monitor"
 
