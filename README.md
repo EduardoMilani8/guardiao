@@ -24,7 +24,7 @@ depende de uma janela aberta.
 | **Monitor** | Analisa cada arquivo que termina de baixar em Downloads e avisa se algum processo agir como shell reverso ou minerador | O tempo todo, desde o login |
 | **Atualizar bases** | Baixa os hashes, as regras e as assinaturas novas | De hora em hora |
 | **Varredura rápida** | Confere os lugares onde malware costuma ficar: Downloads, `/tmp`, programas que iniciam sozinhos | Todo dia, por volta das 12:30 |
-| **Varredura completa** | Confere o disco inteiro | Domingo, por volta das 13:00, com o carregador ligado |
+| **Varredura completa** | Confere o disco inteiro | Uma vez por semana, perguntando antes (veja abaixo) |
 
 O protetor e o monitor olham o que acontece *agora*. As varreduras existem para o
 que já estava no disco antes, e para arquivos que pareciam limpos e passaram a ser
@@ -32,6 +32,33 @@ reconhecidos depois de uma atualização das bases.
 
 As varreduras agendadas nunca movem nada sozinhas: avisam com uma notificação, e
 você decide no painel.
+
+### Varreduras e jogos (ou qualquer programa pesado)
+
+A varredura completa lê o disco inteiro e é a mais pesada. Para ela não atrapalhar
+o que você estiver usando:
+
+- **Ela pergunta antes.** Quando passa uma semana desde a última, aparece o aviso
+  *"Hora da varredura completa da semana"* com dois botões: **Varrer agora** ou
+  **Mais tarde**. Se você escolher *Mais tarde*, ela pergunta de novo no dia
+  seguinte (no máximo uma vez por dia).
+- **Ela só começa sozinha com o computador parado.** Se o teclado e o mouse
+  ficarem 15 minutos sem uso e o notebook estiver no carregador, ela começa sem
+  perguntar. Se você voltar a usar, ela continua, mas devagar e cedendo a vez.
+- **Ela tem um teto de memória.** As varreduras agendadas (rápida e completa)
+  podem usar no máximo cerca de 2,5 GB. Se o computador ficar sem memória, o
+  sistema encerra a varredura primeiro, e não o seu jogo. Ela volta a ser
+  oferecida depois.
+- **Ela gasta pouca memória.** O disco é analisado aos poucos, em lotes, em vez
+  de guardar a lista de todos os arquivos de uma vez (no teste, o processo
+  principal caiu de 1,1 GB para cerca de 40 MB).
+
+Para começar a completa da semana na hora, com as mesmas regras, use
+`.venv/bin/python -m guarnicao semanal --agora`. Para ver quando cada coisa roda:
+`systemctl --user list-timers 'guarnicao-*'`.
+
+O teto de memória vale só para as varreduras **agendadas**. A que você inicia pelo
+painel ou com `guarnicao varrer` roda sem teto, porque foi você quem pediu.
 
 ## Painel
 
