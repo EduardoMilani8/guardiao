@@ -17,6 +17,7 @@ import hashlib
 import inspect
 import os
 import sqlite3
+import time
 from pathlib import Path
 
 from . import __version__, assinaturas, bases, clamav, compactados, heuristicas, regras_yara, scanner
@@ -58,7 +59,9 @@ class Cache:
         caminho = caminho or PADRAO
         caminho.parent.mkdir(parents=True, exist_ok=True)
         self.versao = versao or versao_motor()
-        self.db = sqlite3.connect(caminho, timeout=10)
+        # Espera curta: com outra varredura gravando, é melhor deixar de anotar
+        # alguns arquivos (só serão analisados de novo) do que parar a varredura.
+        self.db = sqlite3.connect(caminho, timeout=1)
         # WAL: quem lê não espera quem escreve, então duas varreduras convivem.
         self.db.execute("PRAGMA journal_mode=WAL")
         colunas = [c[1] for c in self.db.execute("PRAGMA table_info(limpos)")]
@@ -70,6 +73,8 @@ class Cache:
             " sha256 TEXT, PRIMARY KEY (dev, ino))"
         )
         self._pendentes = 0
+        self._gravado = time.monotonic()
+        self._ocupado_ate = 0.0
 
     def consultar(self, st: os.stat_result) -> str | None:
         """O SHA-256 guardado, se o arquivo está no cache e não mudou; senão None."""
@@ -97,13 +102,21 @@ class Cache:
         self._escrever("DELETE FROM limpos WHERE dev = ? AND ino = ?", (st.st_dev, st.st_ino))
 
     def _escrever(self, sql: str, valores: tuple) -> None:
+        if time.monotonic() < self._ocupado_ate:
+            return    # outra varredura está gravando: não fica esperando arquivo por arquivo
         try:
             self.db.execute(sql, valores)
             self._pendentes += 1
-            if self._pendentes >= 1000:    # gravar em lotes é muito mais rápido que um commit por arquivo
+            # Em lotes é muito mais rápido que um commit por arquivo; e no máximo a
+            # cada 2 s, para uma varredura lenta não segurar a escrita das outras.
+            if self._pendentes >= 1000 or time.monotonic() - self._gravado > 2:
                 self.salvar()
+        except sqlite3.OperationalError:
+            # Banco ocupado por outra varredura: tenta de novo daqui a meio minuto.
+            # Perder essas entradas só faz os arquivos serem analisados de novo.
+            self._ocupado_ate = time.monotonic() + 30
         except sqlite3.Error:
-            pass    # perder uma entrada só faz o arquivo ser analisado de novo
+            pass
 
     def salvar(self) -> None:
         try:
@@ -111,6 +124,7 @@ class Cache:
         except sqlite3.Error:
             pass
         self._pendentes = 0
+        self._gravado = time.monotonic()
 
     def fechar(self) -> None:
         self.salvar()
