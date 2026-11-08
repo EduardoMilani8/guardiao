@@ -18,3 +18,11 @@ Environment=PYTHONUNBUFFERED=1
 Nice=19
 CPUSchedulingPolicy=idle
 IOSchedulingClass=idle
+# Memória: em 08/11/2026 a completa somou ~2 GB e o kernel, sem memória, fechou
+# o jogo aberto. Passando de MemoryHigh ela é freada (o cache de disco dela é o
+# primeiro a sair); MemoryMax é o teto. Se mesmo assim faltar memória no PC,
+# o OOMScoreAdjust faz o kernel encerrar a varredura antes de qualquer programa seu.
+MemoryHigh=1536M
+MemoryMax=2560M
+MemorySwapMax=512M
+OOMScoreAdjust=1000
