@@ -10,7 +10,6 @@ from . import compactados, heuristicas, regras_yara
 
 TAMANHO_BLOCO = 64 * 1024
 
-
 class BancoDeHashes(Protocol):
     """Um dict {sha256: nome} ou o assinaturas.Banco, que consulta o disco."""
     def get(self, sha256: str, /) -> str | None: ...
@@ -71,7 +70,7 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Res
             # clamd reiniciando (ex.: carregando assinaturas novas): as outras camadas seguem.
             resultado.motivos.append(f"ClamAV não respondeu: {erro}")
 
-    if yara is not None:
+    if yara is not None and not _e_arquivo_de_regras(caminho):
         for o in regras_yara.verificar(caminho, yara):
             if o.gravidade == "info":
                 continue   # informativo: não pesa na suspeita
@@ -98,6 +97,13 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Res
     resultado.pontuacao = min(resultado.pontuacao + pontos, 100)
     resultado.motivos += motivos
     return resultado
+
+
+def _e_arquivo_de_regras(caminho: Path) -> bool:
+    if not caminho.name.lower().endswith((".yar", ".yara")):
+        return False
+    with caminho.open("rb") as f:
+        return regras_yara.e_arquivo_de_regras(caminho.name, f.read(TAMANHO_BLOCO))
 
 
 def varrer(alvo: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Iterator[Resultado | tuple[Path, OSError]]:

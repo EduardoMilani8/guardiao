@@ -24,6 +24,9 @@ MAX_MEMBROS = 5000
 MAX_PROFUNDIDADE = 3             # zip dentro de zip dentro de zip
 
 
+INICIO_REGRAS = 64 * 1024   # quanto ler para reconhecer um arquivo de regras YARA
+
+
 @dataclass
 class Exame:
     ameaca: str | None = None
@@ -128,7 +131,7 @@ def _analisar_membro(dados: bytes, local: str, banco, yara, exame: Exame) -> Non
     if nome := banco.get(hashlib.sha256(dados).hexdigest()):
         exame.ameaca, exame.camada = f"{nome} (dentro: {local})", "hash"
         return
-    if yara is None:
+    if yara is None or regras_yara.e_arquivo_de_regras(local, dados[:INICIO_REGRAS]):
         return
     for o in regras_yara.verificar_bytes(dados, yara):
         if o.gravidade == "alta":

@@ -123,3 +123,11 @@ def test_limite_de_profundidade(tmp_path, banco, monkeypatch):
 @pytest.mark.parametrize("dados", [b"PK\x03\x04 isto nao e um zip", b"\x1f\x8b gzip quebrado", b"texto comum"])
 def test_pacote_corrompido_ou_texto_nao_quebra(tmp_path, banco, dados):
     assert not analisar(tmp_path, "x.bin", dados, banco).infectado
+
+
+def test_regras_yara_dentro_de_um_wheel_nao_sao_ameaca(tmp_path, banco):
+    pytest.importorskip("yara_x")
+    from .test_yara import REGRA_DE_OUTRA_FERRAMENTA
+    wheel = zip_bytes({"skillspector/yara_rules/cryptominers.yar": REGRA_DE_OUTRA_FERRAMENTA})
+    r = analisar(tmp_path, "skillspector-2.12.0-py3-none-any.whl", wheel, banco, regras_yara.carregar())
+    assert not r.infectado and not r.suspeito

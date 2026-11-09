@@ -187,3 +187,21 @@ def test_realce_de_sintaxe_com_activex_nao_dispara(tmp_path, yara):
                        'registerLanguage("power', 'shell", ps);\n'])
     r = analisar(tmp_path, "swagger.js", swagger, yara)
     assert not r.infectado
+
+
+# Arquivo de regras de outra ferramenta (ex.: o skillspector traz cryptominers.yar):
+# ele contém os textos que procura, mas não é um minerador.
+REGRA_DE_OUTRA_FERRAMENTA = "".join([
+    'rule Minerador\n{\n    strings:\n        $pool = "stratum+', 'tcp://" nocase\n',
+    '        $xm = "xmr', 'ig"\n    condition:\n        any of them\n}\n'])
+
+
+def test_arquivo_de_regras_yara_nao_e_ameaca(tmp_path, yara):
+    r = analisar(tmp_path, "cryptominers.yar", REGRA_DE_OUTRA_FERRAMENTA, yara)
+    assert not r.infectado and not r.suspeito
+
+
+def test_minerador_com_nome_de_regra_continua_ameaca(tmp_path, yara):
+    # Só o nome .yar não basta: o conteúdo tem que ser uma regra de verdade.
+    r = analisar(tmp_path, "config.yar", MINERADOR, yara)
+    assert r.ameaca == "MineradorCripto (YARA)"

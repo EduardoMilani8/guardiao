@@ -156,6 +156,20 @@ def _gravidade(meta: dict) -> str:
     return "media"
 
 
+_REGRA = re.compile(rb"^\s*(?:private\s+|global\s+)*rule\s+\w+[^{]*\{", re.M)
+_CONDICAO = re.compile(rb"^\s*condition\s*:", re.M)
+
+
+def e_arquivo_de_regras(nome: str, inicio: bytes) -> bool:
+    """Um .yar/.yara que é mesmo uma regra YARA (de outra ferramenta, por exemplo).
+
+    Ele contém os textos que procura, então as nossas regras sempre bateriam
+    nele. Exige o nome E o conteúdo: um minerador chamado config.yar continua
+    sendo examinado. O hash e o ClamAV olham o arquivo do mesmo jeito."""
+    return (nome.lower().endswith((".yar", ".yara"))
+            and bool(_REGRA.search(inicio)) and bool(_CONDICAO.search(inicio)))
+
+
 def verificar(caminho: Path, scanner: "yara_x.Scanner") -> list[Ocorrencia]:
     try:
         resultado = scanner.scan_file(str(caminho))
