@@ -146,7 +146,12 @@ cd guarnicao
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 sudo apt install clamav clamav-daemon      # recomendado
+sudo systemctl enable --now clamav-freshclam clamav-daemon
 ```
+
+Se `python3 --version` mostrar 3.10 ou menos (Ubuntu 22.04, por exemplo), instale o 3.11
+(`sudo apt install python3.11 python3.11-venv`) e crie o ambiente com `python3.11 -m venv .venv`.
+O instalador do protetor usa a mesma versão do seu `.venv`.
 
 Para ligar os serviços:
 
