@@ -113,6 +113,23 @@ próxima vez, a menos que mudem (tamanho, mtime ou ctime) ou que as regras sejam
 atualizadas. Quando chegam hashes novos, o cache reconfere o hash guardado de cada
 arquivo sem precisar lê-lo de novo. Ameaças e suspeitos nunca entram no cache.
 
+**Para não acusar o que é inofensivo de propósito** (ajustado em 09/11/2026, depois
+de uma completa com 25 alarmes falsos):
+
+- Ficam de fora as regras da própria Guarnição (no projeto e na cópia do protetor
+  em `/opt/guarnicao`) e as assinaturas do ClamAV (`/var/lib/clamav`): elas
+  contêm os textos que procuram.
+- Arquivos `.yar`/`.yara` que são mesmo regras YARA (de outra ferramenta, soltos
+  ou dentro de um zip/wheel) não passam pelas regras YARA, pelo mesmo motivo. O
+  hash e o ClamAV olham do mesmo jeito, e um minerador chamado `config.yar`, que
+  não é uma regra, continua sendo acusado.
+- Os palpites do ClamAV (`Heuristics.*`, como um zip malformado de propósito em
+  testes de biblioteca) contam como **suspeito**, não como ameaça.
+- Nos caches de pacotes de programador (`~/go/pkg/mod`, `~/.cache/pip`,
+  `~/.cache/uv`, `~/.cargo/registry`, `~/.npm/_cacache`) só aparece ameaça
+  reconhecida (hash, assinatura do ClamAV ou regra YARA forte). Scripts que fazem
+  `curl | sh` ou usam base64 são comuns ali e deixam de aparecer como suspeitos.
+
 Exclusões e limite de tamanho ficam no `~/.config/guarnicao/config.toml`:
 
 ```toml

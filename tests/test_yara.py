@@ -205,3 +205,19 @@ def test_minerador_com_nome_de_regra_continua_ameaca(tmp_path, yara):
     # Só o nome .yar não basta: o conteúdo tem que ser uma regra de verdade.
     r = analisar(tmp_path, "config.yar", MINERADOR, yara)
     assert r.ameaca == "MineradorCripto (YARA)"
+
+
+@pytest.mark.parametrize("pasta", ["go/pkg/mod/exemplo.com/lib@v1.0.0/scripts",
+                                   ".cache/pip/wheels/2f", ".cache/uv/archive-v0/x",
+                                   ".cargo/registry/src/x", ".npm/_cacache/x"])
+def test_script_de_programador_no_cache_de_pacotes_nao_e_suspeito(tmp_path, yara, pasta):
+    (tmp_path / pasta).mkdir(parents=True)
+    r = analisar(tmp_path / pasta, "install.sh", CURL_SH, yara)
+    assert not r.infectado and not r.suspeito
+
+
+def test_ameaca_no_cache_de_pacotes_continua_ameaca(tmp_path, yara):
+    pasta = tmp_path / "go/pkg/mod/exemplo.com/lib@v1.0.0"
+    pasta.mkdir(parents=True)
+    r = analisar(pasta, "atualizar.sh", REVERSE_SHELL, yara)
+    assert r.ameaca == "ReverseShell_DevTcp (YARA)"

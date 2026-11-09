@@ -10,6 +10,18 @@ from . import compactados, heuristicas, regras_yara
 
 TAMANHO_BLOCO = 64 * 1024
 
+# Caches de gerenciadores de pacotes (Go, pip, uv, Cargo, npm): cheios de scripts
+# de programador que fazem `curl | sh` e afins. Ali só vale ameaça reconhecida
+# (hash, assinatura do ClamAV, regra YARA forte); suspeita fica de fora.
+CACHES_DE_PACOTES = ("/go/pkg/mod/", "/.cache/pip/", "/.cache/uv/",
+                     "/.cargo/registry/", "/.npm/_cacache/")
+
+
+def em_cache_de_pacotes(caminho: Path) -> bool:
+    texto = str(caminho)
+    return any(trecho in texto for trecho in CACHES_DE_PACOTES)
+
+
 class BancoDeHashes(Protocol):
     """Um dict {sha256: nome} ou o assinaturas.Banco, que consulta o disco."""
     def get(self, sha256: str, /) -> str | None: ...
@@ -101,6 +113,8 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Res
         resultado.camada = "heuristica"
     resultado.pontuacao = min(resultado.pontuacao + pontos, 100)
     resultado.motivos += motivos
+    if em_cache_de_pacotes(caminho):
+        resultado.pontuacao, resultado.motivos, resultado.camada = 0, [], None
     return resultado
 
 
