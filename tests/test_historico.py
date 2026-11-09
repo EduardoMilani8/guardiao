@@ -175,3 +175,36 @@ def test_contagem_dos_achados():
     assert notificacao.contar_achados(2, 0) == "2 ameaças"
     assert notificacao.contar_achados(1, 1) == "1 ameaça · 1 suspeito"
     assert notificacao.contar_achados(0, 3) == "3 suspeitos"
+
+
+def _com_achado(tipo, quando, caminho):
+    r = registro(tipo, ameacas=1, quando=quando)
+    r.achados = [{"caminho": str(caminho), "sha256": "x", "ameaca": "Falso (YARA)", "veredito": "ameaca"}]
+    return r
+
+
+def test_completa_mais_nova_que_nao_acusou_tira_a_ameaca_da_lista(tmp_path):
+    # Ex.: regras corrigidas depois de um falso positivo: a completa nova sai limpa.
+    arquivo = tmp_path / "regras.yar"
+    arquivo.write_text("rule x { condition: true }")
+    antiga = _com_achado("completa", "2026-11-08T13:00:00", arquivo)
+    nova = registro("completa", quando="2026-11-09T21:00:00")
+    assert historico.pendentes([nova, antiga]) == []
+
+
+def test_rapida_mais_nova_nao_tira_a_ameaca(tmp_path):
+    # A rápida não passa por todo o disco: não dá para dizer que conferiu o arquivo.
+    arquivo = tmp_path / "minerador"
+    arquivo.write_text("x")
+    antiga = _com_achado("completa", "2026-11-08T13:00:00", arquivo)
+    nova = registro("rápida", quando="2026-11-09T21:00:00")
+    assert [a["caminho"] for _, a in historico.pendentes([nova, antiga])] == [str(arquivo)]
+
+
+def test_completa_que_nao_conseguia_ler_o_arquivo_nao_tira_a_ameaca(tmp_path, monkeypatch):
+    arquivo = tmp_path / "do-root"
+    arquivo.write_text("x")
+    monkeypatch.setattr(historico.os, "access", lambda *_: False)
+    antiga = _com_achado("completa", "2026-11-08T13:00:00", arquivo)
+    nova = registro("completa", quando="2026-11-09T21:00:00")
+    assert len(historico.pendentes([nova, antiga])) == 1

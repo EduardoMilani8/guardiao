@@ -144,13 +144,23 @@ def marcar_isolado(caminho: str, sha256: str, quarentena: str, arquivo: Path | N
 
 def pendentes(registros: list[Registro]) -> list[tuple[Registro, dict]]:
     """Ameaças achadas que ainda estão no lugar: sem quarentena e o arquivo existe.
-    Um por caminho, o achado mais recente."""
+    Um por caminho, o achado mais recente.
+
+    Uma completa mais nova que não acusou o arquivo encerra o caso (ex.: era um
+    falso positivo e as regras foram corrigidas). Só a completa: a rápida e a de
+    uma pasta não passam por todo o disco. E só se o arquivo pode ser lido: uma
+    completa sem sudo não teria conseguido conferir um arquivo do root."""
     vistos, lista = set(), []
+    completa_depois = False   # registros vêm do mais recente para o mais antigo
     for r in registros:
         for a in r.achados:
             if a.get("veredito") != "ameaca" or a.get("quarentena") or a["caminho"] in vistos:
                 continue
             vistos.add(a["caminho"])
-            if os.path.isfile(a["caminho"]) and not os.path.islink(a["caminho"]):
-                lista.append((r, a))
+            if not os.path.isfile(a["caminho"]) or os.path.islink(a["caminho"]):
+                continue
+            if completa_depois and os.access(a["caminho"], os.R_OK):
+                continue
+            lista.append((r, a))
+        completa_depois = completa_depois or r.tipo == "completa"
     return lista
