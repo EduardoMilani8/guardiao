@@ -12,7 +12,8 @@ set -eu
 [ "$(id -u)" != 0 ] || { echo "Rode sem sudo: estes serviços são da sua conta." >&2; exit 1; }
 ORIGEM=$(cd "$(dirname "$0")/.." && pwd)
 DESTINO=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user
-[ -x "$ORIGEM/.venv/bin/python" ] || { echo "Crie o ambiente antes: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2; exit 1; }
+[ -x "$ORIGEM/.venv/bin/python" ] || { echo "Crie o ambiente antes: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2; exit 1; }
+"$ORIGEM/.venv/bin/python" -c 'import sys; sys.exit(sys.version_info < (3, 11))' || { echo "O .venv usa Python antigo; a Guarnição precisa do 3.11+: rm -rf .venv && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2; exit 1; }
 
 mkdir -p "$DESTINO"
 
