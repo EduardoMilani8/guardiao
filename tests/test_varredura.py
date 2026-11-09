@@ -204,3 +204,10 @@ def test_disco_inteiro_nao_fica_na_memoria(tmp_path, monkeypatch):
     segunda = eventos[[i for i, e in enumerate(eventos) if e[0] == "lista"][9] + 1:]
     primeira_analise = next(i for i, e in enumerate(segunda) if e[0] == "analisa")
     assert primeira_analise <= 3
+
+
+def test_pula_a_copia_do_protetor_e_a_base_do_clamav():
+    # As regras em /opt/guarnicao e as assinaturas do ClamAV contêm o que procuram.
+    ex = varredura.carregar_exclusoes(Path("/nao/existe.toml"))
+    assert ex.ignora_pasta("/opt/guarnicao/regras/mineradores.yar")
+    assert ex.ignora_pasta("/var/lib/clamav/daily.cld")

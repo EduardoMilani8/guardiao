@@ -78,6 +78,8 @@ def carregar_exclusoes(config: Path = CONFIG) -> Exclusoes:
         str(regras_yara.PASTA_PADRAO.resolve()),  # as regras contêm os padrões que procuram
         str(bases.PASTA),                         # idem para as regras e hashes baixados
         str(Path(__file__).parent.parent / ".venv"),
+        "/opt/guarnicao",                         # a cópia do protetor, com as mesmas regras
+        "/var/lib/clamav",                        # as assinaturas do ClamAV contêm o que procuram
     ])
     if config.is_file():
         dados = tomllib.loads(config.read_text(encoding="utf-8"))
