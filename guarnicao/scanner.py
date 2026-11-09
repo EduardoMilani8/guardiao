@@ -63,7 +63,12 @@ def analisar(caminho: Path, banco: BancoDeHashes, yara=None, clamav=None) -> Res
 
     if clamav is not None:
         try:
-            if nome := clamav.verificar(caminho):
+            if (nome := clamav.verificar(caminho)) and nome.startswith("Heuristics."):
+                # Palpite, não assinatura (ex.: zip malformado em testes de biblioteca).
+                resultado.camada = "clamav"
+                resultado.pontuacao += heuristicas.LIMIAR_SUSPEITO
+                resultado.motivos.append(f"palpite do ClamAV: {nome}")
+            elif nome:
                 resultado.ameaca, resultado.camada = f"{nome} (ClamAV)", "clamav"
                 return resultado
         except OSError as erro:

@@ -48,6 +48,8 @@ class ClamdFalso:
                     self.leu_por_fd += 1
                     if b"EICAR" in conteudo:
                         resposta = "fd[10]: Win.Test.EICAR_HDB-1 FOUND"
+                    elif b"zip-estragado" in conteudo:
+                        resposta = "fd[10]: Heuristics.Zip.OverlappingFiles FOUND"
                     elif b"corrompido" in conteudo:
                         resposta = "fd[10]: Can't read file ERROR"
                     else:
@@ -107,6 +109,15 @@ def test_erro_do_clamav_nao_derruba_as_outras_camadas(tmp_path, clamd):
     arquivo.write_bytes(b"corrompido")
     r = scanner.analisar(arquivo, {}, None, clamav.conectar())
     assert not r.infectado and any("ClamAV não respondeu" in m for m in r.motivos)
+
+
+def test_palpite_do_clamav_e_suspeito_nao_ameaca(tmp_path, clamd):
+    # Heuristics.* é um palpite (ex.: zip malformado de propósito em testes de biblioteca).
+    arquivo = tmp_path / "FuzzReader-raw.zip"
+    arquivo.write_bytes(b"PK zip-estragado")
+    r = scanner.analisar(arquivo, {}, None, clamav.conectar())
+    assert not r.infectado and r.suspeito and r.camada == "clamav"
+    assert any("Heuristics.Zip.OverlappingFiles" in m for m in r.motivos)
 
 
 def test_nao_segue_link_simbolico(tmp_path, clamd):
