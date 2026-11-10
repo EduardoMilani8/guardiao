@@ -13,7 +13,7 @@ export const Escudo = GObject.registerClass(
 class Escudo extends PanelMenu.Button {
     _init(pasta, comandos) {
         super._init(0.5, 'Guarnição');
-        this.add_style_class_name('guarnicao-botao');
+        this.add_style_class_name('guarnicao-escudo-barra');
         this._pasta = pasta;
         this._comandos = comandos;
         this._icone = new St.Icon({style_class: 'system-status-icon'});
