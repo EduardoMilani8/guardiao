@@ -1,4 +1,4 @@
-/* Animações dos quatro personagens (protótipos aprovados em design/telas/anim-*.html).
+/* Animações dos quatro personagens (protótipos aprovados em guarnicao-design: telas/anim-*.html).
    O estado vai no elemento em volta do retrato:
    m-inativo (fora da vez), m-entrada (chegou a vez, uma vez), m-agindo (repete enquanto trabalha),
    m-achou (achou ameaça, uma vez) e m-trancou (só o Carcereiro, uma vez). */

@@ -1,5 +1,5 @@
 /* Painel da Guarnição: a muralha (aba Painel). Desenho aprovado em
-   design/telas/painel-muralha-*.html; as fontes ficam no projeto (SIL OFL,
+   guarnicao-design: telas/painel-muralha-*.html; as fontes ficam no projeto (SIL OFL,
    licenças em fontes/), nada é buscado fora deste computador. */
 @font-face{font-family:'Fraunces';src:url(fontes/fraunces-latin-500-normal.woff2) format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Fraunces';src:url(fontes/fraunces-latin-600-normal.woff2) format('woff2');font-weight:600;font-style:normal;font-display:swap}

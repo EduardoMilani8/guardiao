@@ -1,4 +1,4 @@
-"""O que o escudo da barra do GNOME mostra (design/telas/barra-v2.html).
+"""O que o escudo da barra do GNOME mostra (guarnicao-design: telas/barra-v2.html).
 
 Um estado só, na ordem de prioridade: ameaça não tratada > procurando >
 precisa de atenção > tudo certo. Só lê; quem age são os botões do menu.
