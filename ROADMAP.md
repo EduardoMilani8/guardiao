@@ -79,6 +79,8 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
       ou pedir ajuda (ex.: a um assistente de IA). Ideia de 09/11/2026, depois de uma
       completa com 25 alarmes falsos que precisaram ser copiados à mão da tela.
       Junto: tipo e data da varredura, versão da Guarnição e das bases
+- [ ] **Atualizar e melhorar o README**: deixar em dia com o que mudou (menu do
+      escudo, varreduras, pastas do projeto) e mais claro para quem chega agora
 
 ## Para depois
 
