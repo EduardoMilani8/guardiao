@@ -42,12 +42,17 @@ usam pastas temporárias e imitações de cada parte.
 guarnicao/            o programa (cada arquivo começa explicando o que faz)
 guarnicao/launcher/   o painel: servidor local e a página
 regras/              regras YARA do projeto
+assinaturas/         hashes de ameaças conhecidas que vêm com o projeto
+dados/               pacotes populares do npm e do PyPI (para pegar nomes parecidos)
 contrib/             serviços do systemd e os instaladores
 extensao/            a extensão do GNOME (escudo na barra e avisos na muralha)
 ferramentas/         medição da taxa de detecção
 docs/                documentação
 tests/               testes (pytest)
 ```
+
+Os protótipos das telas e os retratos ficam num repositório à parte, o
+`guarnicao-design` (privado). A arte que o programa usa já está aqui.
 
 O [docs/como-funciona.md](docs/como-funciona.md) explica as decisões de cada parte.
 
