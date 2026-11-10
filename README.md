@@ -200,8 +200,8 @@ Eles desligam os serviços `guardiao-*` e ligam os `guarnicao-*` no lugar; a có
 de root muda de `/opt/guardiao` para `/opt/guarnicao`. A configuração, as bases, o
 histórico e a quarentena mudam sozinhos de `guardiao` para `guarnicao` (em
 `~/.config`, `~/.local/share` e `~/.cache`) na primeira vez que a Guarnição roda, e
-o nome antigo fica como atalho para o novo. O comando `python -m guardiao` e as
-variáveis `GUARDIAO_*` continuam funcionando por enquanto.
+o nome antigo fica como atalho para o novo. O comando agora é `python -m guarnicao`
+(o `python -m guardiao` saiu em 09/11/2026); as variáveis `GUARDIAO_*` ainda valem.
 
 A pasta do projeto pode continuar se chamando `guardiao`. Se mudar o nome dela, rode
 `contrib/instalar-servicos.sh` de novo para os serviços acharem o lugar novo (o

@@ -1,7 +1,5 @@
 """A troca de nome de Guardião para Guarnição não pode perder nada de quem já usava."""
 
-import subprocess
-import sys
 from pathlib import Path
 
 from guarnicao import caminhos
@@ -59,10 +57,3 @@ def test_variavel_antiga_ainda_vale(monkeypatch):
     assert caminhos.variavel("TESTE") == "velha"
     monkeypatch.setenv("GUARNICAO_TESTE", "nova")
     assert caminhos.variavel("TESTE") == "nova"
-
-
-def test_comando_antigo_continua_funcionando():
-    raiz = Path(__file__).resolve().parent.parent
-    saida = subprocess.run([sys.executable, "-m", "guardiao", "--help"], cwd=raiz,
-                           capture_output=True, text=True, timeout=30)
-    assert saida.returncode == 0 and "varrer" in saida.stdout
