@@ -54,7 +54,9 @@ def montar(servicos: dict, registros: list, progresso: dict | None, agora: datet
     bases = servicos.get("bases", {})
     if bases.get("avisos") or bases.get("freshclam_parado"):
         linhas = list(bases.get("avisos") or [])[:2] or ["O serviço do ClamAV (freshclam) está parado"]
-        return {"estado": "atencao", "titulo": "Suas bases estão desatualizadas", "linhas": linhas,
+        clamd_parado = any(a.startswith("clamav: o clamd") for a in linhas)
+        titulo = "O ClamAV está parado" if clamd_parado else "Suas bases estão desatualizadas"
+        return {"estado": "atencao", "titulo": titulo, "linhas": linhas,
                 "acoes": ["atualizar", "abrir"]}
     for nome, rotulo in (("protetor", "O protetor está desligado"), ("monitor", "O monitor está desligado")):
         s = servicos.get(nome, {})

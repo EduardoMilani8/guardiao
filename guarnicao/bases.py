@@ -215,6 +215,7 @@ def avisos(lista: list[Base] | None = None, agora: float | None = None) -> list[
 
 FRESHCLAM = "clamav-freshclam.service"
 LIGAR_FRESHCLAM = f"sudo systemctl enable --now {FRESHCLAM.removesuffix('.service')}"
+LIGAR_CLAMD = "sudo systemctl enable clamav-daemon && sudo systemctl restart clamav-daemon"
 
 
 def freshclam_parado() -> bool:
@@ -235,6 +236,10 @@ def _aviso_clamav(agora: float | None) -> list[str]:
     from . import clamav
     cliente = clamav.conectar()
     if cliente is None:
+        # Socket configurado (clamd.conf existe) e ninguém responde: instalado e parado.
+        # O systemctl pode até dizer "active" (unit presa em "active (exited)").
+        if clamav.encontrar_socket() is not None:
+            return [f"clamav: o clamd não responde (para ligar: {LIGAR_CLAMD})"]
         return []
     if freshclam_parado():
         return [f"clamav: o freshclam está parado e as assinaturas não vão mais atualizar ({LIGAR_FRESHCLAM})"]

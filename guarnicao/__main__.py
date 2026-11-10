@@ -313,7 +313,11 @@ def _status_clamav() -> None:
     from . import clamav
     cliente = clamav.conectar()
     if cliente is None:
-        print(f"{CINZA}{'clamav':<14} {'desligado':<14} instale: sudo apt install clamav clamav-daemon{FIM}")
+        from . import bases
+        if clamav.encontrar_socket() is not None:
+            print(f"{VERMELHO}{'clamav':<14} {'parado':<14} o clamd não responde; para ligar: {bases.LIGAR_CLAMD}{FIM}")
+        else:
+            print(f"{CINZA}{'clamav':<14} {'desligado':<14} instale: sudo apt install clamav clamav-daemon{FIM}")
         return
     motor, numero, quando = cliente.versao()
     idade = None if quando is None else time.time() - quando.timestamp()

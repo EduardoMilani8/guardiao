@@ -63,3 +63,9 @@ def test_ameaca_vence_tudo(tmp_path):
 def test_sem_varredura_ainda():
     e = escudo.montar(servicos(), [], None, AGORA)
     assert e["estado"] == "certo" and "Nenhuma varredura ainda" in e["linhas"]
+
+
+def test_atencao_clamd_parado_nao_fala_em_bases_velhas():
+    e = escudo.montar(servicos(avisos=["clamav: o clamd não responde (para ligar: sudo systemctl restart clamav-daemon)"]),
+                      [registro()], None, AGORA)
+    assert e["estado"] == "atencao" and e["titulo"] == "O ClamAV está parado"

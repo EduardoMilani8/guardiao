@@ -145,3 +145,17 @@ def test_avisa_quando_o_freshclam_esta_parado(clamd, monkeypatch):
     # Mesmo com assinaturas de hoje: parado, ele não vai mais atualizar.
     [aviso] = bases._aviso_clamav(datetime(2026, 11, 3, 20).timestamp())
     assert "freshclam está parado" in aviso and "systemctl enable --now clamav-freshclam" in aviso
+
+
+def test_avisa_quando_o_clamd_esta_instalado_mas_nao_responde(tmp_path, monkeypatch):
+    # Ubuntu 22.04: o script antigo do boot deixou a unit "active (exited)" sem clamd.
+    from guarnicao import bases
+    monkeypatch.setenv("GUARNICAO_CLAMD_SOCKET", str(tmp_path / "clamd.ctl"))   # configurado, ninguém ouvindo
+    [aviso] = bases._aviso_clamav(None)
+    assert "clamd não responde" in aviso and "systemctl restart clamav-daemon" in aviso
+
+
+def test_sem_clamav_instalado_nao_avisa(tmp_path, monkeypatch):
+    from guarnicao import bases, clamav
+    monkeypatch.setattr(clamav, "encontrar_socket", lambda: None)
+    assert bases._aviso_clamav(None) == []
