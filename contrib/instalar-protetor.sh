@@ -24,8 +24,13 @@ chmod -R go-w "$DESTINO"
 # Mesma versão do yara-x da sua conta: as regras foram calibradas com ela.
 YARA=$("$ORIGEM/.venv/bin/python" -m pip freeze 2>/dev/null | grep -i '^yara-x==' || echo yara-x)
 # Mesmo Python do .venv da sua conta (3.11+): o python3 do sistema pode ser mais velho.
-PY=$("$ORIGEM/.venv/bin/python" -c 'import sys; v = sys.version_info; sys.exit(1) if v < (3, 11) else print("python%d.%d" % v[:2])') \
+# Pelo caminho completo: o sudo tem um PATH próprio, sem o Python do pyenv ou do uv.
+PY=$("$ORIGEM/.venv/bin/python" -c 'import sys; sys.exit(1) if sys.version_info < (3, 11) else print(sys._base_executable)') \
     || { echo "O .venv da sua conta não existe ou usa Python antigo; a Guarnição precisa do 3.11+: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2; exit 1; }
+# O protetor roda como root: o Python dele não pode ser um que a sua conta consiga alterar.
+PY=$(readlink -f "$PY")
+[ "$(stat -c %U "$PY")" = root ] && [ -z "$(find "$PY" -perm /022)" ] \
+    || { echo "O Python do seu .venv ($PY) não é do root; o protetor precisa de um do sistema: sudo apt install python3.11 python3.11-venv && python3.11 -m venv .venv" >&2; exit 1; }
 "$DESTINO/.venv/bin/python" -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null || rm -rf "$DESTINO/.venv"
 [ -x "$DESTINO/.venv/bin/python" ] || "$PY" -m venv "$DESTINO/.venv"
 "$DESTINO/.venv/bin/pip" install -q "$YARA"
