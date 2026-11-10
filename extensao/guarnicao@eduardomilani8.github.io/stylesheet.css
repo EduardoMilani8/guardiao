@@ -1,3 +1,6 @@
+/* Botão da barra mais estreito: o padrão do GNOME sobra muito em volta do escudo. */
+.panel-button.guarnicao-botao { -natural-hpadding: 4px; -minimum-hpadding: 2px; }
+
 /* Menu do escudo (barra-v2). A cor do estado só aparece aqui, junto do texto. */
 .guarnicao-menu-cabeca { spacing: 8px; padding-top: 6px; padding-bottom: 4px; }
 .guarnicao-menu-nome { font-family: Fraunces, serif; font-weight: 600; font-size: 14px; color: #E3C384; }
