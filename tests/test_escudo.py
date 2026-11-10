@@ -19,8 +19,7 @@ def registro(achados=(), total=305, quando="2026-11-08T12:30:00"):
 def test_tudo_certo():
     e = escudo.montar(servicos(), [registro()], None, AGORA)
     assert e["estado"] == "certo" and e["titulo"] == "Você está protegido"
-    assert e["linhas"][:2] == ["Última: rápida · hoje, 12:30", "✓ 305 arquivos, tudo limpo"]
-    assert e["linhas"][2] == "Bases atualizadas há 3 min"
+    assert e["linhas"] == ["Última: rápida · hoje, 12:30", "Bases atualizadas há 3 min"]
     assert e["acoes"] == ["varrer", "abrir"]
 
 

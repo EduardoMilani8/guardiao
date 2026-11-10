@@ -28,9 +28,7 @@ def _ultima(registros: list, agora: datetime) -> list[str]:
     if not registros:
         return ["Nenhuma varredura ainda"]
     r = registros[0]
-    resultado = (f"✓ {r.total} arquivos, tudo limpo" if not (r.ameacas or r.suspeitos)
-                 else f"{r.ameacas} ameaça(s) · {r.suspeitos} suspeito(s)")
-    return [f"Última: {r.tipo} · {quando(r.quando, agora)}", resultado]
+    return [f"Última: {r.tipo} · {quando(r.quando, agora)}"]
 
 
 def montar(servicos: dict, registros: list, progresso: dict | None, agora: datetime) -> dict:
