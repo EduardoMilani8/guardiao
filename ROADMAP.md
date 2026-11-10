@@ -73,6 +73,12 @@ fases estão concluídas; os itens em aberto estão em [Próximos passos](#próx
       cópia, uns 200 MB cada) e o pico da varredura rápida, de 768 MB para ~580 MB.
       O monitor (~170 MB) continua com a cópia dele: dividir com o protetor, que roda
       como root, exigiria abrir um canal entre os dois
+- [ ] **Botão "Copiar relatório" em "O que foi encontrado"**: copia de uma vez tudo o
+      que a varredura achou (nome, caminho completo, veredito, regra ou assinatura,
+      quem achou e quando), em texto pronto para colar numa issue de falso positivo
+      ou pedir ajuda (ex.: a um assistente de IA). Ideia de 09/11/2026, depois de uma
+      completa com 25 alarmes falsos que precisaram ser copiados à mão da tela.
+      Junto: tipo e data da varredura, versão da Guarnição e das bases
 
 ## Para depois
 
