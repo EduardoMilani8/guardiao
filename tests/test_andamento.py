@@ -3,7 +3,18 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from guarnicao import andamento, varredura
+
+
+@pytest.fixture(autouse=True)
+def este_processo_e_a_guarnicao(monkeypatch):
+    # andamento.ler() só aceita pid cuja linha de comando cite a guarnicao. O pytest
+    # só cita quando rodado pelo caminho absoluto do .venv; aqui não depende disso.
+    original = andamento._linha_de_comando
+    monkeypatch.setattr(andamento, "_linha_de_comando", lambda pid: (
+        ["python", "-m", "guarnicao", "launcher"] if pid == os.getpid() else original(pid)))
 
 
 def test_grava_le_e_apaga(tmp_path):

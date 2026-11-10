@@ -99,8 +99,10 @@ def test_pontos_de_montagem_um_por_disco(tmp_path):
     )
     pontos = protetor.pontos_de_montagem(mounts)
     assert Path("/") in pontos and Path("/proc") not in pontos and Path("/mnt/remoto") not in pontos
-    # tmp_path está no mesmo dispositivo que "meu disco": entra só um dos dois
-    assert len([p for p in pontos if p in (tmp_path, com_espaco)]) == 1
+    # tmp_path está no mesmo dispositivo que "meu disco": entra só um dos dois. Se o
+    # /tmp estiver no próprio / (sem tmpfs), o / já cobre os dois e não entra nenhum.
+    mesmo_do_raiz = os.stat(tmp_path).st_dev == os.stat("/").st_dev
+    assert len([p for p in pontos if p in (tmp_path, com_espaco)]) == (0 if mesmo_do_raiz else 1)
 
 
 def st(uid=0, modo=0o100755):
