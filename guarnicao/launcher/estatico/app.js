@@ -391,10 +391,10 @@ function desenharAcoes(v) {
     acoes.innerHTML = '<button type="button" class="mu-btn" data-acao="parar">Parar varredura</button>';
   } else if (v === 'cacando') {
     acoes.innerHTML = '';
-  } else if (['repouso', 'parcial', 'protetor'].includes(v)) {
-    acoes.innerHTML = BOTOES_INICIO;
   } else {
-    acoes.innerHTML = '';
+    // Com ameaça na lista também: sem os botões não dava para conferir de novo
+    // (ex.: depois de corrigir um falso positivo, a completa nova limpa a lista).
+    acoes.innerHTML = BOTOES_INICIO;
   }
 
   const s = est.servidor; const h = est.historico;
